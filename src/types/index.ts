@@ -87,3 +87,51 @@ export interface BrandConfig {
   contactEmail: string;
   termsAndConditions: string;
 }
+
+export interface ParticipantFieldConfig {
+  id: 'name' | 'email' | 'phone' | 'document' | 'city';
+  label: string;
+  placeholder: string;
+  enabled: boolean;
+  required: boolean;
+}
+
+export interface FormFieldsConfig {
+  name: ParticipantFieldConfig;
+  email: ParticipantFieldConfig;
+  phone: ParticipantFieldConfig;
+  document: ParticipantFieldConfig;
+  city: ParticipantFieldConfig;
+}
+
+export interface QRCodePosterConfig {
+  title: string;
+  subtitle: string;
+  step1: string;
+  step2: string;
+  step3: string;
+  footerLeft: string;
+  footerRight: string;
+  showDate: boolean;
+  showSteps: boolean;
+  prizeHighlight?: string;
+  scheduleHighlight?: string;
+}
+
+export interface ReportPdfConfig {
+  title: string;
+  subtitle: string;
+  protocolPrefix: string;
+  statementText: string;
+  organizerSignTitle: string;
+  auditorSignTitle: string;
+  includeTicket: boolean;
+  includeWinnerName: boolean;
+  includePrize: boolean;
+  includePhone: boolean;
+  includeDocument: boolean;
+  includeEmail: boolean;
+  includeHash: boolean;
+  includeDate: boolean;
+}
+

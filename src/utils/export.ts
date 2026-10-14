@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Participant, DrawWinner, BrandConfig } from '../types';
+import { Participant, DrawWinner, BrandConfig, ReportPdfConfig } from '../types';
 
 // Export participants to Excel
 export const exportParticipantsToExcel = (participants: Participant[], filename = 'participantes_sorteio.xlsx') => {
@@ -108,9 +108,31 @@ export const exportParticipantsToPDF = (participants: Participant[], brand: Bran
 };
 
 // Export Winners Audit Report to PDF
-export const exportWinnersReportPDF = (winners: DrawWinner[], brand: BrandConfig) => {
+export const exportWinnersReportPDF = (
+  winners: DrawWinner[],
+  brand: BrandConfig,
+  config?: ReportPdfConfig
+) => {
   const doc = new jsPDF();
   const now = new Date();
+
+  const cfg = config || {
+    title: 'ATA E AUDITORIA OFICIAL DE SORTEIO',
+    subtitle: 'RELATÓRIO CONSOLIDADO DE VENCEDORES HOMOLOGADOS',
+    protocolPrefix: 'SRT-',
+    statementText:
+      'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento divulgado aos participantes.',
+    organizerSignTitle: 'Assinatura do Organizador / Diretor',
+    auditorSignTitle: 'Assinatura da Comissão de Auditoria',
+    includeTicket: true,
+    includeWinnerName: true,
+    includePrize: true,
+    includePhone: true,
+    includeDocument: true,
+    includeEmail: true,
+    includeHash: true,
+    includeDate: true,
+  };
 
   // Header Banner
   doc.setFillColor(15, 23, 42);
@@ -119,62 +141,81 @@ export const exportWinnersReportPDF = (winners: DrawWinner[], brand: BrandConfig
   doc.setTextColor(245, 158, 11);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text(brand.companyName || 'SorteioLive Pro', 14, 18);
+  doc.text(brand.companyName || 'SorteioLive Pro', 14, 16);
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text('ATA E AUDITORIA OFICIAL DE SORTEIO', 14, 26);
+  doc.setFontSize(10.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text(cfg.title || 'ATA E AUDITORIA OFICIAL DE SORTEIO', 14, 25);
 
   doc.setTextColor(148, 163, 184);
   doc.setFontSize(8);
-  doc.text(`Protocolo: SRT-${now.getTime().toString().slice(-8)}`, 196, 18, { align: 'right' });
-  doc.text(`Data: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`, 196, 26, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.text(
+    `Protocolo: ${cfg.protocolPrefix || 'SRT-'}${now.getTime().toString().slice(-8)}`,
+    196,
+    16,
+    { align: 'right' }
+  );
+  doc.text(
+    `Data: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`,
+    196,
+    25,
+    { align: 'right' }
+  );
 
   // Body Information
   doc.setTextColor(30, 41, 59);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('1. RESUMO DOS VENCEDORES', 14, 44);
+  doc.text(`1. ${cfg.subtitle || 'VENCEDORES HOMOLOGADOS'} (${winners.length} REGISTROS)`, 14, 42);
 
-  const tableData = winners.map((w, i) => [
-    i + 1,
-    w.prizeTitle,
-    w.participantTicket,
-    w.participantName,
-    w.participantDocument || '-',
-    w.participantPhone,
-    w.validationHash.slice(0, 10),
-  ]);
+  // Dynamic table headers based on config
+  const headers: string[] = ['#'];
+  if (cfg.includePrize) headers.push('Prêmio Sorteado');
+  if (cfg.includeTicket) headers.push('Bilhete');
+  if (cfg.includeWinnerName) headers.push('Vencedor(a)');
+  if (cfg.includeDocument) headers.push('CPF/Doc');
+  if (cfg.includePhone) headers.push('Telefone');
+  if (cfg.includeEmail) headers.push('E-mail');
+  if (cfg.includeDate) headers.push('Data/Hora');
+  if (cfg.includeHash) headers.push('Hash Auditoria');
+
+  const tableData = winners.map((w, i) => {
+    const row: Array<string | number> = [i + 1];
+    if (cfg.includePrize) row.push(w.prizeTitle);
+    if (cfg.includeTicket) row.push(w.participantTicket);
+    if (cfg.includeWinnerName) row.push(w.participantName);
+    if (cfg.includeDocument) row.push(w.participantDocument || '-');
+    if (cfg.includePhone) row.push(w.participantPhone || '-');
+    if (cfg.includeEmail) row.push(w.participantEmail || '-');
+    if (cfg.includeDate) {
+      const dt = new Date(w.wonAt);
+      row.push(`${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
+    }
+    if (cfg.includeHash) row.push(w.validationHash.slice(0, 10));
+    return row;
+  });
 
   autoTable(doc, {
-    startY: 48,
-    head: [['#', 'Prêmio Sorteado', 'Bilhete', 'Vencedor', 'CPF', 'Telefone', 'Hash Autenticidade']],
+    startY: 46,
+    head: [headers],
     body: tableData,
     theme: 'grid',
     headStyles: {
       fillColor: [217, 119, 6],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8.5,
+      fontSize: 8,
     },
     bodyStyles: {
-      fontSize: 8,
-      cellPadding: 3.5,
-    },
-    columnStyles: {
-      0: { cellWidth: 8 },
-      1: { cellWidth: 42, fontStyle: 'bold' },
-      2: { cellWidth: 24, fontStyle: 'bold', textColor: [180, 83, 9] },
-      3: { cellWidth: 42 },
-      4: { cellWidth: 26 },
-      5: { cellWidth: 26 },
-      6: { cellWidth: 24, fontStyle: 'italic', textColor: [100, 116, 139] },
+      fontSize: 7.5,
+      cellPadding: 3,
     },
     margin: { left: 14, right: 14 },
   });
 
-  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 16;
+  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
 
   // Signatures section
   doc.setTextColor(51, 65, 85);
@@ -185,22 +226,23 @@ export const exportWinnersReportPDF = (winners: DrawWinner[], brand: BrandConfig
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.text(
-    'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento divulgado aos participantes.',
+    cfg.statementText ||
+      'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento divulgado aos participantes.',
     14,
-    finalY + 6,
+    finalY + 5,
     { maxWidth: 182 }
   );
 
   // Signature lines
-  const sigY = finalY + 36;
+  const sigY = finalY + 30;
   doc.setDrawColor(148, 163, 184);
   doc.line(14, sigY, 90, sigY);
   doc.line(120, sigY, 196, sigY);
 
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text('Assinatura do Organizador / Diretor', 52, sigY + 5, { align: 'center' });
-  doc.text('Assinatura da Comissão de Auditoria', 158, sigY + 5, { align: 'center' });
+  doc.text(cfg.organizerSignTitle || 'Assinatura do Organizador / Diretor', 52, sigY + 5, { align: 'center' });
+  doc.text(cfg.auditorSignTitle || 'Assinatura da Comissão de Auditoria', 158, sigY + 5, { align: 'center' });
 
   doc.save(`relatorio_vencedores_${now.toISOString().slice(0, 10)}.pdf`);
 };

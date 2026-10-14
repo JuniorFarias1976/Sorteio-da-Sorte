@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Participant, Prize, DrawSchedule, BrandConfig } from '../types';
+import { Participant, Prize, DrawSchedule, BrandConfig, FormFieldsConfig } from '../types';
 import { 
   Ticket, 
   Search, 
@@ -13,8 +13,10 @@ import {
   AlertCircle,
   QrCode,
   Trophy,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle
 } from 'lucide-react';
+import { DEFAULT_FORM_FIELDS } from '../utils/storage';
 
 interface PublicRaffleViewProps {
   brand: BrandConfig;
@@ -22,6 +24,7 @@ interface PublicRaffleViewProps {
   nextSchedule?: DrawSchedule;
   schedules?: DrawSchedule[];
   participants: Participant[];
+  formFields?: FormFieldsConfig;
   onRegisterParticipant: (participant: Participant) => void;
   onGoToLive: () => void;
 }
@@ -32,6 +35,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   nextSchedule,
   schedules = [],
   participants,
+  formFields = DEFAULT_FORM_FIELDS,
   onRegisterParticipant,
   onGoToLive,
 }) => {
@@ -45,6 +49,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
   // Success ticket modal
   const [newlyCreatedTicket, setNewlyCreatedTicket] = useState<Participant | null>(null);
+
+  // Duplicate email restriction modal
+  const [duplicateEmailError, setDuplicateEmailError] = useState<Participant | null>(null);
 
   // Search Ticket State
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,22 +76,39 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim() || !email.trim()) {
-      alert('Por favor, preencha nome completo, e-mail e telefone/WhatsApp.');
+
+    // Dynamic field validation based on admin configuration
+    if (formFields.name.enabled && formFields.name.required && !name.trim()) {
+      alert(`Por favor, preencha o campo obrigatório: ${formFields.name.label}`);
+      return;
+    }
+    if (formFields.email.enabled && formFields.email.required && !email.trim()) {
+      alert(`Por favor, preencha o campo obrigatório: ${formFields.email.label}`);
+      return;
+    }
+    if (formFields.phone.enabled && formFields.phone.required && !phone.trim()) {
+      alert(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
+      return;
+    }
+    if (formFields.document.enabled && formFields.document.required && !document.trim()) {
+      alert(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
+      return;
+    }
+    if (formFields.city.enabled && formFields.city.required && !city.trim()) {
+      alert(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
       return;
     }
 
-    // Check if user is in banned list
-    const isBanned = participants.some(
-      (p) => (p.status === 'banned') && (
-        (document && p.document.replace(/\D/g, '') === document.replace(/\D/g, '')) ||
-        (p.email.toLowerCase() === email.toLowerCase().trim())
-      )
-    );
-
-    if (isBanned) {
-      alert('Aviso do Sistema: Este cadastro possui uma restrição administrativa ativa e não pode gerar novos bilhetes. Contate o suporte para regularização.');
-      return;
+    // Single-entry per email control (Requirement 4)
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail) {
+      const existingUser = participants.find(
+        (p) => p.email.toLowerCase().trim() === normalizedEmail
+      );
+      if (existingUser) {
+        setDuplicateEmailError(existingUser);
+        return;
+      }
     }
 
     // Generate unique 5-digit lucky ticket number
@@ -95,9 +119,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
     const newParticipant: Participant = {
       id: `part-${Date.now()}`,
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
+      name: name.trim() || 'Participante',
+      email: normalizedEmail,
+      phone: phone.trim() || 'Não informado',
       document: document.trim() || 'Não informado',
       city: city.trim() || 'Brasil',
       ticketNumber: ticket,
@@ -107,6 +131,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
     onRegisterParticipant(newParticipant);
     setNewlyCreatedTicket(newParticipant);
+    setDuplicateEmailError(null);
 
     // Reset Form
     setName('');
@@ -263,77 +288,154 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             </div>
 
             <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Nome Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Ana Maria da Silva"
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    WhatsApp / Telefone *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    placeholder="(11) 99999-9999"
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
+              {/* Duplicate Email Warning Banner */}
+              {duplicateEmailError && (
+                <div className="p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/50 text-amber-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-sm text-amber-400">
+                      <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                      <span>ATENÇÃO: E-MAIL JÁ CADASTRADO NO SISTEMA!</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDuplicateEmailError(null)}
+                      className="text-xs text-slate-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    O e-mail <strong className="text-white">{duplicateEmailError.email}</strong> já possui inscrição confirmada neste sorteio. Cada participante só pode se cadastrar <strong>uma única vez</strong>.
+                  </p>
+                  <div className="p-3 bg-slate-950 rounded-xl border border-amber-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase text-slate-400 block font-semibold">
+                        Seu Bilhete Cadastrado:
+                      </span>
+                      <span className="text-xl font-black font-mono text-amber-400">
+                        #{duplicateEmailError.ticketNumber}
+                      </span>
+                    </div>
+                    <div className="text-right text-xs">
+                      <p className="font-bold text-white">{duplicateEmailError.name}</p>
+                      <p className="text-[11px] text-emerald-400">✓ Concorrendo em todas as 4 rodadas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewlyCreatedTicket(duplicateEmailError);
+                        setDuplicateEmailError(null);
+                      }}
+                      className="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-lg text-xs font-bold hover:bg-amber-400 transition-colors"
+                    >
+                      Visualizar Meu Bilhete
+                    </button>
+                  </div>
                 </div>
+              )}
 
+              {/* Dynamic Name Field */}
+              {formFields.name.enabled && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    E-mail *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seuemail@exemplo.com"
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    CPF ou Documento
-                  </label>
-                  <input
-                    type="text"
-                    value={document}
-                    onChange={(e) => handleDocumentChange(e.target.value)}
-                    placeholder="000.000.000-00"
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Cidade / Estado
+                    {formFields.name.label} {formFields.name.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
                   </label>
                   <input
                     type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Ex: São Paulo - SP"
+                    required={formFields.name.required}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={formFields.name.placeholder || 'Ex: Ana Maria da Silva'}
                     className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
+              )}
+
+              {/* Email and Phone Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Dynamic Email Field */}
+                {formFields.email.enabled && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      {formFields.email.label} {formFields.email.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                    </label>
+                    <input
+                      type="email"
+                      required={formFields.email.required}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (duplicateEmailError) setDuplicateEmailError(null);
+                      }}
+                      placeholder={formFields.email.placeholder || 'seuemail@exemplo.com'}
+                      className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                        duplicateEmailError ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700/80'
+                      }`}
+                    />
+                    <span className="text-[10px] text-slate-500 mt-1 block">
+                      Validação única: limite de 1 inscrição por e-mail
+                    </span>
+                  </div>
+                )}
+
+                {/* Dynamic Phone Field */}
+                {formFields.phone.enabled && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      {formFields.phone.label} {formFields.phone.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                    </label>
+                    <input
+                      type="tel"
+                      required={formFields.phone.required}
+                      value={phone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder={formFields.phone.placeholder || '(11) 99999-9999'}
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* Document and City Grid */}
+              {(formFields.document.enabled || formFields.city.enabled) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Dynamic Document Field */}
+                  {formFields.document.enabled && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                        {formFields.document.label} {formFields.document.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                      </label>
+                      <input
+                        type="text"
+                        required={formFields.document.required}
+                        value={document}
+                        onChange={(e) => handleDocumentChange(e.target.value)}
+                        placeholder={formFields.document.placeholder || '000.000.000-00'}
+                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Dynamic City Field */}
+                  {formFields.city.enabled && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                        {formFields.city.label} {formFields.city.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                      </label>
+                      <input
+                        type="text"
+                        required={formFields.city.required}
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder={formFields.city.placeholder || 'Ex: São Paulo - SP'}
+                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-2">
                 <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-400">
@@ -448,7 +550,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             {hasSearched && (
               <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
                 {searchResults && searchResults.length > 0 ? (
-                  searchResults.map((p) => (
+                  searchResults.map((p: Participant) => (
                     <div
                       key={p.id}
                       className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs"

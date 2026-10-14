@@ -11,7 +11,8 @@ import {
   DrawWinner, 
   NotificationLog, 
   NotificationSettings, 
-  BrandConfig 
+  BrandConfig,
+  FormFieldsConfig 
 } from './types';
 import { StorageService } from './utils/storage';
 import { Navbar } from './components/Navbar';
@@ -35,6 +36,7 @@ export default function App() {
   const [notifications, setNotifications] = useState<NotificationLog[]>(() => StorageService.getNotifications());
   const [settings, setSettings] = useState<NotificationSettings>(() => StorageService.getSettings());
   const [brand, setBrand] = useState<BrandConfig>(() => StorageService.getBrand());
+  const [formFields, setFormFields] = useState<FormFieldsConfig>(() => StorageService.getFormFields());
 
   // Next Upcoming Draw
   const nextSchedule = schedules.find((s) => s.status === 'scheduled') || schedules[0];
@@ -100,6 +102,11 @@ export default function App() {
     StorageService.saveBrand(newBrand);
   };
 
+  const handleUpdateFormFields = (newFields: FormFieldsConfig) => {
+    setFormFields(newFields);
+    StorageService.saveFormFields(newFields);
+  };
+
   // Participant Registration handler (from Public page)
   const handleRegisterParticipant = (participant: Participant) => {
     const updated = [participant, ...participants];
@@ -138,6 +145,7 @@ export default function App() {
       setNotifications(StorageService.getNotifications());
       setSettings(StorageService.getSettings());
       setBrand(StorageService.getBrand());
+      setFormFields(StorageService.getFormFields());
     }
   };
 
@@ -183,6 +191,7 @@ export default function App() {
             nextSchedule={nextSchedule}
             schedules={schedules}
             participants={participants}
+            formFields={formFields}
             onRegisterParticipant={handleRegisterParticipant}
             onGoToLive={() => setCurrentView('live')}
           />
@@ -210,6 +219,7 @@ export default function App() {
             notificationLogs={notifications}
             notificationSettings={settings}
             brand={brand}
+            formFields={formFields}
             onUpdateParticipants={handleUpdateParticipants}
             onUpdatePrizes={handleUpdatePrizes}
             onUpdateSchedules={handleUpdateSchedules}
@@ -217,6 +227,7 @@ export default function App() {
             onAddNotificationLog={handleAddNotificationLog}
             onUpdateNotificationSettings={handleUpdateSettings}
             onUpdateBrand={handleUpdateBrand}
+            onUpdateFormFields={handleUpdateFormFields}
             onGoToLive={() => setCurrentView('live')}
             onResetAllData={handleResetAllData}
           />

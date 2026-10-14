@@ -6,13 +6,14 @@ import {
   DrawWinner, 
   NotificationLog, 
   NotificationSettings, 
-  BrandConfig 
+  BrandConfig,
+  FormFieldsConfig
 } from '../../types';
 import { ParticipantsTab } from './ParticipantsTab';
 import { PrizesTab } from './PrizesTab';
 import { CalendarTab } from './CalendarTab';
 import { NotificationsTab } from './NotificationsTab';
-import { BannedUsersTab } from './BannedUsersTab';
+import { FormFieldsTab } from './FormFieldsTab';
 import { QRCodeTab } from './QRCodeTab';
 import { ReportsTab } from './ReportsTab';
 import { BrandCustomizerTab } from './BrandCustomizerTab';
@@ -22,14 +23,13 @@ import {
   Gift, 
   Calendar as CalendarIcon, 
   Bell, 
-  ShieldAlert, 
+  SlidersHorizontal, 
   QrCode, 
   FileCheck2, 
   Palette,
   Tv,
   RotateCcw
 } from 'lucide-react';
-import { StorageService } from '../../utils/storage';
 
 interface AdminDashboardProps {
   participants: Participant[];
@@ -39,6 +39,7 @@ interface AdminDashboardProps {
   notificationLogs: NotificationLog[];
   notificationSettings: NotificationSettings;
   brand: BrandConfig;
+  formFields: FormFieldsConfig;
   onUpdateParticipants: (participants: Participant[]) => void;
   onUpdatePrizes: (prizes: Prize[]) => void;
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
@@ -46,6 +47,7 @@ interface AdminDashboardProps {
   onAddNotificationLog: (log: NotificationLog) => void;
   onUpdateNotificationSettings: (settings: NotificationSettings) => void;
   onUpdateBrand: (brand: BrandConfig) => void;
+  onUpdateFormFields: (fields: FormFieldsConfig) => void;
   onGoToLive: () => void;
   onResetAllData: () => void;
 }
@@ -54,8 +56,8 @@ export type AdminTab =
   | 'participants' 
   | 'prizes' 
   | 'calendar' 
+  | 'fields'
   | 'notifications' 
-  | 'banned' 
   | 'qrcode' 
   | 'reports' 
   | 'brand';
@@ -68,6 +70,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   notificationLogs,
   notificationSettings,
   brand,
+  formFields,
   onUpdateParticipants,
   onUpdatePrizes,
   onUpdateSchedules,
@@ -75,19 +78,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onAddNotificationLog,
   onUpdateNotificationSettings,
   onUpdateBrand,
+  onUpdateFormFields,
   onGoToLive,
   onResetAllData,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('participants');
 
-  const bannedCount = participants.filter((p) => p.status === 'banned').length;
-
   const TABS = [
     { id: 'participants' as AdminTab, label: 'Participantes & Base', icon: Users, badge: participants.length },
     { id: 'prizes' as AdminTab, label: 'Prêmios & Quantidades', icon: Gift, badge: prizes.length },
-    { id: 'calendar' as AdminTab, label: 'Calendário & Horários', icon: CalendarIcon, badge: schedules.length },
+    { id: 'calendar' as AdminTab, label: 'Calendário & 4 Horários', icon: CalendarIcon, badge: schedules.length },
+    { id: 'fields' as AdminTab, label: 'Campos do Formulário', icon: SlidersHorizontal },
     { id: 'notifications' as AdminTab, label: 'Notificações Automáticas', icon: Bell },
-    { id: 'banned' as AdminTab, label: 'Usuários Banidos / Restrições', icon: ShieldAlert, badge: bannedCount > 0 ? bannedCount : undefined, badgeColor: 'bg-red-500' },
     { id: 'qrcode' as AdminTab, label: 'QR Code para Impressão', icon: QrCode },
     { id: 'reports' as AdminTab, label: 'Relatórios & Auditoria PDF', icon: FileCheck2, badge: winners.length },
     { id: 'brand' as AdminTab, label: 'Logo & Cores da Marca', icon: Palette },
@@ -117,7 +119,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {tab.badge !== undefined && (
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        tab.badgeColor ? `${tab.badgeColor} text-white` : isActive ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-300'
+                        isActive ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-300'
                       }`}
                     >
                       {tab.badge}
@@ -132,7 +134,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-800">
             <button
               onClick={onGoToLive}
-              className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow"
+              className="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
               title="Abrir Telão da Live"
             >
               <Tv className="w-3.5 h-3.5" />
@@ -141,7 +143,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={onResetAllData}
-              className="p-2 text-slate-500 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition-colors"
+              className="p-2 text-slate-500 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
               title="Restaurar dados de demonstração padrão"
             >
               <RotateCcw className="w-4 h-4" />
@@ -155,7 +157,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ParticipantsTab
               participants={participants}
               brand={brand}
+              formFields={formFields}
               onUpdateParticipants={onUpdateParticipants}
+              onUpdateFormFields={onUpdateFormFields}
             />
           )}
 
@@ -175,6 +179,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
+          {activeTab === 'fields' && (
+            <FormFieldsTab
+              formFields={formFields}
+              onUpdateFormFields={onUpdateFormFields}
+            />
+          )}
+
           {activeTab === 'notifications' && (
             <NotificationsTab
               participants={participants}
@@ -184,13 +195,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               schedules={schedules}
               onUpdateSettings={onUpdateNotificationSettings}
               onAddNotificationLog={onAddNotificationLog}
-            />
-          )}
-
-          {activeTab === 'banned' && (
-            <BannedUsersTab
-              participants={participants}
-              onUpdateParticipants={onUpdateParticipants}
             />
           )}
 

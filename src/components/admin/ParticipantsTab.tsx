@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Participant, BrandConfig } from '../../types';
+import { Participant, BrandConfig, FormFieldsConfig } from '../../types';
 import { exportParticipantsToExcel, exportParticipantsToPDF } from '../../utils/export';
 import { 
   Users, 
@@ -7,30 +7,32 @@ import {
   FileText, 
   UserPlus, 
   Search, 
-  Filter, 
-  Ban, 
-  CheckCircle, 
   Trash2, 
   Edit3, 
-  Download,
-  Upload,
-  Ticket,
-  Sparkles
+  Sparkles,
+  SlidersHorizontal,
+  Check,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface ParticipantsTabProps {
   participants: Participant[];
   brand: BrandConfig;
+  formFields: FormFieldsConfig;
   onUpdateParticipants: (updated: Participant[]) => void;
+  onUpdateFormFields: (fields: FormFieldsConfig) => void;
 }
 
 export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   participants,
   brand,
+  formFields,
   onUpdateParticipants,
+  onUpdateFormFields,
 }) => {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner' | 'banned'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner'>('all');
   
   // Modal: Add participant
   const [showAddModal, setShowAddModal] = useState(false);
@@ -41,9 +43,9 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [newCity, setNewCity] = useState('');
   const [customTicket, setCustomTicket] = useState('');
 
-  // Ban action prompt
-  const [banModalTarget, setBanModalTarget] = useState<Participant | null>(null);
-  const [banReasonInput, setBanReasonInput] = useState('');
+  // Modal: Configure fields
+  const [showFieldsModal, setShowFieldsModal] = useState(false);
+  const [tempFields, setTempFields] = useState<FormFieldsConfig>(formFields);
 
   // Filtered list
   const filteredParticipants = participants.filter((p) => {
@@ -97,39 +99,6 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     setCustomTicket('');
   };
 
-  const handleConfirmBan = () => {
-    if (!banModalTarget) return;
-    const updated = participants.map((p) => {
-      if (p.id === banModalTarget.id) {
-        return {
-          ...p,
-          status: 'banned' as const,
-          banReason: banReasonInput.trim() || 'Restrição imposta pela moderação administrativa.',
-          banDate: new Date().toISOString(),
-        };
-      }
-      return p;
-    });
-    onUpdateParticipants(updated);
-    setBanModalTarget(null);
-    setBanReasonInput('');
-  };
-
-  const handleUnban = (id: string) => {
-    const updated = participants.map((p) => {
-      if (p.id === id) {
-        return {
-          ...p,
-          status: 'active' as const,
-          banReason: undefined,
-          banDate: undefined,
-        };
-      }
-      return p;
-    });
-    onUpdateParticipants(updated);
-  };
-
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja remover este participante do banco de dados?')) {
       onUpdateParticipants(participants.filter((p) => p.id !== id));
@@ -181,6 +150,18 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
         {/* Buttons: Export & Add */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => {
+              setTempFields({ ...formFields });
+              setShowFieldsModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-semibold shadow transition-colors cursor-pointer"
+            title="Configurar campos obrigatórios, opcionais ou ocultos do cadastro"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Campos do Formulário</span>
+          </button>
+
           <button
             onClick={() => exportParticipantsToExcel(filteredParticipants)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold shadow transition-colors"
@@ -257,14 +238,6 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
           >
             Premiados ({participants.filter((p) => p.status === 'winner').length})
           </button>
-          <button
-            onClick={() => setStatusFilter('banned')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium ${
-              statusFilter === 'banned' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Banidos ({participants.filter((p) => p.status === 'banned').length})
-          </button>
         </div>
       </div>
 
@@ -302,24 +275,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     {p.city}
                   </td>
                   <td className="py-3 px-4">
-                    {p.status === 'active' && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        <CheckCircle className="w-3 h-3" />
-                        Ativo
-                      </span>
-                    )}
-                    {p.status === 'winner' && (
+                    {p.status === 'winner' ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
                         🏆 Contemplado
                       </span>
-                    )}
-                    {p.status === 'banned' && (
-                      <span 
-                        title={p.banReason || 'Banido por infração'} 
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 cursor-help"
-                      >
-                        <Ban className="w-3 h-3" />
-                        Banido
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Ativo
                       </span>
                     )}
                   </td>
@@ -327,33 +289,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     {new Date(p.createdAt).toLocaleDateString('pt-BR')} {new Date(p.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {p.status === 'banned' ? (
-                        <button
-                          onClick={() => handleUnban(p.id)}
-                          className="px-2 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium text-[11px]"
-                          title="Remover Restrição e Reativar"
-                        >
-                          Desbanir
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setBanModalTarget(p)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          title="Restringir / Banir Participante"
-                        >
-                          <Ban className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => handleDelete(p.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Remover Registro"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Excluir Participante"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -482,43 +424,146 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       )}
 
       {/* Modal: Confirmar Banimento */}
-      {banModalTarget && (
+      {/* Modal: Configurar Campos do Formulário */}
+      {showFieldsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-red-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center gap-3 text-red-400 mb-3">
-              <Ban className="w-6 h-6" />
-              <h3 className="text-lg font-bold text-white">
-                Restringir / Banir Participante
-              </h3>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+              <div className="flex items-center gap-2.5">
+                <SlidersHorizontal className="w-5 h-5 text-amber-400" />
+                <h3 className="text-lg font-bold text-white">
+                  Configurar Informações dos Participantes
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowFieldsModal(false)}
+                className="text-slate-400 hover:text-white text-xs"
+              >
+                ✕ Fechar
+              </button>
             </div>
-            <p className="text-xs text-slate-300 mb-4">
-              Você está prestes a bloquear <strong>{banModalTarget.name}</strong> (Bilhete #{banModalTarget.ticketNumber}).
-              Participantes banidos são impedidos de serem sorteados no telão da live e bloqueados no sistema.
+
+            <p className="text-xs text-slate-300 mb-6">
+              Defina quais informações são <strong>obrigatórias</strong>, quais são <strong>opcionais</strong> e quais deseja <strong>ocultar</strong> no formulário público de inscrição.
             </p>
 
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-              Motivo do Banimento *
-            </label>
-            <textarea
-              rows={3}
-              value={banReasonInput}
-              onChange={(e) => setBanReasonInput(e.target.value)}
-              placeholder="Ex: CPF inválido, suspeita de bot, violação das diretrizes do sorteio..."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
-            />
+            <div className="space-y-4">
+              {(Object.keys(tempFields) as Array<keyof FormFieldsConfig>).map((key) => {
+                const field = tempFields[key];
+                return (
+                  <div
+                    key={key}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      field.enabled
+                        ? 'bg-slate-950 border-slate-800'
+                        : 'bg-slate-950/40 border-slate-800/40 opacity-60'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          {field.label}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">({key})</span>
+                      </div>
 
-            <div className="flex items-center justify-end gap-2">
+                      {/* Controls: Enabled & Required */}
+                      <div className="flex items-center gap-4 text-xs">
+                        <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                          <input
+                            type="checkbox"
+                            checked={field.enabled}
+                            onChange={(e) => {
+                              setTempFields({
+                                ...tempFields,
+                                [key]: { ...field, enabled: e.target.checked },
+                              });
+                            }}
+                            className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>Exibir no formulário</span>
+                        </label>
+
+                        {field.enabled && (
+                          <label className="flex items-center gap-1.5 cursor-pointer text-amber-400 font-medium">
+                            <input
+                              type="checkbox"
+                              checked={field.required}
+                              onChange={(e) => {
+                                setTempFields({
+                                  ...tempFields,
+                                  [key]: { ...field, required: e.target.checked },
+                                });
+                              }}
+                              className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                            />
+                            <span>Obrigatório</span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Field label customization */}
+                    {field.enabled && (
+                      <div className="mt-2 pt-2 border-t border-slate-900 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-slate-400 uppercase mb-0.5">
+                            Rótulo Exibido:
+                          </label>
+                          <input
+                            type="text"
+                            value={field.label}
+                            onChange={(e) => {
+                              setTempFields({
+                                ...tempFields,
+                                [key]: { ...field, label: e.target.value },
+                              });
+                            }}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-400 uppercase mb-0.5">
+                            Texto Exemplo (Placeholder):
+                          </label>
+                          <input
+                            type="text"
+                            value={field.placeholder}
+                            onChange={(e) => {
+                              setTempFields({
+                                ...tempFields,
+                                [key]: { ...field, placeholder: e.target.value },
+                              });
+                            }}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-800 mt-6">
               <button
-                onClick={() => setBanModalTarget(null)}
-                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-medium"
+                type="button"
+                onClick={() => setShowFieldsModal(false)}
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
               >
                 Cancelar
               </button>
               <button
-                onClick={handleConfirmBan}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow"
+                type="button"
+                onClick={() => {
+                  onUpdateFormFields(tempFields);
+                  setShowFieldsModal(false);
+                  alert('Configuração dos campos salva com sucesso! O formulário de inscrição já está atualizado.');
+                }}
+                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
               >
-                Confirmar Banimento
+                <Check className="w-4 h-4" />
+                <span>Salvar Configuração</span>
               </button>
             </div>
           </div>

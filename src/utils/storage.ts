@@ -1,4 +1,15 @@
-import { Participant, Prize, DrawSchedule, DrawWinner, NotificationLog, NotificationSettings, BrandConfig } from '../types';
+import { 
+  Participant, 
+  Prize, 
+  DrawSchedule, 
+  DrawWinner, 
+  NotificationLog, 
+  NotificationSettings, 
+  BrandConfig,
+  FormFieldsConfig,
+  QRCodePosterConfig,
+  ReportPdfConfig 
+} from '../types';
 
 const STORAGE_KEYS = {
   PARTICIPANTS: 'sorteiolive_participants_v1',
@@ -8,6 +19,9 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: 'sorteiolive_notifications_v1',
   SETTINGS: 'sorteiolive_settings_v1',
   BRAND: 'sorteiolive_brand_v1',
+  FORM_FIELDS: 'sorteiolive_form_fields_v1',
+  POSTER: 'sorteiolive_poster_v1',
+  REPORT: 'sorteiolive_report_v1',
 };
 
 // Default high-quality SVG Logo (Golden Trophy with Star & Ribbon)
@@ -354,6 +368,43 @@ export const DEFAULT_SETTINGS: NotificationSettings = {
   messageTemplate: 'Olá {nome}! 🎟️ Seu número da sorte é #{bilhete}. O sorteio "{evento}" começará em breve com prêmios incríveis! Assista ao vivo: {link_sorteio}',
 };
 
+export const DEFAULT_FORM_FIELDS: FormFieldsConfig = {
+  name: { id: 'name', label: 'Nome Completo', placeholder: 'Ex: Ana Maria da Silva', enabled: true, required: true },
+  email: { id: 'email', label: 'E-mail', placeholder: 'seuemail@exemplo.com', enabled: true, required: true },
+  phone: { id: 'phone', label: 'WhatsApp / Telefone', placeholder: '(11) 99999-9999', enabled: true, required: true },
+  document: { id: 'document', label: 'CPF ou Documento', placeholder: '000.000.000-00', enabled: true, required: false },
+  city: { id: 'city', label: 'Cidade / Estado', placeholder: 'Ex: São Paulo - SP', enabled: true, required: false },
+};
+
+export const DEFAULT_POSTER_CONFIG: QRCodePosterConfig = {
+  title: 'PARTICIPE DO NOSSO GRANDE SORTEIO!',
+  subtitle: 'Concorra a prêmios incríveis transmitidos 100% ao vivo!',
+  step1: 'Aponte a câmera do seu celular para o QR Code acima.',
+  step2: 'Preencha seus dados reais e receba seu Número da Sorte oficial.',
+  step3: 'Assista à transmissão ao vivo e confira se foi premiado!',
+  footerLeft: 'Inscrição 100% Gratuita',
+  footerRight: 'Sorteio Seguro & Auditado',
+  showDate: true,
+  showSteps: true,
+};
+
+export const DEFAULT_REPORT_CONFIG: ReportPdfConfig = {
+  title: 'ATA E AUDITORIA OFICIAL DE SORTEIO',
+  subtitle: 'RELATÓRIO CONSOLIDADO DE VENCEDORES HOMOLOGADOS',
+  protocolPrefix: 'SRT-',
+  statementText: 'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento divulgado aos participantes.',
+  organizerSignTitle: 'Assinatura do Organizador / Diretor',
+  auditorSignTitle: 'Assinatura da Comissão de Auditoria',
+  includeTicket: true,
+  includeWinnerName: true,
+  includePrize: true,
+  includePhone: true,
+  includeDocument: true,
+  includeEmail: true,
+  includeHash: true,
+  includeDate: true,
+};
+
 // Storage Helpers with LocalStorage persistence
 export function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
@@ -396,6 +447,15 @@ export const StorageService = {
   getBrand: () => loadFromStorage<BrandConfig>(STORAGE_KEYS.BRAND, DEFAULT_BRAND),
   saveBrand: (data: BrandConfig) => saveToStorage(STORAGE_KEYS.BRAND, data),
 
+  getFormFields: () => loadFromStorage<FormFieldsConfig>(STORAGE_KEYS.FORM_FIELDS, DEFAULT_FORM_FIELDS),
+  saveFormFields: (data: FormFieldsConfig) => saveToStorage(STORAGE_KEYS.FORM_FIELDS, data),
+
+  getPosterConfig: () => loadFromStorage<QRCodePosterConfig>(STORAGE_KEYS.POSTER, DEFAULT_POSTER_CONFIG),
+  savePosterConfig: (data: QRCodePosterConfig) => saveToStorage(STORAGE_KEYS.POSTER, data),
+
+  getReportConfig: () => loadFromStorage<ReportPdfConfig>(STORAGE_KEYS.REPORT, DEFAULT_REPORT_CONFIG),
+  saveReportConfig: (data: ReportPdfConfig) => saveToStorage(STORAGE_KEYS.REPORT, data),
+
   resetToDefault: () => {
     localStorage.removeItem(STORAGE_KEYS.PARTICIPANTS);
     localStorage.removeItem(STORAGE_KEYS.PRIZES);
@@ -404,5 +464,9 @@ export const StorageService = {
     localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
     localStorage.removeItem(STORAGE_KEYS.BRAND);
+    localStorage.removeItem(STORAGE_KEYS.FORM_FIELDS);
+    localStorage.removeItem(STORAGE_KEYS.POSTER);
+    localStorage.removeItem(STORAGE_KEYS.REPORT);
   },
 };
+
