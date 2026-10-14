@@ -18,8 +18,10 @@ import {
   Gift, 
   ShieldAlert, 
   Flame,
-  ArrowRight
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react';
+import { ApiService } from '../utils/api';
 
 interface LiveDrawRoomProps {
   participants: Participant[];
@@ -52,6 +54,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [drawSpeed, setDrawSpeed] = useState<number>(40); // ms per tick
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [drawErrorNotice, setDrawErrorNotice] = useState<string | null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
 
   const eligibleParticipants = participants.filter(p => p.status === 'active');

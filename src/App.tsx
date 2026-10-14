@@ -15,6 +15,7 @@ import {
   FormFieldsConfig 
 } from './types';
 import { StorageService } from './utils/storage';
+import { ApiService } from './utils/api';
 import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
@@ -65,46 +66,150 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Persist state updates to local storage
+  // Multi-device Real-Time Data Synchronization (Computer <-> Mobile)
+  useEffect(() => {
+    // 1. Initial Load from Server
+    ApiService.fetchAllData().then((serverData) => {
+      if (!serverData) return;
+      if (serverData.participants) {
+        setParticipants(serverData.participants);
+        StorageService.saveParticipants(serverData.participants);
+      }
+      if (serverData.prizes) {
+        setPrizes(serverData.prizes);
+        StorageService.savePrizes(serverData.prizes);
+      }
+      if (serverData.schedules) {
+        setSchedules(serverData.schedules);
+        StorageService.saveSchedules(serverData.schedules);
+      }
+      if (serverData.winners) {
+        setWinners(serverData.winners);
+        StorageService.saveWinners(serverData.winners);
+      }
+      if (serverData.notifications) {
+        setNotifications(serverData.notifications);
+        StorageService.saveNotifications(serverData.notifications);
+      }
+      if (serverData.settings) {
+        setSettings(serverData.settings);
+        StorageService.saveSettings(serverData.settings);
+      }
+      if (serverData.brand) {
+        setBrand(serverData.brand);
+        StorageService.saveBrand(serverData.brand);
+      }
+      if (serverData.formFields) {
+        setFormFields(serverData.formFields);
+        StorageService.saveFormFields(serverData.formFields);
+      }
+    });
+
+    // 2. Real-time Server-Sent Events subscriber
+    const unsubscribe = ApiService.subscribeLiveEvents({
+      onDataUpdated: (data) => {
+        if (data.participants) {
+          setParticipants(data.participants);
+          StorageService.saveParticipants(data.participants);
+        }
+        if (data.prizes) {
+          setPrizes(data.prizes);
+          StorageService.savePrizes(data.prizes);
+        }
+        if (data.schedules) {
+          setSchedules(data.schedules);
+          StorageService.saveSchedules(data.schedules);
+        }
+        if (data.winners) {
+          setWinners(data.winners);
+          StorageService.saveWinners(data.winners);
+        }
+        if (data.brand) {
+          setBrand(data.brand);
+          StorageService.saveBrand(data.brand);
+        }
+        if (data.formFields) {
+          setFormFields(data.formFields);
+          StorageService.saveFormFields(data.formFields);
+        }
+        if (data.settings) {
+          setSettings(data.settings);
+          StorageService.saveSettings(data.settings);
+        }
+        if (data.notifications) {
+          setNotifications(data.notifications);
+          StorageService.saveNotifications(data.notifications);
+        }
+      },
+    });
+
+    // 3. Fallback background sync polling (every 3.5s) to guarantee zero desync on mobile
+    const syncInterval = setInterval(() => {
+      ApiService.fetchAllData().then((serverData) => {
+        if (!serverData) return;
+        setParticipants((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.participants) ? serverData.participants : prev));
+        setPrizes((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.prizes) ? serverData.prizes : prev));
+        setSchedules((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.schedules) ? serverData.schedules : prev));
+        setWinners((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.winners) ? serverData.winners : prev));
+        setBrand((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.brand) ? serverData.brand : prev));
+        setFormFields((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.formFields) ? serverData.formFields : prev));
+      });
+    }, 3500);
+
+    return () => {
+      unsubscribe();
+      clearInterval(syncInterval);
+    };
+  }, []);
+
+  // Persist state updates to local storage and sync with server
   const handleUpdateParticipants = (data: Participant[]) => {
     setParticipants(data);
     StorageService.saveParticipants(data);
+    ApiService.saveData({ participants: data });
   };
 
   const handleUpdatePrizes = (data: Prize[]) => {
     setPrizes(data);
     StorageService.savePrizes(data);
+    ApiService.saveData({ prizes: data });
   };
 
   const handleUpdateSchedules = (data: DrawSchedule[]) => {
     setSchedules(data);
     StorageService.saveSchedules(data);
+    ApiService.saveData({ schedules: data });
   };
 
   const handleUpdateWinners = (data: DrawWinner[]) => {
     setWinners(data);
     StorageService.saveWinners(data);
+    ApiService.saveData({ winners: data });
   };
 
   const handleAddNotificationLog = (log: NotificationLog) => {
     const updated = [log, ...notifications];
     setNotifications(updated);
     StorageService.saveNotifications(updated);
+    ApiService.saveData({ notifications: updated });
   };
 
   const handleUpdateSettings = (newSettings: NotificationSettings) => {
     setSettings(newSettings);
     StorageService.saveSettings(newSettings);
+    ApiService.saveData({ settings: newSettings });
   };
 
   const handleUpdateBrand = (newBrand: BrandConfig) => {
     setBrand(newBrand);
     StorageService.saveBrand(newBrand);
+    ApiService.saveData({ brand: newBrand });
   };
 
   const handleUpdateFormFields = (newFields: FormFieldsConfig) => {
     setFormFields(newFields);
     StorageService.saveFormFields(newFields);
+    ApiService.saveData({ formFields: newFields });
   };
 
   // Participant Registration handler (from Public page)

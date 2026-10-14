@@ -17,6 +17,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { DEFAULT_FORM_FIELDS } from '../utils/storage';
+import { ApiService } from '../utils/api';
 
 interface PublicRaffleViewProps {
   brand: BrandConfig;
@@ -46,6 +47,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [document, setDocument] = useState('');
   const [city, setCity] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationWarning, setValidationWarning] = useState<string | null>(null);
 
   // Success ticket modal
   const [newlyCreatedTicket, setNewlyCreatedTicket] = useState<Participant | null>(null);
@@ -74,36 +77,38 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
     setDocument(raw.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4'));
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationWarning(null);
 
     // Dynamic field validation based on admin configuration
     if (formFields.name.enabled && formFields.name.required && !name.trim()) {
-      alert(`Por favor, preencha o campo obrigatório: ${formFields.name.label}`);
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.name.label}`);
       return;
     }
     if (formFields.email.enabled && formFields.email.required && !email.trim()) {
-      alert(`Por favor, preencha o campo obrigatório: ${formFields.email.label}`);
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.email.label}`);
       return;
     }
     if (formFields.phone.enabled && formFields.phone.required && !phone.trim()) {
-      alert(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
       return;
     }
     if (formFields.document.enabled && formFields.document.required && !document.trim()) {
-      alert(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
       return;
     }
     if (formFields.city.enabled && formFields.city.required && !city.trim()) {
-      alert(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
       return;
     }
 
-    // Single-entry per email control (Requirement 4)
     const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Client-side rapid duplicate check
     if (normalizedEmail) {
       const existingUser = participants.find(
-        (p) => p.email.toLowerCase().trim() === normalizedEmail
+        (p) => p.email && p.email.toLowerCase().trim() === normalizedEmail
       );
       if (existingUser) {
         setDuplicateEmailError(existingUser);
@@ -111,34 +116,77 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       }
     }
 
-    // Generate unique 5-digit lucky ticket number
-    let ticket = Math.floor(10000 + Math.random() * 90000).toString();
-    while (participants.some((p) => p.ticketNumber === ticket)) {
-      ticket = Math.floor(10000 + Math.random() * 90000).toString();
+    setIsSubmitting(true);
+
+    try {
+      // 2. Server-side registration & authoritative duplication check
+      const result = await ApiService.registerParticipant({
+        name: name.trim() || 'Participante',
+        email: normalizedEmail,
+        phone: phone.trim(),
+        document: document.trim(),
+        city: city.trim(),
+      });
+
+      if (!result.success) {
+        if (result.error === 'DUPLICATE_EMAIL' && result.existingParticipant) {
+          setDuplicateEmailError(result.existingParticipant);
+          return;
+        }
+        // If server had duplicate or another error
+        const localDuplicate = participants.find(
+          (p) => p.email && p.email.toLowerCase().trim() === normalizedEmail
+        );
+        if (localDuplicate) {
+          setDuplicateEmailError(localDuplicate);
+          return;
+        }
+        setValidationWarning(result.error || 'Erro ao processar inscrição no servidor.');
+        return;
+      }
+
+      const participant = result.participant!;
+      onRegisterParticipant(participant);
+      setNewlyCreatedTicket(participant);
+      setDuplicateEmailError(null);
+
+      // Reset Form
+      setName('');
+      setEmail('');
+      setPhone('');
+      setDocument('');
+      setCity('');
+    } catch {
+      // Fallback in case of unexpected network failure
+      let ticket = Math.floor(10000 + Math.random() * 90000).toString();
+      while (participants.some((p) => p.ticketNumber === ticket)) {
+        ticket = Math.floor(10000 + Math.random() * 90000).toString();
+      }
+
+      const fallbackParticipant: Participant = {
+        id: `part-${Date.now()}`,
+        name: name.trim() || 'Participante',
+        email: normalizedEmail,
+        phone: phone.trim() || 'Não informado',
+        document: document.trim() || 'Não informado',
+        city: city.trim() || 'Brasil',
+        ticketNumber: ticket,
+        createdAt: new Date().toISOString(),
+        status: 'active',
+      };
+
+      onRegisterParticipant(fallbackParticipant);
+      setNewlyCreatedTicket(fallbackParticipant);
+      setDuplicateEmailError(null);
+
+      setName('');
+      setEmail('');
+      setPhone('');
+      setDocument('');
+      setCity('');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const newParticipant: Participant = {
-      id: `part-${Date.now()}`,
-      name: name.trim() || 'Participante',
-      email: normalizedEmail,
-      phone: phone.trim() || 'Não informado',
-      document: document.trim() || 'Não informado',
-      city: city.trim() || 'Brasil',
-      ticketNumber: ticket,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-    };
-
-    onRegisterParticipant(newParticipant);
-    setNewlyCreatedTicket(newParticipant);
-    setDuplicateEmailError(null);
-
-    // Reset Form
-    setName('');
-    setEmail('');
-    setPhone('');
-    setDocument('');
-    setCity('');
   };
 
   const handleSearchTickets = (e: React.FormEvent) => {
@@ -336,6 +384,17 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
               )}
 
+              {/* Validation Warning */}
+              {validationWarning && (
+                <div className="p-3.5 rounded-xl bg-red-950/50 border border-red-500/50 text-red-200 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>{validationWarning}</span>
+                  </div>
+                  <button type="button" onClick={() => setValidationWarning(null)} className="text-red-400 hover:text-white">✕</button>
+                </div>
+              )}
+
               {/* Dynamic Name Field */}
               {formFields.name.enabled && (
                 <div>
@@ -453,12 +512,12 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
               <button
                 type="submit"
-                disabled={!acceptedTerms}
+                disabled={!acceptedTerms || isSubmitting}
                 style={{ backgroundColor: brand.primaryColor }}
                 className="w-full py-4 px-6 rounded-xl font-bold text-slate-950 text-base shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Sparkles className="w-5 h-5 fill-current" />
-                <span>GERAR MEU NÚMERO DA SORTE</span>
+                <span>{isSubmitting ? 'REGISTRANDO INSCRIÇÃO...' : 'GERAR MEU NÚMERO DA SORTE'}</span>
               </button>
             </form>
           </div>
