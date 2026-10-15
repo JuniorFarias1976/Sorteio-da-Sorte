@@ -155,22 +155,8 @@ export default function App() {
       },
     });
 
-    // 3. Fallback background sync polling (every 3.5s) to guarantee zero desync on mobile
-    const syncInterval = setInterval(() => {
-      ApiService.fetchAllData().then((serverData) => {
-        if (!serverData) return;
-        setParticipants((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.participants) ? serverData.participants : prev));
-        setPrizes((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.prizes) ? serverData.prizes : prev));
-        setSchedules((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.schedules) ? serverData.schedules : prev));
-        setWinners((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.winners) ? serverData.winners : prev));
-        setBrand((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.brand) ? serverData.brand : prev));
-        setFormFields((prev) => (JSON.stringify(prev) !== JSON.stringify(serverData.formFields) ? serverData.formFields : prev));
-      });
-    }, 3500);
-
     return () => {
       unsubscribe();
-      clearInterval(syncInterval);
     };
   }, []);
 
@@ -226,8 +212,14 @@ export default function App() {
 
   // Participant Registration handler (from Public page)
   const handleRegisterParticipant = (participant: Participant) => {
-    const updated = [participant, ...participants];
-    handleUpdateParticipants(updated);
+    setParticipants((prev) => {
+      if (prev.some((p) => p.id === participant.id || p.ticketNumber === participant.ticketNumber)) {
+        return prev;
+      }
+      const updated = [participant, ...prev];
+      StorageService.saveParticipants(updated);
+      return updated;
+    });
   };
 
   // Live Draw Winner Announced handler

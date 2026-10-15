@@ -195,10 +195,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
     const query = searchQuery.trim().toLowerCase().replace(/[^\w]/g, '');
     const results = participants.filter((p) => {
-      const matchDoc = p.document.replace(/[^\w]/g, '').includes(query);
-      const matchPhone = p.phone.replace(/[^\w]/g, '').includes(query);
-      const matchTicket = p.ticketNumber.toLowerCase().includes(query);
-      const matchEmail = p.email.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchDoc = (p.document || '').replace(/[^\w]/g, '').includes(query);
+      const matchPhone = (p.phone || '').replace(/[^\w]/g, '').includes(query);
+      const matchTicket = (p.ticketNumber || '').toLowerCase().includes(query);
+      const matchEmail = (p.email || '').toLowerCase().includes(searchQuery.trim().toLowerCase());
       return matchDoc || matchPhone || matchTicket || matchEmail;
     });
 

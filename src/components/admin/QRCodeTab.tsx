@@ -24,9 +24,18 @@ interface QRCodeTabProps {
 
 export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdateBrand }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [customLink, setCustomLink] = useState<string>(brand.raffleUrl || window.location.origin);
+  const [customLink, setCustomLink] = useState<string>(brand.raffleUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
   const [copied, setCopied] = useState<boolean>(false);
   const [showEditor, setShowEditor] = useState<boolean>(true);
+  const [networkInfo, setNetworkInfo] = useState<{
+    localIp: string;
+    allIps: string[];
+    port: number;
+    host: string;
+    origin: string;
+    sharedUrl: string;
+    developmentUrl: string;
+  } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Poster Config State
@@ -37,7 +46,37 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
   const nextEvent = schedules.find((s) => s.status === 'scheduled') || schedules[0];
 
   useEffect(() => {
-    generateQR(customLink);
+    // Detect network info from server
+    ApiService.getNetworkInfo().then((info) => {
+      if (!info) return;
+      setNetworkInfo(info);
+      // If brand raffleUrl is empty or points to localhost, auto-suggest real accessible URL
+      if (!brand.raffleUrl || brand.raffleUrl.includes('localhost') || brand.raffleUrl.includes('127.0.0.1')) {
+        let bestUrl = info.origin;
+        if (info.sharedUrl && (window.location.hostname.includes('run.app') || window.location.hostname.includes('google'))) {
+          bestUrl = info.sharedUrl;
+        } else if (info.localIp && info.localIp !== 'localhost') {
+          bestUrl = `http://${info.localIp}:${info.port}`;
+        }
+        setCustomLink(bestUrl);
+        const updated = { ...brand, raffleUrl: bestUrl };
+        onUpdateBrand(updated);
+        StorageService.saveBrand(updated);
+        ApiService.saveData({ brand: updated });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (brand.raffleUrl && brand.raffleUrl !== customLink) {
+      setCustomLink(brand.raffleUrl);
+    }
+  }, [brand.raffleUrl]);
+
+  useEffect(() => {
+    if (customLink) {
+      generateQR(customLink);
+    }
   }, [customLink]);
 
   const generateQR = async (text: string) => {
@@ -172,36 +211,77 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. URL */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                Link de Destino do QR Code:
-              </label>
-              <div className="flex gap-1.5">
+            <div className="md:col-span-2 lg:col-span-3 bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider">
+                    Link de Destino do QR Code (Endereço que o celular abre):
+                  </label>
+                  <p className="text-[11px] text-slate-400">
+                    Ao escanear pelo celular, ele abrirá este endereço. Todas as alterações e inscrições são sincronizadas automaticamente.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={customLink}
                   onChange={(e) => handleLinkChange(e.target.value)}
                   placeholder="https://..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-500 outline-none font-mono"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-2 focus:ring-amber-500 outline-none font-mono font-medium shadow-inner"
                 />
                 <button
                   onClick={handleCopyLink}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs flex items-center shrink-0 cursor-pointer"
-                  title="Copiar"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer border border-slate-700"
+                  title="Copiar Link"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  <span>{copied ? 'Copiado!' : 'Copiar'}</span>
                 </button>
               </div>
-              <div className="flex items-center justify-between mt-1 text-[10px] text-slate-400">
-                <span>Sincronizado com o telemóvel</span>
+
+              {/* Quick Preset Buttons for Mobile Scanning */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                <span className="text-slate-500 text-[11px] font-medium">Atalhos rápidos para celular:</span>
+                
+                {networkInfo?.localIp && networkInfo.localIp !== 'localhost' && (
+                  <button
+                    type="button"
+                    onClick={() => handleLinkChange(`http://${networkInfo.localIp}:${networkInfo.port}`)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-mono cursor-pointer transition-colors"
+                  >
+                    📶 Wi-Fi Local (Celular): http://{networkInfo.localIp}:{networkInfo.port}
+                  </button>
+                )}
+
+                {networkInfo?.sharedUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleLinkChange(networkInfo.sharedUrl)}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono cursor-pointer transition-colors"
+                  >
+                    🌐 URL Pública de Prévia (Internet)
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => handleLinkChange(window.location.origin)}
-                  className="text-amber-400 hover:text-amber-300 underline"
+                  onClick={() => handleLinkChange(typeof window !== 'undefined' ? window.location.origin : '')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-mono cursor-pointer transition-colors"
                 >
-                  Usar URL atual deste navegador
+                  💻 URL Atual do Navegador
                 </button>
               </div>
+
+              {customLink.includes('localhost') && (
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
+                  <span>💡</span>
+                  <span>
+                    <strong>Dica para o telemóvel:</strong> Se estiver a escanear com a câmera do celular na mesma rede Wi-Fi, clique no botão <strong>"Wi-Fi Local"</strong> ou <strong>"URL Pública"</strong> acima para o celular conseguir se conectar ao seu computador.
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* 2. Title */}

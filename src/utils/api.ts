@@ -138,6 +138,25 @@ export const ApiService = {
     }
   },
 
+  // Get network and server host info to construct ideal mobile QR links
+  async getNetworkInfo(): Promise<{
+    localIp: string;
+    allIps: string[];
+    port: number;
+    host: string;
+    origin: string;
+    sharedUrl: string;
+    developmentUrl: string;
+  } | null> {
+    try {
+      const res = await fetch(`${API_BASE}/network-info`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
   // Subscribe to real-time events from server (Server-Sent Events)
   subscribeLiveEvents(handlers: {
     onLiveEvent?: (event: any) => void;

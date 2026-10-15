@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -356,21 +357,31 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function loadDB(): typeof INITIAL_DATABASE {
+function loadDB(): typeof INITIAL_DATABASE & { version: number } {
   try {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
-      return { ...INITIAL_DATABASE, ...JSON.parse(content) };
+      const parsed = JSON.parse(content);
+      return {
+        ...INITIAL_DATABASE,
+        ...parsed,
+        brand: { ...INITIAL_DATABASE.brand, ...(parsed.brand || {}) },
+        settings: { ...INITIAL_DATABASE.settings, ...(parsed.settings || {}) },
+        posterConfig: { ...INITIAL_DATABASE.posterConfig, ...(parsed.posterConfig || {}) },
+        reportConfig: { ...INITIAL_DATABASE.reportConfig, ...(parsed.reportConfig || {}) },
+        formFields: { ...INITIAL_DATABASE.formFields, ...(parsed.formFields || {}) },
+        version: parsed.version || Date.now(),
+      };
     }
   } catch (err) {
     console.error('Error reading database file:', err);
   }
-  // Initialize with initial database
-  saveDB(INITIAL_DATABASE);
-  return INITIAL_DATABASE;
+  const defaultWithVersion = { ...INITIAL_DATABASE, version: Date.now() };
+  saveDB(defaultWithVersion);
+  return defaultWithVersion;
 }
 
-function saveDB(data: typeof INITIAL_DATABASE) {
+function saveDB(data: typeof INITIAL_DATABASE & { version?: number }) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
@@ -433,12 +444,18 @@ async function startServer() {
     res.json(db);
   });
 
-  // 2. Update synchronized application data (admin saves)
+  // 2. Update synchronized application data (admin saves) with safe deep merge
   app.post('/api/data', (req, res) => {
     const updates = req.body;
     db = {
       ...db,
       ...updates,
+      brand: updates.brand ? { ...db.brand, ...updates.brand } : db.brand,
+      settings: updates.settings ? { ...db.settings, ...updates.settings } : db.settings,
+      posterConfig: updates.posterConfig ? { ...db.posterConfig, ...updates.posterConfig } : db.posterConfig,
+      reportConfig: updates.reportConfig ? { ...db.reportConfig, ...updates.reportConfig } : db.reportConfig,
+      formFields: updates.formFields ? { ...db.formFields, ...updates.formFields } : db.formFields,
+      version: Date.now(),
     };
     saveDB(db);
     broadcastSSE('DATA_UPDATED', db);
@@ -449,25 +466,22 @@ async function startServer() {
   app.post('/api/participants', (req, res) => {
     const { name, email, phone, document, city } = req.body;
 
-    if (!email || typeof email !== 'string') {
-      res.status(400).json({ error: 'INVALID_EMAIL', message: 'E-mail é obrigatório.' });
-      return;
-    }
+    const normalizedEmail = (email || '').trim().toLowerCase();
 
-    const normalizedEmail = email.trim().toLowerCase();
+    // Check if participant already exists with this email (if provided)
+    if (normalizedEmail) {
+      const existing = db.participants.find(
+        (p) => p.email && p.email.trim().toLowerCase() === normalizedEmail
+      );
 
-    // Check if participant already exists with this email
-    const existing = db.participants.find(
-      (p) => p.email && p.email.trim().toLowerCase() === normalizedEmail
-    );
-
-    if (existing) {
-      res.status(409).json({
-        error: 'DUPLICATE_EMAIL',
-        message: 'Este e-mail já está inscrito no sorteio!',
-        existingParticipant: existing,
-      });
-      return;
+      if (existing) {
+        res.status(409).json({
+          error: 'DUPLICATE_EMAIL',
+          message: `O e-mail "${normalizedEmail}" já está cadastrado no sistema (Bilhete #${existing.ticketNumber})! Cada participante só pode se cadastrar uma única vez.`,
+          existingParticipant: existing,
+        });
+        return;
+      }
     }
 
     // Generate unique 5-digit lucky number
@@ -480,7 +494,7 @@ async function startServer() {
     const newParticipant = {
       id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       name: (name || '').trim() || 'Participante',
-      email: normalizedEmail,
+      email: normalizedEmail || 'sem-email@sorteiolive.com',
       phone: (phone || '').trim(),
       document: (document || '').trim(),
       city: (city || '').trim(),
@@ -490,13 +504,38 @@ async function startServer() {
     };
 
     db.participants = [newParticipant, ...db.participants];
+    db.version = Date.now();
     saveDB(db);
 
-    broadcastSSE('DATA_UPDATED', { participants: db.participants });
+    broadcastSSE('DATA_UPDATED', db);
     res.status(201).json({ success: true, participant: newParticipant });
   });
 
-  // 4. Live Draw State Endpoint
+  // 4. Network Info Endpoint to help mobile devices connect cleanly
+  app.get('/api/network-info', (req, res) => {
+    const interfaces = os.networkInterfaces();
+    const ips: string[] = [];
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name] || []) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          ips.push(iface.address);
+        }
+      }
+    }
+    const host = req.get('host') || `localhost:${PORT}`;
+    const proto = req.protocol || 'http';
+    res.json({
+      localIp: ips[0] || 'localhost',
+      allIps: ips,
+      port: PORT,
+      host,
+      origin: `${proto}://${host}`,
+      sharedUrl: 'https://ais-pre-fkqr6cbqxscjqpgrmpwlg3-111376061697.europe-west2.run.app',
+      developmentUrl: 'https://ais-dev-fkqr6cbqxscjqpgrmpwlg3-111376061697.europe-west2.run.app',
+    });
+  });
+
+  // 5. Live Draw State Endpoint
   app.get('/api/live/state', (_req, res) => {
     res.json(liveState);
   });

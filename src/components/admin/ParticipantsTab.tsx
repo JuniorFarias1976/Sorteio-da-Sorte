@@ -51,12 +51,12 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const filteredParticipants = participants.filter((p) => {
     const query = search.toLowerCase();
     const matchQuery =
-      p.name.toLowerCase().includes(query) ||
-      p.email.toLowerCase().includes(query) ||
-      p.phone.includes(query) ||
-      p.document.includes(query) ||
-      p.ticketNumber.toLowerCase().includes(query) ||
-      p.city.toLowerCase().includes(query);
+      (p.name || '').toLowerCase().includes(query) ||
+      (p.email || '').toLowerCase().includes(query) ||
+      (p.phone || '').includes(query) ||
+      (p.document || '').includes(query) ||
+      (p.ticketNumber || '').toLowerCase().includes(query) ||
+      (p.city || '').toLowerCase().includes(query);
 
     const matchStatus = statusFilter === 'all' ? true : p.status === statusFilter;
     return matchQuery && matchStatus;
@@ -64,16 +64,36 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
   const handleAddParticipant = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newEmail.trim() || !newPhone.trim()) {
-      alert('Preencha os campos obrigatórios (Nome, E-mail e Telefone).');
+
+    // Validate based on configured fields
+    if (formFields.name.enabled && formFields.name.required && !newName.trim()) {
+      alert(`Por favor, preencha o campo: ${formFields.name.label}`);
+      return;
+    }
+    if (formFields.email.enabled && formFields.email.required && !newEmail.trim()) {
+      alert(`Por favor, preencha o campo: ${formFields.email.label}`);
+      return;
+    }
+    if (formFields.phone.enabled && formFields.phone.required && !newPhone.trim()) {
+      alert(`Por favor, preencha o campo: ${formFields.phone.label}`);
+      return;
+    }
+    if (formFields.document.enabled && formFields.document.required && !newDoc.trim()) {
+      alert(`Por favor, preencha o campo: ${formFields.document.label}`);
+      return;
+    }
+    if (formFields.city.enabled && formFields.city.required && !newCity.trim()) {
+      alert(`Por favor, preencha o campo: ${formFields.city.label}`);
       return;
     }
 
     const normalizedEmail = newEmail.trim().toLowerCase();
-    const existing = participants.find((p) => p.email.toLowerCase() === normalizedEmail);
-    if (existing) {
-      alert(`Aviso: O e-mail "${newEmail.trim()}" já está cadastrado no sistema para o participante "${existing.name}" (Bilhete #${existing.ticketNumber})! Cada participante só pode se cadastrar uma única vez.`);
-      return;
+    if (normalizedEmail) {
+      const existing = participants.find((p) => p.email && p.email.toLowerCase().trim() === normalizedEmail);
+      if (existing) {
+        alert(`Aviso: O e-mail "${newEmail.trim()}" já está cadastrado no sistema para o participante "${existing.name}" (Bilhete #${existing.ticketNumber})! Cada participante só pode se cadastrar uma única vez.`);
+        return;
+      }
     }
 
     let ticket = customTicket.trim();
@@ -85,10 +105,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     }
 
     const created: Participant = {
-      id: `part-${Date.now()}`,
-      name: newName.trim(),
-      email: newEmail.trim().toLowerCase(),
-      phone: newPhone.trim(),
+      id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: newName.trim() || 'Participante',
+      email: normalizedEmail || 'sem-email@sorteiolive.com',
+      phone: newPhone.trim() || 'Não informado',
       document: newDoc.trim() || 'Não informado',
       city: newCity.trim() || 'Brasil',
       ticketNumber: ticket,
