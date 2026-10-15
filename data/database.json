@@ -1,6 +1,17 @@
 {
   "participants": [
     {
+      "id": "part-1792072451472-505",
+      "name": "Junior Farias",
+      "email": "junior.farias.teste@gmail.com",
+      "phone": "(93) 7129-276",
+      "document": "",
+      "city": "",
+      "ticketNumber": "47017",
+      "createdAt": "2026-10-15T13:54:11.472Z",
+      "status": "active"
+    },
+    {
       "id": "part-1792070783891-854",
       "name": "Maria Ferreira",
       "email": "maria.ferreira.test@gmail.com",
@@ -398,5 +409,5 @@
     "includeHash": true,
     "includeDate": true
   },
-  "version": 1792071804466
+  "version": 1792072451472
 }

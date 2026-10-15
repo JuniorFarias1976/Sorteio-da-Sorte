@@ -32,7 +32,9 @@ export const ApiService = {
   async fetchAllData(): Promise<AppServerData | null> {
     try {
       const res = await fetch(`${API_BASE}/data`);
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      if (!res.ok) return null;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return null;
       return await res.json();
     } catch (err) {
       console.warn('Could not fetch server data, falling back to local storage:', err);
@@ -41,7 +43,7 @@ export const ApiService = {
   },
 
   // Save updates to server so mobile and other devices immediately sync
-  async saveData(updates: Partial<AppServerData>): Promise<{ success: boolean; error?: string }> {
+  async saveData(updates: Partial<AppServerData>): Promise<{ success: boolean; error?: string; serverOffline?: boolean }> {
     try {
       const res = await fetch(`${API_BASE}/data`, {
         method: 'POST',
@@ -49,13 +51,12 @@ export const ApiService = {
         body: JSON.stringify(updates),
       });
       if (!res.ok) {
-        const errText = await res.text();
-        return { success: false, error: `HTTP ${res.status}: ${errText}` };
+        return { success: false, serverOffline: true };
       }
       return { success: true };
     } catch (err: any) {
-      console.warn('Failed to sync data to server:', err);
-      return { success: false, error: err?.message || 'Erro de rede ao salvar' };
+      console.warn('Failed to sync data to server (running in local/offline mode):', err?.message);
+      return { success: false, serverOffline: true };
     }
   },
 
@@ -77,20 +78,28 @@ export const ApiService = {
     try {
       const res = await fetch(`${API_BASE}/db/status`);
       if (!res.ok) return null;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return null;
       return await res.json();
     } catch {
       return null;
     }
   },
 
-  // Register participant with server uniqueness check
+  // Register participant with server uniqueness check & resilient offline fallback
   async registerParticipant(data: {
     name: string;
     email: string;
     phone?: string;
     document?: string;
     city?: string;
-  }): Promise<{ success: boolean; participant?: Participant; error?: string; existingParticipant?: Participant }> {
+  }): Promise<{ 
+    success: boolean; 
+    participant?: Participant; 
+    error?: string; 
+    existingParticipant?: Participant;
+    serverOffline?: boolean;
+  }> {
     try {
       const res = await fetch(`${API_BASE}/participants`, {
         method: 'POST',
@@ -98,20 +107,31 @@ export const ApiService = {
         body: JSON.stringify(data),
       });
 
+      const contentType = res.headers.get('content-type') || '';
+
+      // If server returned non-JSON (like 404 HTML on Vercel static deployment or proxy error)
+      if (!contentType.includes('application/json')) {
+        return {
+          success: false,
+          serverOffline: true,
+          error: 'SERVER_UNAVAILABLE',
+        };
+      }
+
       const body = await res.json();
 
       if (res.status === 409) {
         return {
           success: false,
           error: 'DUPLICATE_EMAIL',
-          existingParticipant: body.existingParticipant,
+          existingParticipant: body?.existingParticipant,
         };
       }
 
       if (!res.ok) {
         return {
           success: false,
-          error: body.message || 'Falha ao realizar inscrição.',
+          error: body?.message || 'Falha ao realizar inscrição no servidor.',
         };
       }
 
@@ -119,10 +139,11 @@ export const ApiService = {
         success: true,
         participant: body.participant,
       };
-    } catch (err: any) {
+    } catch {
       return {
         success: false,
-        error: err.message || 'Erro de conexão com o servidor.',
+        serverOffline: true,
+        error: 'SERVER_UNAVAILABLE',
       };
     }
   },
@@ -132,6 +153,8 @@ export const ApiService = {
     try {
       const res = await fetch(`${API_BASE}/live/state`);
       if (!res.ok) return null;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return null;
       return await res.json();
     } catch {
       return null;
@@ -179,6 +202,8 @@ export const ApiService = {
     try {
       const res = await fetch(`${API_BASE}/network-info`);
       if (!res.ok) return null;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return null;
       return await res.json();
     } catch {
       return null;
