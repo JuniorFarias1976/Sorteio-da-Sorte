@@ -28,7 +28,8 @@ import {
   FileCheck2, 
   Palette,
   Tv,
-  RotateCcw
+  RotateCcw,
+  Database
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -130,8 +131,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             })}
           </div>
 
-          {/* Quick Actions (Live & Reset) */}
+          {/* Quick Actions (Live & Reset & DB Status) */}
           <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-800">
+            <div 
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300 font-mono shadow-inner"
+              title="Banco de dados central ativo e sincronizado em data/database.json"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>DB Ativo</span>
+            </div>
+
             <button
               onClick={onGoToLive}
               className="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"

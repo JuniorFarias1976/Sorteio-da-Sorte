@@ -447,19 +447,62 @@ async function startServer() {
   // 2. Update synchronized application data (admin saves) with safe deep merge
   app.post('/api/data', (req, res) => {
     const updates = req.body;
+    console.log('[DB-SAVE] Received /api/data updates for keys:', Object.keys(updates || {}));
+
+    let mergedBrand = db.brand;
+    if (updates.brand) {
+      // Determine logoUrl: if updates provides non-empty logo, use it.
+      // If updates provides empty or default logo, but db already has a custom logo, preserve the custom logo.
+      let targetLogo = updates.brand.logoUrl;
+      if (!targetLogo || targetLogo === DEFAULT_BRAND_LOGO) {
+        if (db.brand?.logoUrl && db.brand.logoUrl !== DEFAULT_BRAND_LOGO && !updates.brand.forceResetLogo) {
+          targetLogo = db.brand.logoUrl;
+        } else {
+          targetLogo = targetLogo || DEFAULT_BRAND_LOGO;
+        }
+      }
+
+      mergedBrand = {
+        ...db.brand,
+        ...updates.brand,
+        logoUrl: targetLogo,
+      };
+    }
+
     db = {
       ...db,
       ...updates,
-      brand: updates.brand ? { ...db.brand, ...updates.brand } : db.brand,
+      brand: mergedBrand,
       settings: updates.settings ? { ...db.settings, ...updates.settings } : db.settings,
       posterConfig: updates.posterConfig ? { ...db.posterConfig, ...updates.posterConfig } : db.posterConfig,
       reportConfig: updates.reportConfig ? { ...db.reportConfig, ...updates.reportConfig } : db.reportConfig,
       formFields: updates.formFields ? { ...db.formFields, ...updates.formFields } : db.formFields,
       version: Date.now(),
     };
+
     saveDB(db);
+    console.log(`[DB-SAVE] Successfully saved to database.json. Brand: "${db.brand.companyName}", Logo bytes: ${db.brand.logoUrl?.length || 0}`);
     broadcastSSE('DATA_UPDATED', db);
-    res.json({ success: true, data: db });
+    res.json({ success: true, data: db, version: db.version, savedAt: new Date().toISOString() });
+  });
+
+  // Database verification & status endpoint
+  app.get('/api/db/status', (_req, res) => {
+    res.json({
+      success: true,
+      status: 'connected',
+      databaseFile: DB_FILE,
+      version: db.version,
+      participantsCount: db.participants.length,
+      prizesCount: db.prizes.length,
+      winnersCount: db.winners.length,
+      brand: {
+        companyName: db.brand.companyName,
+        hasCustomLogo: db.brand.logoUrl !== DEFAULT_BRAND_LOGO,
+        primaryColor: db.brand.primaryColor,
+      },
+      lastSaved: new Date(db.version).toISOString(),
+    });
   });
 
   // 3. Register participant with server-side email duplication check

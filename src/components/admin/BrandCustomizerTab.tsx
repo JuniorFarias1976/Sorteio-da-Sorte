@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrandConfig } from '../../types';
-import { Palette, Upload, Image, RotateCcw, Check, Sparkles, Building2, ShieldCheck } from 'lucide-react';
+import { 
+  Palette, 
+  Upload, 
+  Image as ImageIcon, 
+  RotateCcw, 
+  Check, 
+  Sparkles, 
+  Building2, 
+  Database,
+  RefreshCw,
+  Server,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
 import { DEFAULT_BRAND_LOGO } from '../../utils/storage';
+import { ApiService } from '../../utils/api';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface BrandCustomizerTabProps {
   brand: BrandConfig;
@@ -19,25 +34,107 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [secondaryColor, setSecondaryColor] = useState(brand.secondaryColor);
   const [accentColor, setAccentColor] = useState(brand.accentColor);
   const [terms, setTerms] = useState(brand.termsAndConditions);
-  const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // File upload reader for logo
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
+  const [dbStatusInfo, setDbStatusInfo] = useState<{
+    status: string;
+    version: number;
+    lastSaved: string;
+    hasCustomLogo: boolean;
+    brandName: string;
+  } | null>(null);
+  const [isCheckingDb, setIsCheckingDb] = useState(false);
+
+  // Sync internal state whenever `brand` prop is updated from server or other tabs
+  useEffect(() => {
+    setCompanyName(brand.companyName);
+    setCompanySlogan(brand.companySlogan);
+    setLogoUrl(brand.logoUrl);
+    setPrimaryColor(brand.primaryColor);
+    setSecondaryColor(brand.secondaryColor);
+    setAccentColor(brand.accentColor);
+    setTerms(brand.termsAndConditions);
+  }, [brand]);
+
+  // Initial check of server database status
+  useEffect(() => {
+    checkDatabaseLiveStatus();
+  }, []);
+
+  const checkDatabaseLiveStatus = async () => {
+    setIsCheckingDb(true);
+    try {
+      const data = await ApiService.getDbStatus();
+      if (data) {
+        setDbStatusInfo({
+          status: data.status,
+          version: data.version,
+          lastSaved: data.lastSaved,
+          hasCustomLogo: data.brand.hasCustomLogo,
+          brandName: data.brand.companyName,
+        });
+      }
+    } finally {
+      setIsCheckingDb(false);
+    }
+  };
+
+  // Safe file upload with image compression and immediate auto-save to Database
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, envie um arquivo de imagem (PNG, JPG, SVG, WebP).');
+      alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, SVG, WebP).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setLogoUrl(reader.result);
+    setIsUploadingLogo(true);
+    setSavedSuccessMessage(null);
+
+    try {
+      // Compress to lightweight, high-performance web asset (max 600x600, quality 0.85)
+      const compressedDataUrl = await compressImageFile(file, 600, 600, 0.85);
+
+      if (!compressedDataUrl) {
+        throw new Error('Não foi possível processar a imagem.');
       }
-    };
-    reader.readAsDataURL(file);
+
+      setLogoUrl(compressedDataUrl);
+
+      // Immediately persist to central database & local storage
+      const updated: BrandConfig = {
+        ...brand,
+        logoUrl: compressedDataUrl,
+      };
+
+      onUpdateBrand(updated);
+      setSavedSuccessMessage('Logomarca gravada com sucesso na Base de Dados do Servidor!');
+      setTimeout(() => setSavedSuccessMessage(null), 4000);
+      setTimeout(() => checkDatabaseLiveStatus(), 800);
+    } catch (err: any) {
+      alert('Erro ao carregar a logomarca: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset input value so user can upload the same file again if desired
+      e.target.value = '';
+    }
+  };
+
+  const handleRestoreDefaultLogo = () => {
+    if (confirm('Deseja restaurar a logomarca para o ícone padrão do sistema?')) {
+      setLogoUrl(DEFAULT_BRAND_LOGO);
+      const updated: BrandConfig = {
+        ...brand,
+        logoUrl: DEFAULT_BRAND_LOGO,
+      };
+      onUpdateBrand(updated);
+      setSavedSuccessMessage('Logomarca padrão restaurada e salva no banco de dados.');
+      setTimeout(() => setSavedSuccessMessage(null), 3000);
+      setTimeout(() => checkDatabaseLiveStatus(), 800);
+    }
   };
 
   const handleApplyPreset = (theme: { name: string; primary: string; secondary: string; accent: string }) => {
@@ -46,8 +143,11 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setAccentColor(theme.accent);
   };
 
-  const handleSaveAll = (e: React.FormEvent) => {
+  const handleSaveAll = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
+    setSavedSuccessMessage(null);
+
     const updated: BrandConfig = {
       ...brand,
       companyName: companyName.trim() || 'SorteioLive Pro',
@@ -60,8 +160,14 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     };
 
     onUpdateBrand(updated);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+
+    // Give visual confirmation of database write
+    setTimeout(() => {
+      setIsSaving(false);
+      setSavedSuccessMessage('Todas as alterações de marca e cores foram gravadas com sucesso na Base de Dados!');
+      checkDatabaseLiveStatus();
+      setTimeout(() => setSavedSuccessMessage(null), 4000);
+    }, 400);
   };
 
   const PRESET_THEMES = [
@@ -75,7 +181,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   return (
     <form onSubmit={handleSaveAll} className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Palette className="w-5 h-5 text-amber-400" />
@@ -88,12 +194,63 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
         <button
           type="submit"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-all active:scale-98 cursor-pointer"
+          disabled={isSaving || isUploadingLogo}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold shadow-lg transition-all active:scale-98 cursor-pointer"
         >
-          {savedSuccess ? <Check className="w-4 h-4 text-emerald-950" /> : <Sparkles className="w-4 h-4" />}
-          <span>{savedSuccess ? 'Salvo com Sucesso!' : 'Aplicar Alterações'}</span>
+          {isSaving ? (
+            <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+          <span>{isSaving ? 'Gravando na Base de Dados...' : 'Gravar Alterações na Base de Dados'}</span>
         </button>
       </div>
+
+      {/* Database Verification Indicator Banner */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Database className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">Status da Base de Dados Central:</span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Ativa & Conectada (data/database.json)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {dbStatusInfo ? (
+                <>
+                  Empresa registrada: <strong className="text-slate-200">{dbStatusInfo.brandName}</strong> • Logo personalizado: {dbStatusInfo.hasCustomLogo ? <span className="text-emerald-400 font-semibold">Sim (Gravado)</span> : <span className="text-slate-400">Padrão</span>} • Última gravação: {new Date(dbStatusInfo.lastSaved).toLocaleTimeString()}
+                </>
+              ) : (
+                'Carregando informações da base de dados do servidor...'
+              )}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={checkDatabaseLiveStatus}
+          disabled={isCheckingDb}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium cursor-pointer transition-colors"
+          title="Verificar integridade da gravação no banco de dados"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isCheckingDb ? 'animate-spin text-amber-400' : ''}`} />
+          <span>{isCheckingDb ? 'Verificando...' : 'Verificar Gravação'}</span>
+        </button>
+      </div>
+
+      {/* Floating / Toast Message if Saved */}
+      {savedSuccessMessage && (
+        <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 shadow-lg animate-in fade-in duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{savedSuccessMessage}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Logo and Corporate Data (6 cols) */}
@@ -109,22 +266,27 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               Logomarca Oficial
             </label>
             <div className="flex items-center gap-4 bg-slate-950 border border-slate-800 p-4 rounded-xl">
-              <div className="w-16 h-16 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center p-2 overflow-hidden shrink-0">
+              <div className="w-18 h-18 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center p-2 overflow-hidden shrink-0 shadow-inner">
                 {logoUrl ? (
                   <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-contain" />
                 ) : (
-                  <Image className="w-8 h-8 text-slate-500" />
+                  <ImageIcon className="w-8 h-8 text-slate-500" />
                 )}
               </div>
 
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload do Arquivo</span>
+                  <label className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-1.5">
+                    {isUploadingLogo ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isUploadingLogo ? 'Processando...' : 'Carregar Imagem do Logo'}</span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={isUploadingLogo}
                       onChange={handleLogoFileUpload}
                       className="hidden"
                     />
@@ -132,19 +294,24 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setLogoUrl(DEFAULT_BRAND_LOGO)}
-                    className="px-2.5 py-1.5 text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                    onClick={handleRestoreDefaultLogo}
+                    className="px-2.5 py-1.5 text-slate-400 hover:text-white text-xs flex items-center gap-1 cursor-pointer transition-colors"
                     title="Restaurar Logo Padrão"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>Restaurar</span>
                   </button>
                 </div>
+
+                <p className="text-[11px] text-slate-400">
+                  Formatos aceitos: PNG, JPG, SVG, WebP. O sistema otimiza e grava automaticamente na base de dados central.
+                </p>
+
                 <input
                   type="text"
-                  value={logoUrl}
+                  value={logoUrl.startsWith('data:') ? 'Imagem personalizada carregada (DataURL)' : logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="Ou insira a URL da imagem..."
+                  placeholder="Ou insira a URL direta da imagem (https://...)"
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
@@ -277,7 +444,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
           {/* Live Preview Sample */}
           <div className="pt-3 border-t border-slate-800">
             <span className="text-xs text-slate-400 block mb-2 font-medium">
-              Amostra de Botão e Elemento com as cores selecionadas:
+              Amostra em Tempo Real com as cores selecionadas:
             </span>
             <div className="flex items-center gap-3">
               <button

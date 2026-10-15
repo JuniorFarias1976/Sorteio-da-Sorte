@@ -41,17 +41,45 @@ export const ApiService = {
   },
 
   // Save updates to server so mobile and other devices immediately sync
-  async saveData(updates: Partial<AppServerData>): Promise<boolean> {
+  async saveData(updates: Partial<AppServerData>): Promise<{ success: boolean; error?: string }> {
     try {
       const res = await fetch(`${API_BASE}/data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
-      return res.ok;
-    } catch (err) {
+      if (!res.ok) {
+        const errText = await res.text();
+        return { success: false, error: `HTTP ${res.status}: ${errText}` };
+      }
+      return { success: true };
+    } catch (err: any) {
       console.warn('Failed to sync data to server:', err);
-      return false;
+      return { success: false, error: err?.message || 'Erro de rede ao salvar' };
+    }
+  },
+
+  // Get real-time database health and verification
+  async getDbStatus(): Promise<{
+    success: boolean;
+    status: string;
+    version: number;
+    participantsCount: number;
+    prizesCount: number;
+    winnersCount: number;
+    brand: {
+      companyName: string;
+      hasCustomLogo: boolean;
+      primaryColor: string;
+    };
+    lastSaved: string;
+  } | null> {
+    try {
+      const res = await fetch(`${API_BASE}/db/status`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
     }
   },
 

@@ -11,7 +11,8 @@ import {
   RotateCcw,
   Sparkles,
   Trophy,
-  Clock
+  Clock,
+  Save
 } from 'lucide-react';
 import { StorageService, DEFAULT_POSTER_CONFIG } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
@@ -46,11 +47,11 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
   const nextEvent = schedules.find((s) => s.status === 'scheduled') || schedules[0];
 
   useEffect(() => {
-    // Detect network info from server
+    // Detect network info from server to provide friendly link options
     ApiService.getNetworkInfo().then((info) => {
       if (!info) return;
       setNetworkInfo(info);
-      // If brand raffleUrl is empty or points to localhost, auto-suggest real accessible URL
+      // If brand raffleUrl is not set or points to localhost, default the local input field to the best accessible URL
       if (!brand.raffleUrl || brand.raffleUrl.includes('localhost') || brand.raffleUrl.includes('127.0.0.1')) {
         let bestUrl = info.origin;
         if (info.sharedUrl && (window.location.hostname.includes('run.app') || window.location.hostname.includes('google'))) {
@@ -59,10 +60,6 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
           bestUrl = `http://${info.localIp}:${info.port}`;
         }
         setCustomLink(bestUrl);
-        const updated = { ...brand, raffleUrl: bestUrl };
-        onUpdateBrand(updated);
-        StorageService.saveBrand(updated);
-        ApiService.saveData({ brand: updated });
       }
     });
   }, []);
@@ -106,12 +103,19 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
     }
   };
 
+  const [savedLinkSuccess, setSavedLinkSuccess] = useState(false);
+
   const handleLinkChange = (newLink: string) => {
     setCustomLink(newLink);
-    const updatedBrand = { ...brand, raffleUrl: newLink };
+  };
+
+  const handleSaveLink = (linkToSave?: string) => {
+    const targetLink = (linkToSave !== undefined ? linkToSave : customLink).trim();
+    setCustomLink(targetLink);
+    const updatedBrand = { ...brand, raffleUrl: targetLink };
     onUpdateBrand(updatedBrand);
-    StorageService.saveBrand(updatedBrand);
-    ApiService.saveData({ brand: updatedBrand });
+    setSavedLinkSuccess(true);
+    setTimeout(() => setSavedLinkSuccess(false), 2500);
   };
 
   const handleCopyLink = () => {
@@ -223,17 +227,27 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={customLink}
                   onChange={(e) => handleLinkChange(e.target.value)}
                   placeholder="https://..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-2 focus:ring-amber-500 outline-none font-mono font-medium shadow-inner"
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-2 focus:ring-amber-500 outline-none font-mono font-medium shadow-inner"
                 />
                 <button
+                  type="button"
+                  onClick={() => handleSaveLink()}
+                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow transition-all active:scale-98"
+                  title="Salvar Link na Base de Dados"
+                >
+                  {savedLinkSuccess ? <Check className="w-4 h-4 text-emerald-950" /> : <Save className="w-4 h-4" />}
+                  <span>{savedLinkSuccess ? 'Salvo no Banco!' : 'Gravar Link'}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleCopyLink}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer border border-slate-700"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer border border-slate-700"
                   title="Copiar Link"
                 >
                   {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -248,7 +262,7 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
                 {networkInfo?.localIp && networkInfo.localIp !== 'localhost' && (
                   <button
                     type="button"
-                    onClick={() => handleLinkChange(`http://${networkInfo.localIp}:${networkInfo.port}`)}
+                    onClick={() => handleSaveLink(`http://${networkInfo.localIp}:${networkInfo.port}`)}
                     className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-mono cursor-pointer transition-colors"
                   >
                     📶 Wi-Fi Local (Celular): http://{networkInfo.localIp}:{networkInfo.port}
@@ -258,7 +272,7 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
                 {networkInfo?.sharedUrl && (
                   <button
                     type="button"
-                    onClick={() => handleLinkChange(networkInfo.sharedUrl)}
+                    onClick={() => handleSaveLink(networkInfo.sharedUrl)}
                     className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono cursor-pointer transition-colors"
                   >
                     🌐 URL Pública de Prévia (Internet)
@@ -267,7 +281,7 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
 
                 <button
                   type="button"
-                  onClick={() => handleLinkChange(typeof window !== 'undefined' ? window.location.origin : '')}
+                  onClick={() => handleSaveLink(typeof window !== 'undefined' ? window.location.origin : '')}
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-mono cursor-pointer transition-colors"
                 >
                   💻 URL Atual do Navegador

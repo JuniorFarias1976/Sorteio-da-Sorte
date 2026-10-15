@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormFieldsConfig } from '../../types';
 import { SlidersHorizontal, Check, RotateCcw, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { DEFAULT_FORM_FIELDS } from '../../utils/storage';
@@ -14,6 +14,10 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
 }) => {
   const [fields, setFields] = useState<FormFieldsConfig>(formFields);
   const [saveToast, setSaveToast] = useState(false);
+
+  useEffect(() => {
+    setFields(formFields);
+  }, [formFields]);
 
   const handleToggleEnabled = (key: keyof FormFieldsConfig) => {
     // Email is critical for single registration check

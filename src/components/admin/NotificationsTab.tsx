@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Participant, NotificationLog, NotificationSettings, BrandConfig, DrawSchedule } from '../../types';
 import { 
   Bell, 
@@ -37,6 +37,10 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
   const [sendSuccessMessage, setSendSuccessMessage] = useState<string | null>(null);
   const [customMsg, setCustomMsg] = useState(settings.messageTemplate);
   const [timingOption, setTimingOption] = useState<'immediate' | '15m' | '1h' | '24h'>('immediate');
+
+  useEffect(() => {
+    setCustomMsg(settings.messageTemplate);
+  }, [settings.messageTemplate]);
 
   const activeParticipants = participants.filter((p) => p.status === 'active');
   const nextEvent = schedules.find((s) => s.status === 'scheduled') || schedules[0];
