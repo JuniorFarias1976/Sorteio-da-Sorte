@@ -69,6 +69,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       return;
     }
 
+    const normalizedEmail = newEmail.trim().toLowerCase();
+    const existing = participants.find((p) => p.email.toLowerCase() === normalizedEmail);
+    if (existing) {
+      alert(`Aviso: O e-mail "${newEmail.trim()}" já está cadastrado no sistema para o participante "${existing.name}" (Bilhete #${existing.ticketNumber})! Cada participante só pode se cadastrar uma única vez.`);
+      return;
+    }
+
     let ticket = customTicket.trim();
     if (!ticket) {
       ticket = Math.floor(10000 + Math.random() * 90000).toString();

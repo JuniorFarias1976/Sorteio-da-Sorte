@@ -14,6 +14,7 @@ import {
   Clock
 } from 'lucide-react';
 import { StorageService, DEFAULT_POSTER_CONFIG } from '../../utils/storage';
+import { ApiService } from '../../utils/api';
 
 interface QRCodeTabProps {
   brand: BrandConfig;
@@ -21,7 +22,7 @@ interface QRCodeTabProps {
   onUpdateBrand: (brand: BrandConfig) => void;
 }
 
-export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules }) => {
+export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdateBrand }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [customLink, setCustomLink] = useState<string>(brand.raffleUrl || window.location.origin);
   const [copied, setCopied] = useState<boolean>(false);
@@ -66,6 +67,14 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules }) => {
     }
   };
 
+  const handleLinkChange = (newLink: string) => {
+    setCustomLink(newLink);
+    const updatedBrand = { ...brand, raffleUrl: newLink };
+    onUpdateBrand(updatedBrand);
+    StorageService.saveBrand(updatedBrand);
+    ApiService.saveData({ brand: updatedBrand });
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(customLink);
     setCopied(true);
@@ -88,11 +97,13 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules }) => {
     const updated = { ...posterConfig, ...updates };
     setPosterConfig(updated);
     StorageService.savePosterConfig(updated);
+    ApiService.saveData({ posterConfig: updated });
   };
 
   const handleResetPoster = () => {
     setPosterConfig(DEFAULT_POSTER_CONFIG);
     StorageService.savePosterConfig(DEFAULT_POSTER_CONFIG);
+    ApiService.saveData({ posterConfig: DEFAULT_POSTER_CONFIG });
   };
 
   return (
@@ -169,7 +180,8 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules }) => {
                 <input
                   type="text"
                   value={customLink}
-                  onChange={(e) => setCustomLink(e.target.value)}
+                  onChange={(e) => handleLinkChange(e.target.value)}
+                  placeholder="https://..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-500 outline-none font-mono"
                 />
                 <button
@@ -178,6 +190,16 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules }) => {
                   title="Copiar"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <div className="flex items-center justify-between mt-1 text-[10px] text-slate-400">
+                <span>Sincronizado com o telemóvel</span>
+                <button
+                  type="button"
+                  onClick={() => handleLinkChange(window.location.origin)}
+                  className="text-amber-400 hover:text-amber-300 underline"
+                >
+                  Usar URL atual deste navegador
                 </button>
               </div>
             </div>

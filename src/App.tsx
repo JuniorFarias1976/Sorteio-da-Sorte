@@ -103,6 +103,12 @@ export default function App() {
         setFormFields(serverData.formFields);
         StorageService.saveFormFields(serverData.formFields);
       }
+      if (serverData.posterConfig) {
+        StorageService.savePosterConfig(serverData.posterConfig);
+      }
+      if (serverData.reportConfig) {
+        StorageService.saveReportConfig(serverData.reportConfig);
+      }
     });
 
     // 2. Real-time Server-Sent Events subscriber
@@ -139,6 +145,12 @@ export default function App() {
         if (data.notifications) {
           setNotifications(data.notifications);
           StorageService.saveNotifications(data.notifications);
+        }
+        if (data.posterConfig) {
+          StorageService.savePosterConfig(data.posterConfig);
+        }
+        if (data.reportConfig) {
+          StorageService.saveReportConfig(data.reportConfig);
         }
       },
     });

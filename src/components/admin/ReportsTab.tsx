@@ -12,6 +12,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { StorageService, DEFAULT_REPORT_CONFIG } from '../../utils/storage';
+import { ApiService } from '../../utils/api';
 
 interface ReportsTabProps {
   winners: DrawWinner[];
@@ -49,6 +50,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const handleSaveConfig = (newCfg: ReportPdfConfig) => {
     setReportConfig(newCfg);
     StorageService.saveReportConfig(newCfg);
+    ApiService.saveData({ reportConfig: newCfg });
     setShowConfigModal(false);
   };
 

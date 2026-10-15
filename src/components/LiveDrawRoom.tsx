@@ -110,53 +110,99 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     }, 250);
   };
 
-  // Broadcast Channel for live sync between admin and viewer screens
+  // Multi-device real-time sync (SSE + BroadcastChannel)
   useEffect(() => {
-    if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return;
-    const channel = new BroadcastChannel('sorteiolive_stream_channel');
+    // 1. Initial snapshot of live state
+    ApiService.getLiveState().then((state) => {
+      if (!state) return;
+      if (state.prizeId) setSelectedPrizeId(state.prizeId);
+      if (state.round) setSelectedRound(state.round);
+      if (state.isDrawing) setIsDrawing(true);
+      if (state.countdown !== null) setCountdown(state.countdown);
+      if (state.currentDisplayTicket) setCurrentDisplayTicket(state.currentDisplayTicket);
+      if (state.currentDisplayName) setCurrentDisplayName(state.currentDisplayName);
+      if (state.currentDisplayCity) setCurrentDisplayCity(state.currentDisplayCity);
+      if (state.latestWinner) setLatestWinner(state.latestWinner);
+    });
 
-    channel.onmessage = (event) => {
-      const data = event.data;
-      if (!data) return;
+    // 2. Real-time Multi-device Server-Sent Events (SSE) listener
+    const unsubscribe = ApiService.subscribeLiveEvents({
+      onLiveEvent: (data) => {
+        if (!data) return;
 
-      if (data.type === 'START_DRAW') {
-        setSelectedPrizeId(data.prizeId);
-        setSelectedRound(data.round);
-        setLatestWinner(null);
-        setIsDrawing(true);
-        setCountdown(3);
-        if (soundEnabled) playCountdownBeep(false);
+        if (data.type === 'START_DRAW') {
+          setSelectedPrizeId(data.prizeId);
+          setSelectedRound(data.round || 1);
+          setLatestWinner(null);
+          setIsDrawing(true);
+          setCountdown(3);
+          if (soundEnabled) playCountdownBeep(false);
 
-        const cd = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev === null || prev <= 1) {
-              clearInterval(cd);
-              if (soundEnabled) playCountdownBeep(true);
-              return null;
-            }
-            if (soundEnabled) playCountdownBeep(false);
-            return prev - 1;
-          });
-        }, 1000);
-      } else if (data.type === 'TUMBLER_TICK') {
-        setCurrentDisplayTicket(data.ticket);
-        setCurrentDisplayName(data.name);
-        setCurrentDisplayCity(data.city);
-        if (soundEnabled) playTickSound(700);
-      } else if (data.type === 'WINNER_REVEALED') {
-        setIsDrawing(false);
-        setCountdown(null);
-        setCurrentDisplayTicket(data.winner.participantTicket);
-        setCurrentDisplayName(data.winner.participantName);
-        setCurrentDisplayCity(data.winner.participantDocument || 'CONTEMPLADO');
-        setLatestWinner(data.winner);
-        if (soundEnabled) playWinFanfare();
-        triggerConfettiExplosion();
+          const cd = setInterval(() => {
+            setCountdown((prev) => {
+              if (prev === null || prev <= 1) {
+                clearInterval(cd);
+                if (soundEnabled) playCountdownBeep(true);
+                return null;
+              }
+              if (soundEnabled) playCountdownBeep(false);
+              return prev - 1;
+            });
+          }, 1000);
+        } else if (data.type === 'TUMBLER_TICK') {
+          setCurrentDisplayTicket(data.ticket);
+          setCurrentDisplayName(data.name);
+          setCurrentDisplayCity(data.city);
+          if (soundEnabled) playTickSound(700);
+        } else if (data.type === 'WINNER_REVEALED') {
+          setIsDrawing(false);
+          setCountdown(null);
+          setCurrentDisplayTicket(data.winner.participantTicket);
+          setCurrentDisplayName(data.winner.participantName);
+          setCurrentDisplayCity(data.winner.participantDocument || 'CONTEMPLADO');
+          setLatestWinner(data.winner);
+          onWinnerAnnounced(data.winner);
+          onPrizeQuantityDrawn(data.winner.prizeId);
+          if (soundEnabled) playWinFanfare();
+          triggerConfettiExplosion();
+        } else if (data.type === 'LIVE_RESET') {
+          setIsDrawing(false);
+          setCountdown(null);
+          setLatestWinner(null);
+          setCurrentDisplayTicket('-----');
+          setCurrentDisplayName('AGUARDANDO SORTEIO...');
+          setCurrentDisplayCity('BRASIL');
+        }
+      },
+    });
+
+    // 3. Same-origin tab fallback channel
+    let channel: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        channel = new BroadcastChannel('sorteiolive_stream_channel');
+        channel.onmessage = (event) => {
+          const data = event.data;
+          if (!data) return;
+          if (data.type === 'LIVE_RESET') {
+            setIsDrawing(false);
+            setCountdown(null);
+            setLatestWinner(null);
+            setCurrentDisplayTicket('-----');
+            setCurrentDisplayName('AGUARDANDO SORTEIO...');
+            setCurrentDisplayCity('BRASIL');
+          }
+        };
+      } catch (e) {
+        console.debug('BroadcastChannel error', e);
       }
-    };
+    }
 
-    return () => channel.close();
-  }, [soundEnabled]);
+    return () => {
+      unsubscribe();
+      channel?.close();
+    };
+  }, [soundEnabled, onWinnerAnnounced, onPrizeQuantityDrawn]);
 
   const broadcastEvent = (payload: object) => {
     try {
@@ -170,13 +216,13 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     }
   };
 
-  const startDrawRoutine = () => {
+  const startDrawRoutine = async () => {
     if (!isAdmin) {
       alert('Acesso Restrito: Somente o administrador pode realizar o sorteio!');
       return;
     }
     if (eligibleParticipants.length === 0) {
-      alert('Não há participantes ativos e válidos para sortear. Verifique a lista de inscritos e banidos no painel administrativo.');
+      alert('Não há participantes ativos e válidos para sortear. Verifique a lista de inscritos no painel administrativo.');
       return;
     }
     if (!currentPrize) {
@@ -200,19 +246,17 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
     if (soundEnabled) playCountdownBeep(false);
 
-    // 3 seconds dramatic countdown
-    const cdInterval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(cdInterval);
-          if (soundEnabled) playCountdownBeep(true);
-          runDigitalTumbler();
-          return null;
-        }
-        if (soundEnabled) playCountdownBeep(false);
-        return prev - 1;
-      });
-    }, 1000);
+    // Call server to trigger authoritative draw across ALL connected devices (mobile + desktop)
+    try {
+      const res = await ApiService.triggerDraw(currentPrize.id, selectedRound);
+      if (!res.success) {
+        console.warn('Server triggerDraw fallback:', res.error);
+        runDigitalTumbler();
+      }
+    } catch (err) {
+      console.warn('Server connection error, running local tumbler:', err);
+      runDigitalTumbler();
+    }
   };
 
   const runDigitalTumbler = () => {
@@ -302,17 +346,17 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     }, speed);
   };
 
-  const handleResetScreen = () => {
+  const handleResetScreen = async () => {
     setLatestWinner(null);
-    setCurrentDisplayTicket('00000');
-    setCurrentDisplayName('AGUARDANDO PRÓXIMA RODADA...');
+    setCurrentDisplayTicket('-----');
+    setCurrentDisplayName('AGUARDANDO SORTEIO...');
     setCurrentDisplayCity('BRASIL');
-    broadcastEvent({
-      type: 'TUMBLER_TICK',
-      ticket: '00000',
-      name: 'AGUARDANDO PRÓXIMA RODADA...',
-      city: 'BRASIL',
-    });
+    broadcastEvent({ type: 'LIVE_RESET' });
+    try {
+      await ApiService.resetLive();
+    } catch (e) {
+      console.warn('Reset live error:', e);
+    }
   };
 
   return (
