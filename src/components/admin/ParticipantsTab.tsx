@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Participant, BrandConfig, FormFieldsConfig } from '../../types';
 import { exportParticipantsToExcel, exportParticipantsToPDF } from '../../utils/export';
 import { 
@@ -8,12 +8,13 @@ import {
   UserPlus, 
   Search, 
   Trash2, 
-  Edit3, 
   Sparkles,
   SlidersHorizontal,
   Check,
-  Eye,
-  EyeOff
+  AlertCircle,
+  X,
+  Database,
+  Ticket
 } from 'lucide-react';
 
 interface ParticipantsTabProps {
@@ -34,6 +35,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner'>('all');
   
+  // Feedback banners
+  const [saveSuccessToast, setSaveSuccessToast] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
   // Modal: Add participant
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
@@ -42,10 +47,19 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [newDoc, setNewDoc] = useState('');
   const [newCity, setNewCity] = useState('');
   const [customTicket, setCustomTicket] = useState('');
+  const [allowExtraTicket, setAllowExtraTicket] = useState(false);
+
+  // Modal: Confirm deletion
+  const [deletingParticipant, setDeletingParticipant] = useState<Participant | null>(null);
 
   // Modal: Configure fields
   const [showFieldsModal, setShowFieldsModal] = useState(false);
   const [tempFields, setTempFields] = useState<FormFieldsConfig>(formFields);
+
+  // Synchronize tempFields when formFields updates
+  useEffect(() => {
+    setTempFields(formFields);
+  }, [formFields]);
 
   // Filtered list
   const filteredParticipants = participants.filter((p) => {
@@ -62,36 +76,51 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     return matchQuery && matchStatus;
   });
 
+  const handleOpenAddModal = () => {
+    setFormError(null);
+    setNewName('');
+    setNewEmail('');
+    setNewPhone('');
+    setNewDoc('');
+    setNewCity('');
+    setCustomTicket('');
+    setAllowExtraTicket(false);
+    setShowAddModal(true);
+  };
+
   const handleAddParticipant = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     // Validate based on configured fields
     if (formFields.name.enabled && formFields.name.required && !newName.trim()) {
-      alert(`Por favor, preencha o campo: ${formFields.name.label}`);
+      setFormError(`Por favor, preencha o campo obrigatório: ${formFields.name.label}`);
       return;
     }
     if (formFields.email.enabled && formFields.email.required && !newEmail.trim()) {
-      alert(`Por favor, preencha o campo: ${formFields.email.label}`);
+      setFormError(`Por favor, preencha o campo obrigatório: ${formFields.email.label}`);
       return;
     }
     if (formFields.phone.enabled && formFields.phone.required && !newPhone.trim()) {
-      alert(`Por favor, preencha o campo: ${formFields.phone.label}`);
+      setFormError(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
       return;
     }
     if (formFields.document.enabled && formFields.document.required && !newDoc.trim()) {
-      alert(`Por favor, preencha o campo: ${formFields.document.label}`);
+      setFormError(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
       return;
     }
     if (formFields.city.enabled && formFields.city.required && !newCity.trim()) {
-      alert(`Por favor, preencha o campo: ${formFields.city.label}`);
+      setFormError(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
       return;
     }
 
     const normalizedEmail = newEmail.trim().toLowerCase();
-    if (normalizedEmail) {
+    if (normalizedEmail && !allowExtraTicket) {
       const existing = participants.find((p) => p.email && p.email.toLowerCase().trim() === normalizedEmail);
       if (existing) {
-        alert(`Aviso: O e-mail "${newEmail.trim()}" já está cadastrado no sistema para o participante "${existing.name}" (Bilhete #${existing.ticketNumber})! Cada participante só pode se cadastrar uma única vez.`);
+        setFormError(
+          `Aviso: O e-mail "${newEmail.trim()}" já possui o Bilhete #${existing.ticketNumber}. Se desejar emitir um bilhete adicional para ele, marque a opção "Permitir bilhete extra" abaixo.`
+        );
         return;
       }
     }
@@ -101,6 +130,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       ticket = Math.floor(10000 + Math.random() * 90000).toString();
       while (participants.some((p) => p.ticketNumber === ticket)) {
         ticket = Math.floor(10000 + Math.random() * 90000).toString();
+      }
+    } else {
+      if (participants.some((p) => p.ticketNumber === ticket)) {
+        setFormError(`O número de bilhete #${ticket} já pertence a outro participante. Escolha outro ou deixe em branco para gerar aleatório.`);
+        return;
       }
     }
 
@@ -118,18 +152,18 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
     onUpdateParticipants([created, ...participants]);
     setShowAddModal(false);
-    setNewName('');
-    setNewEmail('');
-    setNewPhone('');
-    setNewDoc('');
-    setNewCity('');
-    setCustomTicket('');
+    setSaveSuccessToast(`Participante "${created.name}" (Bilhete #${created.ticketNumber}) gravado com sucesso no Banco de Dados!`);
+    setTimeout(() => setSaveSuccessToast(null), 4000);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja remover este participante do banco de dados?')) {
-      onUpdateParticipants(participants.filter((p) => p.id !== id));
-    }
+  const handleConfirmDelete = () => {
+    if (!deletingParticipant) return;
+    const targetId = deletingParticipant.id;
+    const targetName = deletingParticipant.name;
+    onUpdateParticipants(participants.filter((p) => p.id !== targetId));
+    setDeletingParticipant(null);
+    setSaveSuccessToast(`Participante "${targetName}" removido com sucesso.`);
+    setTimeout(() => setSaveSuccessToast(null), 3500);
   };
 
   const handleGenerateBatch = () => {
@@ -141,7 +175,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     for (let i = 0; i < 5; i++) {
       const fName = firstNames[Math.floor(Math.random() * firstNames.length)];
       const lName = lastNames[Math.floor(Math.random() * lastNames.length)];
-      const randomTicket = Math.floor(10000 + Math.random() * 90000).toString();
+      let randomTicket = Math.floor(10000 + Math.random() * 90000).toString();
+      while (participants.some((p) => p.ticketNumber === randomTicket) || newBatch.some((b) => b.ticketNumber === randomTicket)) {
+        randomTicket = Math.floor(10000 + Math.random() * 90000).toString();
+      }
       const phoneDDD = Math.floor(11 + Math.random() * 80);
       const phoneNum = Math.floor(900000000 + Math.random() * 99999999);
 
@@ -159,10 +196,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     }
 
     onUpdateParticipants([...newBatch, ...participants]);
+    setSaveSuccessToast('5 participantes de simulação adicionados e sincronizados com a Base de Dados!');
+    setTimeout(() => setSaveSuccessToast(null), 3500);
   };
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {saveSuccessToast && (
+        <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 p-4 rounded-2xl flex items-center justify-between text-xs font-medium shadow-lg animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{saveSuccessToast}</span>
+          </div>
+          <button onClick={() => setSaveSuccessToast(null)} className="text-emerald-400 hover:text-white p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Action Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
         <div>
@@ -191,7 +243,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
           <button
             onClick={() => exportParticipantsToExcel(filteredParticipants)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold shadow transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold shadow transition-colors cursor-pointer"
             title="Exportar para planilha Excel"
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -200,7 +252,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
           <button
             onClick={() => exportParticipantsToPDF(filteredParticipants, brand)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-700 hover:bg-red-600 text-white text-xs font-semibold shadow transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-700 hover:bg-red-600 text-white text-xs font-semibold shadow transition-colors cursor-pointer"
             title="Exportar para documento PDF formatado"
           >
             <FileText className="w-4 h-4" />
@@ -209,7 +261,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
           <button
             onClick={handleGenerateBatch}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
             title="Gerar 5 participantes automáticos para simulação"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -217,8 +269,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
           </button>
 
           <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors"
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Novo Participante</span>
@@ -243,7 +295,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium ${
+            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
               statusFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -251,7 +303,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
           </button>
           <button
             onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium ${
+            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
               statusFilter === 'active' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -259,7 +311,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
           </button>
           <button
             onClick={() => setStatusFilter('winner')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium ${
+            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
               statusFilter === 'winner' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -287,7 +339,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               {filteredParticipants.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1">
+                      <Ticket className="w-3.5 h-3.5 opacity-70" />
                       #{p.ticketNumber}
                     </span>
                   </td>
@@ -296,10 +349,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     <p className="text-slate-400 text-[11px]">{p.email} · {p.phone}</p>
                   </td>
                   <td className="py-3 px-4 font-mono text-slate-300">
-                    {p.document}
+                    {p.document || 'Não informado'}
                   </td>
                   <td className="py-3 px-4 text-slate-300">
-                    {p.city}
+                    {p.city || 'Não informado'}
                   </td>
                   <td className="py-3 px-4">
                     {p.status === 'winner' ? (
@@ -317,8 +370,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
-                      onClick={() => handleDelete(p.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      onClick={() => setDeletingParticipant(p)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                       title="Excluir Participante"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -341,26 +394,43 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
       {/* Modal: Novo Participante */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-amber-400" />
-              <span>Cadastrar Novo Participante Manual</span>
-            </h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Adicione um participante manualmente à base de dados do sorteio.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-amber-400" />
+                <span>Cadastrar Novo Participante Manual</span>
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Grave o participante diretamente na Base de Dados Oficial (<code className="text-amber-400">data/database.json</code>).
             </p>
+
+            {/* Error Message inside modal */}
+            {formError && (
+              <div className="bg-red-500/15 border border-red-500/30 text-red-300 p-3 rounded-xl mb-4 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="flex-1">{formError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleAddParticipant} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Nome Completo *
+                  Nome Completo {formFields.name.required && '*'}
                 </label>
                 <input
                   type="text"
-                  required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Ex: Carlos Eduardo Silva"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -368,25 +438,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    E-mail *
+                    E-mail {formFields.email.required && '*'}
                   </label>
                   <input
                     type="email"
-                    required
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    WhatsApp / Telefone *
+                    WhatsApp / Telefone {formFields.phone.required && '*'}
                   </label>
                   <input
                     type="text"
-                    required
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="(11) 99999-9999"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -395,23 +465,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    CPF ou Documento
+                    CPF ou Documento {formFields.document.required && '*'}
                   </label>
                   <input
                     type="text"
                     value={newDoc}
                     onChange={(e) => setNewDoc(e.target.value)}
+                    placeholder="000.000.000-00"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    Cidade / UF
+                    Cidade / UF {formFields.city.required && '*'}
                   </label>
                   <input
                     type="text"
                     value={newCity}
                     onChange={(e) => setNewCity(e.target.value)}
+                    placeholder="Ex: São Paulo - SP"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -419,7 +491,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Bilhete Específico (Opcional - deixe vazio para gerar automático)
+                  Número do Bilhete (Opcional - deixe vazio para gerar automático)
                 </label>
                 <input
                   type="text"
@@ -430,19 +502,31 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 />
               </div>
 
+              {/* Extra ticket option */}
+              <label className="flex items-center gap-2 p-3 bg-slate-950/60 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={allowExtraTicket}
+                  onChange={(e) => setAllowExtraTicket(e.target.checked)}
+                  className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                />
+                <span>Permitir bilhete extra para participante que já possua outro bilhete</span>
+              </label>
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
                 >
-                  Salvar Participante
+                  <Check className="w-4 h-4" />
+                  <span>Gravar na Base de Dados</span>
                 </button>
               </div>
             </form>
@@ -450,7 +534,39 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         </div>
       )}
 
-      {/* Modal: Confirmar Banimento */}
+      {/* Modal: Confirm Deletion */}
+      {deletingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              <span>Remover Participante</span>
+            </h3>
+            <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+              Tem certeza que deseja excluir o participante <strong>{deletingParticipant.name}</strong> (Bilhete #{deletingParticipant.ticketNumber}) da base de dados do sorteio?
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingParticipant(null)}
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal: Configurar Campos do Formulário */}
       {showFieldsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
@@ -464,7 +580,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               </div>
               <button
                 onClick={() => setShowFieldsModal(false)}
-                className="text-slate-400 hover:text-white text-xs"
+                className="text-slate-400 hover:text-white text-xs cursor-pointer"
               >
                 ✕ Fechar
               </button>
@@ -576,7 +692,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <button
                 type="button"
                 onClick={() => setShowFieldsModal(false)}
-                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
               >
                 Cancelar
               </button>
@@ -585,7 +701,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 onClick={() => {
                   onUpdateFormFields(tempFields);
                   setShowFieldsModal(false);
-                  alert('Configuração dos campos salva com sucesso! O formulário de inscrição já está atualizado.');
+                  setSaveSuccessToast('Configuração dos campos salva com sucesso e sincronizada com o formulário!');
+                  setTimeout(() => setSaveSuccessToast(null), 3500);
                 }}
                 className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
               >

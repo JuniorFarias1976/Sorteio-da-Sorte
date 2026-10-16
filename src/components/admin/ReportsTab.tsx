@@ -41,10 +41,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     );
   });
 
-  const handleDeleteWinner = (id: string) => {
-    if (confirm('Deseja excluir este registro de vencedor da ata de auditoria?')) {
-      onUpdateWinners(winners.filter((w) => w.id !== id));
-    }
+  const [deletingWinner, setDeletingWinner] = useState<DrawWinner | null>(null);
+
+  const handleConfirmDeleteWinner = () => {
+    if (!deletingWinner) return;
+    const targetId = deletingWinner.id;
+    onUpdateWinners(winners.filter((w) => w.id !== targetId));
+    setDeletingWinner(null);
   };
 
   const handleSaveConfig = (newCfg: ReportPdfConfig) => {
@@ -177,8 +180,8 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                       </button>
 
                       <button
-                        onClick={() => handleDeleteWinner(w.id)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 transition-colors"
+                        onClick={() => setDeletingWinner(w)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                         title="Excluir Registro"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -207,6 +210,39 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           onSave={handleSaveConfig}
           onClose={() => setShowConfigModal(false)}
         />
+      )}
+
+      {/* Modal: Confirm Deletion */}
+      {deletingWinner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              <span>Remover Registro de Vencedor</span>
+            </h3>
+            <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+              Tem certeza que deseja excluir o vencedor <strong>{deletingWinner.participantName}</strong> ({deletingWinner.prizeTitle}) da ata e do histórico de sorteios?
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingWinner(null)}
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteWinner}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

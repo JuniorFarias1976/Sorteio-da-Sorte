@@ -15,6 +15,8 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
   const [fields, setFields] = useState<FormFieldsConfig>(formFields);
   const [saveToast, setSaveToast] = useState(false);
 
+  const [validationWarning, setValidationWarning] = useState<string | null>(null);
+
   useEffect(() => {
     setFields(formFields);
   }, [formFields]);
@@ -22,7 +24,8 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
   const handleToggleEnabled = (key: keyof FormFieldsConfig) => {
     // Email is critical for single registration check
     if (key === 'email') {
-      alert('O campo E-mail é a chave de validação única de cada participante e deve permanecer ativo.');
+      setValidationWarning('O campo E-mail é a chave de validação de cada participante e deve permanecer ativo.');
+      setTimeout(() => setValidationWarning(null), 3500);
       return;
     }
     const updated = {
@@ -37,7 +40,8 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
 
   const handleToggleRequired = (key: keyof FormFieldsConfig) => {
     if (key === 'email') {
-      alert('O campo E-mail é obrigatório para evitar duplicidade de inscrições.');
+      setValidationWarning('O campo E-mail é recomendado como obrigatório para evitar duplicidade de inscrições.');
+      setTimeout(() => setValidationWarning(null), 3500);
       return;
     }
     const updated = {
@@ -68,14 +72,14 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
   const handleSave = () => {
     onUpdateFormFields(fields);
     setSaveToast(true);
-    setTimeout(() => setSaveToast(false), 3000);
+    setTimeout(() => setSaveToast(false), 3500);
   };
 
   const handleReset = () => {
-    if (confirm('Deseja restaurar as configurações padrão dos campos do formulário?')) {
-      setFields(DEFAULT_FORM_FIELDS);
-      onUpdateFormFields(DEFAULT_FORM_FIELDS);
-    }
+    setFields(DEFAULT_FORM_FIELDS);
+    onUpdateFormFields(DEFAULT_FORM_FIELDS);
+    setSaveToast(true);
+    setTimeout(() => setSaveToast(false), 3500);
   };
 
   return (
@@ -115,6 +119,13 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
         <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-bold flex items-center gap-2 animate-fadeIn">
           <Check className="w-4 h-4" />
           <span>Configuração dos campos salva com sucesso! O formulário público já está atualizado.</span>
+        </div>
+      )}
+
+      {validationWarning && (
+        <div className="p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-medium flex items-center gap-2 animate-fadeIn">
+          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{validationWarning}</span>
         </div>
       )}
 

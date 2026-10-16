@@ -218,19 +218,23 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
   const startDrawRoutine = async () => {
     if (!isAdmin) {
-      alert('Acesso Restrito: Somente o administrador pode realizar o sorteio!');
+      setDrawErrorNotice('Acesso Restrito: Somente o administrador pode realizar o sorteio!');
+      setTimeout(() => setDrawErrorNotice(null), 4000);
       return;
     }
     if (eligibleParticipants.length === 0) {
-      alert('Não há participantes ativos e válidos para sortear. Verifique a lista de inscritos no painel administrativo.');
+      setDrawErrorNotice('Não há participantes ativos e válidos para sortear. Verifique a lista de inscritos no painel administrativo.');
+      setTimeout(() => setDrawErrorNotice(null), 4000);
       return;
     }
     if (!currentPrize) {
-      alert('Selecione um prêmio para realizar o sorteio.');
+      setDrawErrorNotice('Selecione um prêmio para realizar o sorteio.');
+      setTimeout(() => setDrawErrorNotice(null), 4000);
       return;
     }
     if (isPrizeExhausted) {
-      alert(`Atenção: A quantidade estipulada pelo administrador para o prêmio "${currentPrize.title}" (${currentPrize.totalQuantity} unidades) já foi totalmente contemplada! Selecione outro prêmio disponível.`);
+      setDrawErrorNotice(`Atenção: A quantidade estipulada para o prêmio "${currentPrize.title}" (${currentPrize.totalQuantity} unidades) já foi totalmente contemplada! Selecione outro prêmio disponível.`);
+      setTimeout(() => setDrawErrorNotice(null), 5000);
       return;
     }
 

@@ -565,16 +565,18 @@ async function startServer() {
         }
       }
     }
-    const host = req.get('host') || `localhost:${PORT}`;
-    const proto = req.protocol || 'http';
+    const forwardedHost = (req.headers['x-forwarded-host'] as string) || req.get('host') || `localhost:${PORT}`;
+    const forwardedProto = (req.headers['x-forwarded-proto'] as string) || (req.secure ? 'https' : 'http');
+    const dynamicOrigin = `${forwardedProto}://${forwardedHost}`;
+
     res.json({
       localIp: ips[0] || 'localhost',
       allIps: ips,
       port: PORT,
-      host,
-      origin: `${proto}://${host}`,
-      sharedUrl: 'https://ais-pre-fkqr6cbqxscjqpgrmpwlg3-111376061697.europe-west2.run.app',
-      developmentUrl: 'https://ais-dev-fkqr6cbqxscjqpgrmpwlg3-111376061697.europe-west2.run.app',
+      host: forwardedHost,
+      origin: dynamicOrigin,
+      sharedUrl: dynamicOrigin,
+      developmentUrl: dynamicOrigin,
     });
   });
 

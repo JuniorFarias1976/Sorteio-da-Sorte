@@ -17,6 +17,7 @@ import { FormFieldsTab } from './FormFieldsTab';
 import { QRCodeTab } from './QRCodeTab';
 import { ReportsTab } from './ReportsTab';
 import { BrandCustomizerTab } from './BrandCustomizerTab';
+import { BackupSyncModal } from './BackupSyncModal';
 
 import { 
   Users, 
@@ -29,7 +30,8 @@ import {
   Palette,
   Tv,
   RotateCcw,
-  Database
+  Database,
+  Cloud
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -84,6 +86,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('participants');
+  const [showBackupModal, setShowBackupModal] = useState(false);
+
+  const handleRestoreFullData = (data: any) => {
+    if (data.brand) onUpdateBrand(data.brand);
+    if (data.prizes) onUpdatePrizes(data.prizes);
+    if (data.participants) onUpdateParticipants(data.participants);
+    if (data.schedules) onUpdateSchedules(data.schedules);
+    if (data.winners) onUpdateWinners(data.winners);
+    if (data.settings) onUpdateNotificationSettings(data.settings);
+    if (data.formFields) onUpdateFormFields(data.formFields);
+  };
 
   const TABS = [
     { id: 'participants' as AdminTab, label: 'Participantes & Base', icon: Users, badge: participants.length },
@@ -140,6 +153,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>DB Ativo</span>
             </div>
+
+            <button
+              onClick={() => setShowBackupModal(true)}
+              className="px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-amber-400 hover:text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-amber-500/30 transition-all shadow cursor-pointer active:scale-98"
+              title="Backup e Sincronização direta de dados e imagens entre quaisquer navegadores"
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              <span>Backup & Sync</span>
+            </button>
 
             <button
               onClick={onGoToLive}
@@ -231,6 +253,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
         </main>
       </div>
+
+      {/* Universal Backup & Synchronization Modal */}
+      <BackupSyncModal
+        isOpen={showBackupModal}
+        onClose={() => setShowBackupModal(false)}
+        fullData={{
+          brand,
+          prizes,
+          participants,
+          schedules,
+          winners,
+          settings: notificationSettings,
+          formFields,
+        }}
+        onRestoreFullData={handleRestoreFullData}
+      />
     </div>
   );
 };

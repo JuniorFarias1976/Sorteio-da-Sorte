@@ -218,6 +218,7 @@ export default function App() {
       }
       const updated = [participant, ...prev];
       StorageService.saveParticipants(updated);
+      ApiService.saveData({ participants: updated });
       return updated;
     });
   };
@@ -245,16 +246,43 @@ export default function App() {
 
   // Reset to default seeds
   const handleResetAllData = () => {
-    if (confirm('Deseja restaurar todos os dados padrões de fábrica do sistema de sorteios?')) {
+    let proceed = false;
+    try {
+      proceed = window.confirm('Deseja restaurar todos os dados padrões de fábrica do sistema de sorteios?');
+    } catch {
+      proceed = true;
+    }
+    if (proceed) {
       StorageService.resetToDefault();
-      setParticipants(StorageService.getParticipants());
-      setPrizes(StorageService.getPrizes());
-      setSchedules(StorageService.getSchedules());
-      setWinners(StorageService.getWinners());
-      setNotifications(StorageService.getNotifications());
-      setSettings(StorageService.getSettings());
-      setBrand(StorageService.getBrand());
-      setFormFields(StorageService.getFormFields());
+      const defParticipants = StorageService.getParticipants();
+      const defPrizes = StorageService.getPrizes();
+      const defSchedules = StorageService.getSchedules();
+      const defWinners = StorageService.getWinners();
+      const defNotifications = StorageService.getNotifications();
+      const defSettings = StorageService.getSettings();
+      const defBrand = StorageService.getBrand();
+      const defFields = StorageService.getFormFields();
+
+      setParticipants(defParticipants);
+      setPrizes(defPrizes);
+      setSchedules(defSchedules);
+      setWinners(defWinners);
+      setNotifications(defNotifications);
+      setSettings(defSettings);
+      setBrand(defBrand);
+      setFormFields(defFields);
+
+      // Persist factory reset to server database as well
+      ApiService.saveData({
+        participants: defParticipants,
+        prizes: defPrizes,
+        schedules: defSchedules,
+        winners: defWinners,
+        notifications: defNotifications,
+        settings: defSettings,
+        brand: { ...defBrand, forceResetLogo: true },
+        formFields: defFields,
+      });
     }
   };
 

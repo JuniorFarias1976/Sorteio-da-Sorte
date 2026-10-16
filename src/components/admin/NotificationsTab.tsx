@@ -52,9 +52,13 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
     });
   };
 
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+
   const handleBroadcastNotification = () => {
+    setWarningMessage(null);
     if (activeParticipants.length === 0) {
-      alert('Não há participantes ativos na base para receber notificações.');
+      setWarningMessage('Não há participantes ativos na base para receber notificações.');
+      setTimeout(() => setWarningMessage(null), 3500);
       return;
     }
 
@@ -271,6 +275,13 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-400 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 shrink-0" />
                 <span>{sendSuccessMessage}</span>
+              </div>
+            )}
+
+            {warningMessage && (
+              <div className="p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-xs text-red-300 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{warningMessage}</span>
               </div>
             )}
 

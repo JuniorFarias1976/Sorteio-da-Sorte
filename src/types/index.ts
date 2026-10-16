@@ -86,6 +86,7 @@ export interface BrandConfig {
   raffleUrl: string;
   contactEmail: string;
   termsAndConditions: string;
+  forceResetLogo?: boolean;
 }
 
 export interface ParticipantFieldConfig {

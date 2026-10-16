@@ -22,10 +22,15 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
   const [scheduledTime, setScheduledTime] = useState('20:00');
   const [selectedPrizeIds, setSelectedPrizeIds] = useState<string[]>([]);
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deletingSchedule, setDeletingSchedule] = useState<DrawSchedule | null>(null);
+
   const handleCreateSchedule = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!title.trim() || !scheduledDate || !scheduledTime) {
-      alert('Preencha título, data e horário do sorteio.');
+      setFormError('Por favor, preencha título, data e horário do sorteio.');
       return;
     }
 
@@ -45,12 +50,17 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
     setTitle('');
     setDescription('');
     setSelectedPrizeIds([]);
+    setToastMessage(`Sorteio "${newSchedule.title}" agendado e salvo com sucesso no banco de dados!`);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleDeleteSchedule = (id: string) => {
-    if (confirm('Deseja excluir este agendamento de sorteio?')) {
-      onUpdateSchedules(schedules.filter((s) => s.id !== id));
-    }
+  const handleConfirmDelete = () => {
+    if (!deletingSchedule) return;
+    const targetId = deletingSchedule.id;
+    onUpdateSchedules(schedules.filter((s) => s.id !== targetId));
+    setDeletingSchedule(null);
+    setToastMessage('Agendamento removido da base de dados.');
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleToggleStatus = (id: string, currentStatus: DrawSchedule['status']) => {
@@ -94,11 +104,24 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
     }));
 
     onUpdateSchedules([...schedules, ...newSchedules]);
-    alert(`4 horários (10:00, 14:00, 18:00 e 21:00) foram agendados com sucesso para ${targetDate}!`);
+    setToastMessage(`4 horários (10:00, 14:00, 18:00 e 21:00) foram agendados e salvos no banco de dados para ${targetDate}!`);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   return (
     <div className="space-y-6">
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 p-4 rounded-2xl flex items-center justify-between text-xs font-medium shadow-lg animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="text-emerald-400 hover:text-white p-1">
+            ✕
+          </button>
+        </div>
+      )}
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
         <div>
@@ -231,8 +254,8 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                   </button>
 
                   <button
-                    onClick={() => handleDeleteSchedule(schedule.id)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    onClick={() => setDeletingSchedule(schedule)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                     title="Excluir Agendamento"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -261,6 +284,14 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
             <p className="text-xs text-slate-400 mb-6">
               Defina o dia, horário e prêmios vinculados a este sorteio.
             </p>
+
+            {/* Error Message inside modal */}
+            {formError && (
+              <div className="bg-red-500/15 border border-red-500/30 text-red-300 p-3 rounded-xl mb-4 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="flex-1">{formError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreateSchedule} className="space-y-4">
               <div>
@@ -361,6 +392,38 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal: Confirm Deletion */}
+      {deletingSchedule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              <span>Excluir Agendamento</span>
+            </h3>
+            <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+              Tem certeza que deseja remover o agendamento <strong>{deletingSchedule.title}</strong> ({deletingSchedule.scheduledDate} às {deletingSchedule.scheduledTime}) da base de dados?
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingSchedule(null)}
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

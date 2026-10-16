@@ -81,13 +81,17 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     }
   };
 
+  const [logoError, setLogoError] = useState<string | null>(null);
+
   // Safe file upload with image compression and immediate auto-save to Database
   const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setLogoError(null);
+
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, SVG, WebP).');
+      setLogoError('Por favor, selecione um arquivo de imagem válido (PNG, JPG, SVG, WebP).');
       return;
     }
 
@@ -115,7 +119,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       setTimeout(() => setSavedSuccessMessage(null), 4000);
       setTimeout(() => checkDatabaseLiveStatus(), 800);
     } catch (err: any) {
-      alert('Erro ao carregar a logomarca: ' + (err.message || 'Erro desconhecido'));
+      setLogoError('Erro ao carregar a logomarca: ' + (err.message || 'Erro desconhecido'));
     } finally {
       setIsUploadingLogo(false);
       // Reset input value so user can upload the same file again if desired
@@ -124,17 +128,17 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   };
 
   const handleRestoreDefaultLogo = () => {
-    if (confirm('Deseja restaurar a logomarca para o ícone padrão do sistema?')) {
-      setLogoUrl(DEFAULT_BRAND_LOGO);
-      const updated: BrandConfig = {
-        ...brand,
-        logoUrl: DEFAULT_BRAND_LOGO,
-      };
-      onUpdateBrand(updated);
-      setSavedSuccessMessage('Logomarca padrão restaurada e salva no banco de dados.');
-      setTimeout(() => setSavedSuccessMessage(null), 3000);
-      setTimeout(() => checkDatabaseLiveStatus(), 800);
-    }
+    setLogoError(null);
+    setLogoUrl(DEFAULT_BRAND_LOGO);
+    const updated: any = {
+      ...brand,
+      logoUrl: DEFAULT_BRAND_LOGO,
+      forceResetLogo: true,
+    };
+    onUpdateBrand(updated);
+    setSavedSuccessMessage('Logomarca padrão restaurada e salva no banco de dados.');
+    setTimeout(() => setSavedSuccessMessage(null), 3500);
+    setTimeout(() => checkDatabaseLiveStatus(), 800);
   };
 
   const handleApplyPreset = (theme: { name: string; primary: string; secondary: string; accent: string }) => {
@@ -307,13 +311,33 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   Formatos aceitos: PNG, JPG, SVG, WebP. O sistema otimiza e grava automaticamente na base de dados central.
                 </p>
 
-                <input
-                  type="text"
-                  value={logoUrl.startsWith('data:') ? 'Imagem personalizada carregada (DataURL)' : logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="Ou insira a URL direta da imagem (https://...)"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-                />
+                {logoError && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-xs">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>{logoError}</span>
+                  </div>
+                )}
+
+                {logoUrl.startsWith('data:') ? (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
+                    <span className="truncate font-medium">✓ Imagem carregada e comprimida com sucesso</span>
+                    <button
+                      type="button"
+                      onClick={handleRestoreDefaultLogo}
+                      className="text-slate-400 hover:text-red-400 text-[11px] ml-2 shrink-0 cursor-pointer underline"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={logoUrl === DEFAULT_BRAND_LOGO ? '' : logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value || DEFAULT_BRAND_LOGO)}
+                    placeholder="Ou insira a URL direta da imagem (https://...)"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                )}
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Prize } from '../../types';
-import { Gift, Plus, Trash2, Edit3, Image, DollarSign, Layers } from 'lucide-react';
+import { Gift, Plus, Trash2, Edit3, Image, DollarSign, Layers, RefreshCw, Check, AlertCircle, X } from 'lucide-react';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface PrizesTabProps {
   prizes: Prize[];
@@ -10,6 +11,8 @@ interface PrizesTabProps {
 export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const [saveSuccessToast, setSaveSuccessToast] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -19,7 +22,11 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
   const [imageUrl, setImageUrl] = useState('');
   const [drawOrder, setDrawOrder] = useState(1);
 
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deletingPrize, setDeletingPrize] = useState<Prize | null>(null);
+
   const openAddModal = () => {
+    setFormError(null);
     setEditingPrize(null);
     setTitle('');
     setDescription('');
@@ -31,6 +38,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
   };
 
   const openEditModal = (p: Prize) => {
+    setFormError(null);
     setEditingPrize(p);
     setTitle(p.title);
     setDescription(p.description);
@@ -43,8 +51,9 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!title.trim()) {
-      alert('Preencha o título do prêmio.');
+      setFormError('Por favor, informe o título do prêmio.');
       return;
     }
 
@@ -79,12 +88,17 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
     }
 
     setShowModal(false);
+    setSaveSuccessToast(true);
+    setTimeout(() => setSaveSuccessToast(false), 3500);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este prêmio?')) {
-      onUpdatePrizes(prizes.filter((p) => p.id !== id));
-    }
+  const handleConfirmDelete = () => {
+    if (!deletingPrize) return;
+    const targetId = deletingPrize.id;
+    onUpdatePrizes(prizes.filter((p) => p.id !== targetId));
+    setDeletingPrize(null);
+    setSaveSuccessToast(true);
+    setTimeout(() => setSaveSuccessToast(false), 3500);
   };
 
   // Image presets for convenience
@@ -96,22 +110,30 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
     { label: 'Dinheiro / Pix', url: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?w=600&auto=format&fit=crop&q=80' },
   ];
 
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setFormError(null);
+
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, WebP, SVG).');
+      setFormError('Por favor, selecione um arquivo de imagem válido (PNG, JPG, WebP, SVG).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setImageUrl(reader.result);
+    setIsCompressingImage(true);
+    try {
+      // Compress to ultra-lightweight asset (max 500x500, quality 0.8) so it never overflows browser memory or quota
+      const compressedDataUrl = await compressImageFile(file, 500, 500, 0.8);
+      if (compressedDataUrl) {
+        setImageUrl(compressedDataUrl);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      setFormError('Erro ao processar imagem: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setIsCompressingImage(false);
+      e.target.value = '';
+    }
   };
 
   return (
@@ -136,6 +158,13 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
           <span>Adicionar Novo Prêmio</span>
         </button>
       </div>
+
+      {saveSuccessToast && (
+        <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg animate-in fade-in duration-200">
+          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>Alterações nos prêmios gravadas com sucesso na Base de Dados e em todos os dispositivos!</span>
+        </div>
+      )}
 
       {/* Grid of Prizes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -163,8 +192,8 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(prize.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      onClick={() => setDeletingPrize(prize)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                       title="Excluir Prêmio"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -232,9 +261,16 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
               <Gift className="w-5 h-5 text-amber-400" />
               <span>{editingPrize ? 'Editar Prêmio' : 'Adicionar Novo Prêmio'}</span>
             </h3>
-            <p className="text-xs text-slate-400 mb-6">
+            <p className="text-xs text-slate-400 mb-4">
               Defina os detalhes, quantidade e imagem do prêmio a ser sorteado.
             </p>
+
+            {formError && (
+              <div className="bg-red-500/15 border border-red-500/30 text-red-300 p-3 rounded-xl mb-4 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="flex-1">{formError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -327,11 +363,16 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                     <div className="flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <label className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-2">
-                          <Image className="w-4 h-4" />
-                          <span>Selecionar do Computador</span>
+                          {isCompressingImage ? (
+                            <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                          ) : (
+                            <Image className="w-4 h-4" />
+                          )}
+                          <span>{isCompressingImage ? 'Otimizando Imagem...' : 'Selecionar do Computador'}</span>
                           <input
                             type="file"
                             accept="image/*"
+                            disabled={isCompressingImage}
                             onChange={handleImageFileUpload}
                             className="hidden"
                           />
@@ -341,14 +382,14 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                           <button
                             type="button"
                             onClick={() => setImageUrl('')}
-                            className="px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors"
+                            className="px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
                           >
                             Remover Imagem
                           </button>
                         )}
                       </div>
                       <p className="text-[11px] text-slate-400">
-                        Selecione um arquivo JPG, PNG ou WebP diretamente do seu dispositivo.
+                        O sistema comprime e otimiza a imagem automaticamente para gravação segura e instantânea.
                       </p>
                     </div>
                   </div>
@@ -356,10 +397,10 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                   {/* Optional URL input toggle */}
                   <div className="pt-2 border-t border-slate-900">
                     <input
-                      type="url"
+                      type="text"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Ou cole uma URL externa de imagem (opcional)..."
+                      placeholder="Ou cole uma URL direta de imagem (opcional)..."
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
 
@@ -385,18 +426,52 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
                 >
-                  {editingPrize ? 'Salvar Alterações' : 'Cadastrar Prêmio'}
+                  <Check className="w-4 h-4" />
+                  <span>{editingPrize ? 'Salvar Alterações' : 'Gravar Prêmio no Banco'}</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Deletion */}
+      {deletingPrize && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              <span>Excluir Prêmio</span>
+            </h3>
+            <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+              Tem certeza que deseja remover o prêmio <strong>{deletingPrize.title}</strong> do catálogo e da base de dados?
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingPrize(null)}
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
