@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandConfig, DrawSchedule } from '../types';
-import { Tv, ShieldCheck, Ticket, Calendar, Sparkles } from 'lucide-react';
+import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw, Key } from 'lucide-react';
 
 interface NavbarProps {
   currentView: 'public' | 'live' | 'admin';
@@ -10,6 +10,10 @@ interface NavbarProps {
   participantsCount: number;
   isAdminUnlocked: boolean;
   onToggleAdminLock: () => void;
+  onRequestUnlockAdmin?: () => void;
+  isServerConnected?: boolean;
+  isSyncing?: boolean;
+  onManualSync?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,6 +24,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   participantsCount,
   isAdminUnlocked,
   onToggleAdminLock,
+  onRequestUnlockAdmin,
+  isServerConnected = true,
+  isSyncing = false,
+  onManualSync,
 }) => {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
 
@@ -87,34 +95,50 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Live Countdown Badge */}
-        {nextSchedule && timeLeft && (
-          <div 
-            onClick={() => onViewChange('live')}
-            className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl cursor-pointer transition-colors"
-            title="Clique para ir para a Sala da Live"
-          >
-            <div className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+        {/* Center: Live Sync & Status Indicator */}
+        <div className="hidden md:flex items-center gap-2">
+          {onManualSync && (
+            <button
+              onClick={onManualSync}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
+              title="Clique para sincronizar os dados em tempo real com o banco de dados central"
+            >
+              <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+              <span className="hidden lg:inline">{isSyncing ? 'Sincronizando...' : 'Base Sincronizada'}</span>
+              <span className="lg:hidden">{isSyncing ? 'Sync...' : 'DB'}</span>
+            </button>
+          )}
+
+          {/* Live Countdown Badge */}
+          {nextSchedule && timeLeft && (
+            <div 
+              onClick={() => onViewChange('live')}
+              className="flex items-center gap-2 px-3 py-1 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg cursor-pointer transition-colors"
+              title="Clique para ir para a Sala da Live"
+            >
+              <div className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </div>
+              <div className="text-xs">
+                <span className="text-slate-400 mr-1.5 font-medium">Próximo:</span>
+                <span className="font-mono font-bold text-amber-400">
+                  {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
+                  {String(timeLeft.hours).padStart(2, '0')}:
+                  {String(timeLeft.minutes).padStart(2, '0')}:
+                  {String(timeLeft.seconds).padStart(2, '0')}
+                </span>
+              </div>
             </div>
-            <div className="text-xs">
-              <span className="text-slate-400 mr-1.5 font-medium">Próximo Sorteio:</span>
-              <span className="font-mono font-bold text-amber-400">
-                {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
-                {String(timeLeft.hours).padStart(2, '0')}:
-                {String(timeLeft.minutes).padStart(2, '0')}:
-                {String(timeLeft.seconds).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Navigation Switcher Tabs */}
         <nav className="flex items-center bg-slate-950/70 p-1.5 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
           <button
             onClick={() => onViewChange('public')}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
               currentView === 'public'
                 ? 'bg-amber-500 text-slate-950 font-semibold shadow-md'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
@@ -126,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onViewChange('live')}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
               currentView === 'live'
                 ? 'bg-red-500 text-white font-semibold shadow-lg shadow-red-500/20 animate-pulse'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
@@ -139,17 +163,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          {/* Hidden Admin Tab: only rendered when unlocked via Alt+c */}
-          {isAdminUnlocked && (
+          {/* Admin Tab: Rendered when unlocked */}
+          {isAdminUnlocked ? (
             <div className="flex items-center gap-1 pl-1 ml-1 border-l border-slate-800">
               <button
                 onClick={() => onViewChange('admin')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
                   currentView === 'admin'
                     ? 'bg-slate-800 text-amber-400 font-semibold border border-amber-500/40 shadow-md ring-1 ring-amber-500/30'
                     : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'
                 }`}
-                title="Painel de Administrador (Desbloqueado com Alt+C)"
+                title="Painel de Administrador"
               >
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
                 <span className="hidden sm:inline">Admin [Alt+C]</span>
@@ -162,6 +186,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Ocultar e Bloquear Painel Admin"
               >
                 ✕
+              </button>
+            </div>
+          ) : (
+            /* Discrete Admin Access button visible across any browser */
+            <div className="flex items-center pl-1 ml-1 border-l border-slate-800">
+              <button
+                onClick={onRequestUnlockAdmin}
+                className="p-2 text-slate-500 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Acessar Painel de Controle de Administrador (ou pressione Alt+C)"
+              >
+                <Key className="w-4 h-4" />
               </button>
             </div>
           )}

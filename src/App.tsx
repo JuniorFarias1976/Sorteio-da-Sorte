@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Participant, 
   Prize, 
@@ -12,22 +12,46 @@ import {
   NotificationLog, 
   NotificationSettings, 
   BrandConfig,
-  FormFieldsConfig 
+  FormFieldsConfig,
+  QRCodePosterConfig,
+  ReportPdfConfig
 } from './types';
-import { StorageService } from './utils/storage';
-import { ApiService } from './utils/api';
+import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG } from './utils/storage';
+import { ApiService, AppServerData } from './utils/api';
 import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { Lock, Key, ShieldCheck, CheckCircle2, AlertCircle, X, RefreshCw } from 'lucide-react';
 
 export default function App() {
   // Navigation View State
   const [currentView, setCurrentView] = useState<'public' | 'live' | 'admin'>('public');
 
-  // Hidden Admin Panel State (Unlocked via Alt + C)
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+  // Persistent Admin Panel State (Unlocked via Alt + C, ?admin=true, or In-App Modal)
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === 'true' || window.location.hash === '#admin') {
+        return true;
+      }
+      return localStorage.getItem('sorteiolive_admin_unlocked') === 'true';
+    }
+    return false;
+  });
+
   const [adminToast, setAdminToast] = useState<string | null>(null);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+
+  // In-App Admin Unlock Modal (replacing window.prompt to avoid iframe blocks)
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [adminKeyInput, setAdminKeyInput] = useState<string>('');
+  const [adminKeyError, setAdminKeyError] = useState<string | null>(null);
+
+  // Real-Time Server Synchronization State
+  const [isServerConnected, setIsServerConnected] = useState<boolean>(true);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Application Data States
   const [participants, setParticipants] = useState<Participant[]>(() => StorageService.getParticipants());
@@ -38,17 +62,85 @@ export default function App() {
   const [settings, setSettings] = useState<NotificationSettings>(() => StorageService.getSettings());
   const [brand, setBrand] = useState<BrandConfig>(() => StorageService.getBrand());
   const [formFields, setFormFields] = useState<FormFieldsConfig>(() => StorageService.getFormFields());
+  const [posterConfig, setPosterConfig] = useState<QRCodePosterConfig>(() => StorageService.getPosterConfig());
+  const [reportConfig, setReportConfig] = useState<ReportPdfConfig>(() => StorageService.getReportConfig());
 
   // Next Upcoming Draw
   const nextSchedule = schedules.find((s) => s.status === 'scheduled') || schedules[0];
 
-  // Shortcut Listener for Alt + C
+  // Helper to safely apply full server data across all states and LocalStorage
+  const applyServerData = useCallback((serverData: Partial<AppServerData>) => {
+    if (!serverData) return;
+
+    if (Array.isArray(serverData.participants)) {
+      setParticipants(serverData.participants);
+      try { StorageService.saveParticipants(serverData.participants); } catch {}
+    }
+    if (Array.isArray(serverData.prizes)) {
+      setPrizes(serverData.prizes);
+      try { StorageService.savePrizes(serverData.prizes); } catch {}
+    }
+    if (Array.isArray(serverData.schedules)) {
+      setSchedules(serverData.schedules);
+      try { StorageService.saveSchedules(serverData.schedules); } catch {}
+    }
+    if (Array.isArray(serverData.winners)) {
+      setWinners(serverData.winners);
+      try { StorageService.saveWinners(serverData.winners); } catch {}
+    }
+    if (Array.isArray(serverData.notifications)) {
+      setNotifications(serverData.notifications);
+      try { StorageService.saveNotifications(serverData.notifications); } catch {}
+    }
+    if (serverData.settings) {
+      setSettings(serverData.settings);
+      try { StorageService.saveSettings(serverData.settings); } catch {}
+    }
+    if (serverData.brand) {
+      setBrand(serverData.brand);
+      try { StorageService.saveBrand(serverData.brand); } catch {}
+      if (serverData.brand.companyName) {
+        document.title = `${serverData.brand.companyName} - Sorteios Oficiais`;
+      }
+    }
+    if (serverData.formFields) {
+      setFormFields(serverData.formFields);
+      try { StorageService.saveFormFields(serverData.formFields); } catch {}
+    }
+    if (serverData.posterConfig) {
+      setPosterConfig(serverData.posterConfig);
+      try { StorageService.savePosterConfig(serverData.posterConfig); } catch {}
+    }
+    if (serverData.reportConfig) {
+      setReportConfig(serverData.reportConfig);
+      try { StorageService.saveReportConfig(serverData.reportConfig); } catch {}
+    }
+
+    setIsServerConnected(true);
+    setLastSyncTime(new Date());
+  }, []);
+
+  // Broadcast channel for instant multi-tab sync in same browser
+  const broadcastCrossTab = useCallback((dbSnapshot: Partial<AppServerData>) => {
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('sorteiolive_cross_tab_sync');
+        bc.postMessage({ type: 'DATA_SYNC', data: dbSnapshot });
+        bc.close();
+      }
+    } catch {}
+  }, []);
+
+  // Keyboard shortcut listener for Alt + C
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'c' || e.key === 'C')) {
         e.preventDefault();
         setIsAdminUnlocked((prev) => {
           const next = !prev;
+          try {
+            localStorage.setItem('sorteiolive_admin_unlocked', String(next));
+          } catch {}
           if (next) {
             setCurrentView('admin');
             setAdminToast('🔑 Painel de Administrador Desbloqueado via [Alt + C]!');
@@ -66,148 +158,171 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Multi-device Real-Time Data Synchronization (Computer <-> Mobile)
+  // Real-time synchronization across devices and browsers
   useEffect(() => {
-    // 1. Initial Load from Server
-    ApiService.fetchAllData().then((serverData) => {
-      if (!serverData) return;
-      if (serverData.participants) {
-        setParticipants(serverData.participants);
-        StorageService.saveParticipants(serverData.participants);
-      }
-      if (serverData.prizes) {
-        setPrizes(serverData.prizes);
-        StorageService.savePrizes(serverData.prizes);
-      }
-      if (serverData.schedules) {
-        setSchedules(serverData.schedules);
-        StorageService.saveSchedules(serverData.schedules);
-      }
-      if (serverData.winners) {
-        setWinners(serverData.winners);
-        StorageService.saveWinners(serverData.winners);
-      }
-      if (serverData.notifications) {
-        setNotifications(serverData.notifications);
-        StorageService.saveNotifications(serverData.notifications);
-      }
-      if (serverData.settings) {
-        setSettings(serverData.settings);
-        StorageService.saveSettings(serverData.settings);
-      }
-      if (serverData.brand) {
-        setBrand(serverData.brand);
-        StorageService.saveBrand(serverData.brand);
-      }
-      if (serverData.formFields) {
-        setFormFields(serverData.formFields);
-        StorageService.saveFormFields(serverData.formFields);
-      }
-      if (serverData.posterConfig) {
-        StorageService.savePosterConfig(serverData.posterConfig);
-      }
-      if (serverData.reportConfig) {
-        StorageService.saveReportConfig(serverData.reportConfig);
-      }
-    });
+    // 1. Initial Load from Central Server Database with high priority
+    setIsSyncing(true);
+    ApiService.fetchAllData(3)
+      .then((serverData) => {
+        if (serverData) {
+          applyServerData(serverData);
+        }
+      })
+      .catch((err) => {
+        console.warn('Initial server fetch:', err);
+      })
+      .finally(() => {
+        setIsSyncing(false);
+      });
 
-    // 2. Real-time Server-Sent Events subscriber
-    const unsubscribe = ApiService.subscribeLiveEvents({
+    // 2. Real-time Server-Sent Events subscriber (handles both INITIAL_STATE snapshot & DATA_UPDATED)
+    const unsubscribeSSE = ApiService.subscribeLiveEvents({
+      onInitialState: (snapshot) => {
+        if (snapshot?.db) {
+          applyServerData(snapshot.db);
+        }
+      },
       onDataUpdated: (data) => {
-        if (data.participants) {
-          setParticipants(data.participants);
-          StorageService.saveParticipants(data.participants);
-        }
-        if (data.prizes) {
-          setPrizes(data.prizes);
-          StorageService.savePrizes(data.prizes);
-        }
-        if (data.schedules) {
-          setSchedules(data.schedules);
-          StorageService.saveSchedules(data.schedules);
-        }
-        if (data.winners) {
-          setWinners(data.winners);
-          StorageService.saveWinners(data.winners);
-        }
-        if (data.brand) {
-          setBrand(data.brand);
-          StorageService.saveBrand(data.brand);
-        }
-        if (data.formFields) {
-          setFormFields(data.formFields);
-          StorageService.saveFormFields(data.formFields);
-        }
-        if (data.settings) {
-          setSettings(data.settings);
-          StorageService.saveSettings(data.settings);
-        }
-        if (data.notifications) {
-          setNotifications(data.notifications);
-          StorageService.saveNotifications(data.notifications);
-        }
-        if (data.posterConfig) {
-          StorageService.savePosterConfig(data.posterConfig);
-        }
-        if (data.reportConfig) {
-          StorageService.saveReportConfig(data.reportConfig);
-        }
+        applyServerData(data as AppServerData);
       },
     });
 
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+    // 3. Cross-Tab BroadcastChannel listener
+    let bc: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('sorteiolive_cross_tab_sync');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'DATA_SYNC' && event.data?.data) {
+            applyServerData(event.data.data);
+          }
+        };
+      }
+    } catch {}
 
-  // Persist state updates to local storage and sync with server
+    // 4. Automatic sync when window/tab gains focus or becomes visible
+    const handleFocusOrVisible = () => {
+      ApiService.fetchAllData(1).then((data) => {
+        if (data) applyServerData(data);
+      });
+    };
+    window.addEventListener('focus', handleFocusOrVisible);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        handleFocusOrVisible();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // 5. Periodic background heartbeat check every 6 seconds to guarantee multi-browser sync
+    const pollInterval = setInterval(() => {
+      ApiService.fetchAllData(1).then((data) => {
+        if (data) applyServerData(data);
+      });
+    }, 6000);
+
+    return () => {
+      unsubscribeSSE();
+      bc?.close();
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(pollInterval);
+    };
+  }, [applyServerData]);
+
+  // Persist state updates to local storage, central server API, and broadcast across tabs
   const handleUpdateParticipants = (data: Participant[]) => {
     setParticipants(data);
-    StorageService.saveParticipants(data);
+    try { StorageService.saveParticipants(data); } catch {}
     ApiService.saveData({ participants: data });
+    broadcastCrossTab({ participants: data });
   };
 
   const handleUpdatePrizes = (data: Prize[]) => {
     setPrizes(data);
-    StorageService.savePrizes(data);
+    try { StorageService.savePrizes(data); } catch {}
     ApiService.saveData({ prizes: data });
+    broadcastCrossTab({ prizes: data });
   };
 
   const handleUpdateSchedules = (data: DrawSchedule[]) => {
     setSchedules(data);
-    StorageService.saveSchedules(data);
+    try { StorageService.saveSchedules(data); } catch {}
     ApiService.saveData({ schedules: data });
+    broadcastCrossTab({ schedules: data });
   };
 
   const handleUpdateWinners = (data: DrawWinner[]) => {
     setWinners(data);
-    StorageService.saveWinners(data);
+    try { StorageService.saveWinners(data); } catch {}
     ApiService.saveData({ winners: data });
+    broadcastCrossTab({ winners: data });
   };
 
   const handleAddNotificationLog = (log: NotificationLog) => {
     const updated = [log, ...notifications];
     setNotifications(updated);
-    StorageService.saveNotifications(updated);
+    try { StorageService.saveNotifications(updated); } catch {}
     ApiService.saveData({ notifications: updated });
+    broadcastCrossTab({ notifications: updated });
   };
 
   const handleUpdateSettings = (newSettings: NotificationSettings) => {
     setSettings(newSettings);
-    StorageService.saveSettings(newSettings);
+    try { StorageService.saveSettings(newSettings); } catch {}
     ApiService.saveData({ settings: newSettings });
+    broadcastCrossTab({ settings: newSettings });
   };
 
   const handleUpdateBrand = (newBrand: BrandConfig) => {
     setBrand(newBrand);
-    StorageService.saveBrand(newBrand);
+    try { StorageService.saveBrand(newBrand); } catch {}
+    if (newBrand.companyName) {
+      document.title = `${newBrand.companyName} - Sorteios Oficiais`;
+    }
     ApiService.saveData({ brand: newBrand });
+    broadcastCrossTab({ brand: newBrand });
   };
 
   const handleUpdateFormFields = (newFields: FormFieldsConfig) => {
     setFormFields(newFields);
-    StorageService.saveFormFields(newFields);
+    try { StorageService.saveFormFields(newFields); } catch {}
     ApiService.saveData({ formFields: newFields });
+    broadcastCrossTab({ formFields: newFields });
+  };
+
+  const handleUpdatePosterConfig = (newPoster: QRCodePosterConfig) => {
+    setPosterConfig(newPoster);
+    try { StorageService.savePosterConfig(newPoster); } catch {}
+    ApiService.saveData({ posterConfig: newPoster });
+    broadcastCrossTab({ posterConfig: newPoster });
+  };
+
+  const handleUpdateReportConfig = (newReport: ReportPdfConfig) => {
+    setReportConfig(newReport);
+    try { StorageService.saveReportConfig(newReport); } catch {}
+    ApiService.saveData({ reportConfig: newReport });
+    broadcastCrossTab({ reportConfig: newReport });
+  };
+
+  // Manual Instant Synchronize button handler
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    setSyncToast(null);
+    try {
+      const freshData = await ApiService.fetchAllData(2);
+      if (freshData) {
+        applyServerData(freshData);
+        setSyncToast(`Base de dados sincronizada! (${freshData.participants?.length || 0} participantes, ${freshData.prizes?.length || 0} prêmios)`);
+      } else {
+        setSyncToast('Não foi possível obter resposta imediata do servidor.');
+      }
+    } catch (err: any) {
+      setSyncToast('Erro na sincronização: ' + (err?.message || 'Falha de conexão'));
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncToast(null), 3500);
+    }
   };
 
   // Participant Registration handler (from Public page)
@@ -217,19 +332,18 @@ export default function App() {
         return prev;
       }
       const updated = [participant, ...prev];
-      StorageService.saveParticipants(updated);
+      try { StorageService.saveParticipants(updated); } catch {}
       ApiService.saveData({ participants: updated });
+      broadcastCrossTab({ participants: updated });
       return updated;
     });
   };
 
   // Live Draw Winner Announced handler
   const handleWinnerAnnounced = (winner: DrawWinner) => {
-    // 1. Add to winners list
     const updatedWinners = [winner, ...winners];
     handleUpdateWinners(updatedWinners);
 
-    // 2. Mark participant status as 'winner'
     const updatedParticipants = participants.map((p) =>
       p.id === winner.participantId ? { ...p, status: 'winner' as const } : p
     );
@@ -244,7 +358,40 @@ export default function App() {
     handleUpdatePrizes(updatedPrizes);
   };
 
-  // Reset to default seeds
+  // Toggle Admin Lock
+  const handleToggleAdminLock = () => {
+    const next = !isAdminUnlocked;
+    setIsAdminUnlocked(next);
+    try {
+      localStorage.setItem('sorteiolive_admin_unlocked', String(next));
+    } catch {}
+    if (!next && currentView === 'admin') {
+      setCurrentView('public');
+    }
+  };
+
+  // In-app Unlock Admin submit
+  const handleAdminModalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminKeyError(null);
+    const code = adminKeyInput.trim().toLowerCase();
+    // Accept standard passkeys or blank direct confirmation
+    if (code === 'admin' || code === 'admin123' || code === '1234' || code === 'sorteio' || code === '') {
+      setIsAdminUnlocked(true);
+      try {
+        localStorage.setItem('sorteiolive_admin_unlocked', 'true');
+      } catch {}
+      setShowAdminModal(false);
+      setAdminKeyInput('');
+      setCurrentView('admin');
+      setAdminToast('🔑 Painel de Administrador Desbloqueado com sucesso!');
+      setTimeout(() => setAdminToast(null), 3500);
+    } else {
+      setAdminKeyError('Chave incorreta. Dica: digite "admin" ou deixe em branco.');
+    }
+  };
+
+  // Reset to default factory seeds
   const handleResetAllData = () => {
     let proceed = false;
     try {
@@ -262,6 +409,8 @@ export default function App() {
       const defSettings = StorageService.getSettings();
       const defBrand = StorageService.getBrand();
       const defFields = StorageService.getFormFields();
+      const defPoster = StorageService.getPosterConfig();
+      const defReport = StorageService.getReportConfig();
 
       setParticipants(defParticipants);
       setPrizes(defPrizes);
@@ -271,8 +420,10 @@ export default function App() {
       setSettings(defSettings);
       setBrand(defBrand);
       setFormFields(defFields);
+      setPosterConfig(defPoster);
+      setReportConfig(defReport);
 
-      // Persist factory reset to server database as well
+      // Persist factory reset to server database
       ApiService.saveData({
         participants: defParticipants,
         prizes: defPrizes,
@@ -282,15 +433,36 @@ export default function App() {
         settings: defSettings,
         brand: { ...defBrand, forceResetLogo: true },
         formFields: defFields,
+        posterConfig: defPoster,
+        reportConfig: defReport,
+      });
+
+      broadcastCrossTab({
+        participants: defParticipants,
+        prizes: defPrizes,
+        schedules: defSchedules,
+        winners: defWinners,
+        notifications: defNotifications,
+        settings: defSettings,
+        brand: defBrand,
+        formFields: defFields,
+        posterConfig: defPoster,
+        reportConfig: defReport,
       });
     }
   };
 
   // Inject primary and accent brand colors into document root styles
   useEffect(() => {
-    document.documentElement.style.setProperty('--brand-primary', brand.primaryColor);
-    document.documentElement.style.setProperty('--brand-secondary', brand.secondaryColor);
-    document.documentElement.style.setProperty('--brand-accent', brand.accentColor);
+    if (brand.primaryColor) {
+      document.documentElement.style.setProperty('--brand-primary', brand.primaryColor);
+    }
+    if (brand.secondaryColor) {
+      document.documentElement.style.setProperty('--brand-secondary', brand.secondaryColor);
+    }
+    if (brand.accentColor) {
+      document.documentElement.style.setProperty('--brand-accent', brand.accentColor);
+    }
   }, [brand]);
 
   return (
@@ -303,19 +475,98 @@ export default function App() {
         nextSchedule={nextSchedule}
         participantsCount={participants.length}
         isAdminUnlocked={isAdminUnlocked}
-        onToggleAdminLock={() => {
-          setIsAdminUnlocked(!isAdminUnlocked);
-          if (isAdminUnlocked && currentView === 'admin') {
-            setCurrentView('public');
-          }
-        }}
+        onToggleAdminLock={handleToggleAdminLock}
+        onRequestUnlockAdmin={() => setShowAdminModal(true)}
+        isServerConnected={isServerConnected}
+        isSyncing={isSyncing}
+        onManualSync={handleManualSync}
       />
 
-      {/* Secret Toast Indicator for Alt+C */}
+      {/* Sync Confirmation Toast */}
+      {syncToast && (
+        <div className="fixed top-24 right-4 z-50 bg-slate-900 border-2 border-emerald-500 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <p className="text-xs font-bold text-emerald-200">{syncToast}</p>
+        </div>
+      )}
+
+      {/* Admin Unlock Toast Indicator */}
       {adminToast && (
         <div className="fixed top-24 right-4 z-50 bg-slate-900 border-2 border-amber-500 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce">
           <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></div>
           <p className="text-xs font-bold text-amber-300">{adminToast}</p>
+        </div>
+      )}
+
+      {/* In-App Admin Access Modal (Mobile & Desktop Friendly) */}
+      {showAdminModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => {
+                setShowAdminModal(false);
+                setAdminKeyError(null);
+                setAdminKeyInput('');
+              }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Acesso de Administrador</h3>
+                <p className="text-xs text-slate-400">Entre para gerenciar participantes, prêmios e sorteios</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAdminModalSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  Chave ou Senha de Acesso:
+                </label>
+                <div className="relative">
+                  <Key className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    placeholder="Digite 'admin' ou deixe vazio e confirme"
+                    value={adminKeyInput}
+                    onChange={(e) => setAdminKeyInput(e.target.value)}
+                    autoFocus
+                    className="w-full bg-slate-950 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none"
+                  />
+                </div>
+                {adminKeyError && (
+                  <p className="text-xs text-red-400 mt-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{adminKeyError}</span>
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-400 mt-2">
+                  Dica de atalho no computador: Pressione <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-amber-400 font-mono text-[10px]">Alt + C</kbd> em qualquer tela.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminModal(false)}
+                  className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors shadow-lg cursor-pointer"
+                >
+                  Acessar Painel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -357,6 +608,8 @@ export default function App() {
             notificationSettings={settings}
             brand={brand}
             formFields={formFields}
+            posterConfig={posterConfig}
+            reportConfig={reportConfig}
             onUpdateParticipants={handleUpdateParticipants}
             onUpdatePrizes={handleUpdatePrizes}
             onUpdateSchedules={handleUpdateSchedules}
@@ -365,8 +618,12 @@ export default function App() {
             onUpdateNotificationSettings={handleUpdateSettings}
             onUpdateBrand={handleUpdateBrand}
             onUpdateFormFields={handleUpdateFormFields}
+            onUpdatePosterConfig={handleUpdatePosterConfig}
+            onUpdateReportConfig={handleUpdateReportConfig}
             onGoToLive={() => setCurrentView('live')}
             onResetAllData={handleResetAllData}
+            onManualSync={handleManualSync}
+            isSyncing={isSyncing}
           />
         )}
       </main>
@@ -377,35 +634,48 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-400">{brand.companyName || 'SorteioLive Pro'}</span>
             <span>· 4 Sorteios Diários Oficiais Auditados</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Banco de Dados Sincronizado
+            </span>
           </div>
 
           <div className="flex items-center gap-4 text-slate-400">
             <button 
               onClick={() => setCurrentView('public')} 
-              className="hover:text-white transition-colors"
+              className="hover:text-white transition-colors cursor-pointer"
             >
               Inscrição & Bilhetes
             </button>
             <button 
               onClick={() => setCurrentView('live')} 
-              className="hover:text-white transition-colors"
+              className="hover:text-white transition-colors cursor-pointer"
             >
               Telão Ao Vivo
             </button>
+            <button
+              onClick={handleManualSync}
+              className="hover:text-emerald-400 flex items-center gap-1 transition-colors cursor-pointer"
+              title="Sincronizar dados com o banco de dados central"
+            >
+              <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+              <span>Sincronizar</span>
+            </button>
 
-            {/* Secret mobile fallback unlock trigger */}
+            {/* In-app accessible admin trigger */}
             <button
               onClick={() => {
-                const pass = prompt('Acesso Restrito: Pressione Alt+C no teclado ou digite a chave de acesso:');
-                if (pass === 'admin' || pass === 'admin123' || pass === 'c') {
-                  setIsAdminUnlocked(true);
+                if (isAdminUnlocked) {
                   setCurrentView('admin');
+                } else {
+                  setShowAdminModal(true);
                 }
               }}
-              className="text-slate-600 hover:text-slate-400 text-[10px] tracking-wider transition-colors"
-              title="Acesso de Moderação (Alt+C)"
+              className="text-slate-500 hover:text-amber-400 text-xs flex items-center gap-1 transition-colors cursor-pointer"
+              title="Acesso de Administrador"
             >
-              [Alt+C]
+              <Lock className="w-3 h-3" />
+              <span>Painel Admin</span>
             </button>
           </div>
         </div>

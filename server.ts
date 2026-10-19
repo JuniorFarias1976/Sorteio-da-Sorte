@@ -439,8 +439,12 @@ async function startServer() {
   });
 
   // API Endpoints
-  // 1. Get full synchronized application data
+  // 1. Get full synchronized application data (always reload fresh from disk with no-cache headers)
   app.get('/api/data', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    db = loadDB();
     res.json(db);
   });
 
@@ -449,11 +453,13 @@ async function startServer() {
     const updates = req.body;
     console.log('[DB-SAVE] Received /api/data updates for keys:', Object.keys(updates || {}));
 
+    // Ensure we start from current disk state
+    db = loadDB();
+
     let mergedBrand = db.brand;
     if (updates.brand) {
-      // Determine logoUrl: if updates provides non-empty logo, use it.
-      // If updates provides empty or default logo, but db already has a custom logo, preserve the custom logo.
       let targetLogo = updates.brand.logoUrl;
+      // If updates explicitly provides a logoUrl, use it
       if (!targetLogo || targetLogo === DEFAULT_BRAND_LOGO) {
         if (db.brand?.logoUrl && db.brand.logoUrl !== DEFAULT_BRAND_LOGO && !updates.brand.forceResetLogo) {
           targetLogo = db.brand.logoUrl;
@@ -488,6 +494,10 @@ async function startServer() {
 
   // Database verification & status endpoint
   app.get('/api/db/status', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    db = loadDB();
     res.json({
       success: true,
       status: 'connected',
@@ -560,7 +570,12 @@ async function startServer() {
     const ips: string[] = [];
     for (const name of Object.keys(interfaces)) {
       for (const iface of interfaces[name] || []) {
-        if (iface.family === 'IPv4' && !iface.internal) {
+        if (
+          iface.family === 'IPv4' && 
+          !iface.internal && 
+          !iface.address.startsWith('169.254.') && 
+          !iface.address.startsWith('127.')
+        ) {
           ips.push(iface.address);
         }
       }

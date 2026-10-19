@@ -20,10 +20,18 @@ import { ApiService } from '../../utils/api';
 interface QRCodeTabProps {
   brand: BrandConfig;
   schedules: DrawSchedule[];
+  posterConfig?: QRCodePosterConfig;
   onUpdateBrand: (brand: BrandConfig) => void;
+  onUpdatePosterConfig?: (config: QRCodePosterConfig) => void;
 }
 
-export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdateBrand }) => {
+export const QRCodeTab: React.FC<QRCodeTabProps> = ({ 
+  brand, 
+  schedules, 
+  posterConfig: propPosterConfig,
+  onUpdateBrand,
+  onUpdatePosterConfig 
+}) => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [customLink, setCustomLink] = useState<string>(brand.raffleUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
   const [copied, setCopied] = useState<boolean>(false);
@@ -41,8 +49,14 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
 
   // Poster Config State
   const [posterConfig, setPosterConfig] = useState<QRCodePosterConfig>(() =>
-    StorageService.getPosterConfig()
+    propPosterConfig || StorageService.getPosterConfig()
   );
+
+  useEffect(() => {
+    if (propPosterConfig) {
+      setPosterConfig(propPosterConfig);
+    }
+  }, [propPosterConfig]);
 
   const nextEvent = schedules.find((s) => s.status === 'scheduled') || schedules[0];
 
@@ -51,12 +65,17 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
     ApiService.getNetworkInfo().then((info) => {
       if (!info) return;
       setNetworkInfo(info);
-      // If brand raffleUrl is not set or points to localhost, default the local input field to the best accessible URL
+      // If brand raffleUrl is not set or points to localhost, default to current origin
       if (!brand.raffleUrl || brand.raffleUrl.includes('localhost') || brand.raffleUrl.includes('127.0.0.1')) {
-        let bestUrl = info.origin;
+        let bestUrl = window.location.origin;
         if (info.sharedUrl && (window.location.hostname.includes('run.app') || window.location.hostname.includes('google'))) {
           bestUrl = info.sharedUrl;
-        } else if (info.localIp && info.localIp !== 'localhost') {
+        } else if (
+          info.localIp && 
+          !info.localIp.startsWith('169.254.') && 
+          info.localIp !== 'localhost' && 
+          window.location.hostname === 'localhost'
+        ) {
           bestUrl = `http://${info.localIp}:${info.port}`;
         }
         setCustomLink(bestUrl);
@@ -140,12 +159,14 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({ brand, schedules, onUpdate
     const updated = { ...posterConfig, ...updates };
     setPosterConfig(updated);
     StorageService.savePosterConfig(updated);
+    onUpdatePosterConfig?.(updated);
     ApiService.saveData({ posterConfig: updated });
   };
 
   const handleResetPoster = () => {
     setPosterConfig(DEFAULT_POSTER_CONFIG);
     StorageService.savePosterConfig(DEFAULT_POSTER_CONFIG);
+    onUpdatePosterConfig?.(DEFAULT_POSTER_CONFIG);
     ApiService.saveData({ posterConfig: DEFAULT_POSTER_CONFIG });
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DrawWinner, BrandConfig, ReportPdfConfig } from '../../types';
 import { exportWinnersReportPDF, exportCertificatePDF } from '../../utils/export';
 import { 
@@ -17,19 +17,29 @@ import { ApiService } from '../../utils/api';
 interface ReportsTabProps {
   winners: DrawWinner[];
   brand: BrandConfig;
+  reportConfig?: ReportPdfConfig;
   onUpdateWinners: (winners: DrawWinner[]) => void;
+  onUpdateReportConfig?: (config: ReportPdfConfig) => void;
 }
 
 export const ReportsTab: React.FC<ReportsTabProps> = ({
   winners,
   brand,
+  reportConfig: propReportConfig,
   onUpdateWinners,
+  onUpdateReportConfig,
 }) => {
   const [search, setSearch] = useState('');
   const [reportConfig, setReportConfig] = useState<ReportPdfConfig>(() =>
-    StorageService.getReportConfig()
+    propReportConfig || StorageService.getReportConfig()
   );
   const [showConfigModal, setShowConfigModal] = useState(false);
+
+  useEffect(() => {
+    if (propReportConfig) {
+      setReportConfig(propReportConfig);
+    }
+  }, [propReportConfig]);
 
   const filteredWinners = winners.filter((w) => {
     const q = search.toLowerCase();
@@ -53,6 +63,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const handleSaveConfig = (newCfg: ReportPdfConfig) => {
     setReportConfig(newCfg);
     StorageService.saveReportConfig(newCfg);
+    onUpdateReportConfig?.(newCfg);
     ApiService.saveData({ reportConfig: newCfg });
     setShowConfigModal(false);
   };

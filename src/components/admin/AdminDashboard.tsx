@@ -7,7 +7,9 @@ import {
   NotificationLog, 
   NotificationSettings, 
   BrandConfig,
-  FormFieldsConfig
+  FormFieldsConfig,
+  QRCodePosterConfig,
+  ReportPdfConfig
 } from '../../types';
 import { ParticipantsTab } from './ParticipantsTab';
 import { PrizesTab } from './PrizesTab';
@@ -31,7 +33,8 @@ import {
   Tv,
   RotateCcw,
   Database,
-  Cloud
+  Cloud,
+  RefreshCw
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -43,6 +46,8 @@ interface AdminDashboardProps {
   notificationSettings: NotificationSettings;
   brand: BrandConfig;
   formFields: FormFieldsConfig;
+  posterConfig?: QRCodePosterConfig;
+  reportConfig?: ReportPdfConfig;
   onUpdateParticipants: (participants: Participant[]) => void;
   onUpdatePrizes: (prizes: Prize[]) => void;
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
@@ -51,8 +56,12 @@ interface AdminDashboardProps {
   onUpdateNotificationSettings: (settings: NotificationSettings) => void;
   onUpdateBrand: (brand: BrandConfig) => void;
   onUpdateFormFields: (fields: FormFieldsConfig) => void;
+  onUpdatePosterConfig?: (config: QRCodePosterConfig) => void;
+  onUpdateReportConfig?: (config: ReportPdfConfig) => void;
   onGoToLive: () => void;
   onResetAllData: () => void;
+  onManualSync?: () => void;
+  isSyncing?: boolean;
 }
 
 export type AdminTab = 
@@ -74,6 +83,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   notificationSettings,
   brand,
   formFields,
+  posterConfig,
+  reportConfig,
   onUpdateParticipants,
   onUpdatePrizes,
   onUpdateSchedules,
@@ -82,8 +93,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateNotificationSettings,
   onUpdateBrand,
   onUpdateFormFields,
+  onUpdatePosterConfig,
+  onUpdateReportConfig,
   onGoToLive,
   onResetAllData,
+  onManualSync,
+  isSyncing = false,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('participants');
   const [showBackupModal, setShowBackupModal] = useState(false);
@@ -96,6 +111,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (data.winners) onUpdateWinners(data.winners);
     if (data.settings) onUpdateNotificationSettings(data.settings);
     if (data.formFields) onUpdateFormFields(data.formFields);
+    if (data.posterConfig && onUpdatePosterConfig) onUpdatePosterConfig(data.posterConfig);
+    if (data.reportConfig && onUpdateReportConfig) onUpdateReportConfig(data.reportConfig);
   };
 
   const TABS = [
@@ -146,13 +163,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Quick Actions (Live & Reset & DB Status) */}
           <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-800">
-            <div 
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300 font-mono shadow-inner"
-              title="Banco de dados central ativo e sincronizado em data/database.json"
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>DB Ativo</span>
-            </div>
+            {onManualSync ? (
+              <button
+                onClick={onManualSync}
+                disabled={isSyncing}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-500/80 text-[11px] text-emerald-300 font-mono shadow-inner cursor-pointer transition-all disabled:opacity-50"
+                title="Clique para sincronizar os dados em tempo real com o banco de dados central (data/database.json)"
+              >
+                <Database className={`w-3.5 h-3.5 text-emerald-400 shrink-0 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+                <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'DB Ativo (Sincronizar)'}</span>
+                <span className="sm:hidden">{isSyncing ? '...' : 'DB'}</span>
+              </button>
+            ) : (
+              <div 
+                className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300 font-mono shadow-inner"
+                title="Banco de dados central ativo e sincronizado em data/database.json"
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>DB Ativo</span>
+              </div>
+            )}
 
             <button
               onClick={() => setShowBackupModal(true)}
@@ -233,7 +263,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <QRCodeTab
               brand={brand}
               schedules={schedules}
+              posterConfig={posterConfig}
               onUpdateBrand={onUpdateBrand}
+              onUpdatePosterConfig={onUpdatePosterConfig}
             />
           )}
 
@@ -241,7 +273,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ReportsTab
               winners={winners}
               brand={brand}
+              reportConfig={reportConfig}
               onUpdateWinners={onUpdateWinners}
+              onUpdateReportConfig={onUpdateReportConfig}
             />
           )}
 

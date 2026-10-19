@@ -28,18 +28,44 @@ export interface LiveState {
 const API_BASE = '/api';
 
 export const ApiService = {
-  // Fetch full synchronized data from server
-  async fetchAllData(): Promise<AppServerData | null> {
-    try {
-      const res = await fetch(`${API_BASE}/data`);
-      if (!res.ok) return null;
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) return null;
-      return await res.json();
-    } catch (err) {
-      console.warn('Could not fetch server data, falling back to local storage:', err);
-      return null;
+  // Fetch full synchronized data from server with cache-busting and automatic retry
+  async fetchAllData(retries = 3): Promise<AppServerData | null> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(`${API_BASE}/data?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (!res.ok) {
+          if (attempt < retries) {
+            await new Promise((r) => setTimeout(r, 400 * attempt));
+            continue;
+          }
+          return null;
+        }
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          if (attempt < retries) {
+            await new Promise((r) => setTimeout(r, 400 * attempt));
+            continue;
+          }
+          return null;
+        }
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 400 * attempt));
+          continue;
+        }
+        console.warn('Could not fetch server data, falling back to local storage:', err);
+        return null;
+      }
     }
+    return null;
   },
 
   // Save updates to server so mobile and other devices immediately sync
@@ -47,16 +73,21 @@ export const ApiService = {
     try {
       const res = await fetch(`${API_BASE}/data`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
         body: JSON.stringify(updates),
       });
       if (!res.ok) {
-        return { success: false, serverOffline: true };
+        const errText = await res.text().catch(() => '');
+        console.error('Failed to sync data to server, status:', res.status, errText);
+        return { success: false, serverOffline: true, error: `Erro ${res.status} ao gravar no servidor` };
       }
       return { success: true };
     } catch (err: any) {
       console.warn('Failed to sync data to server (running in local/offline mode):', err?.message);
-      return { success: false, serverOffline: true };
+      return { success: false, serverOffline: true, error: err?.message || 'Falha de rede' };
     }
   },
 
@@ -76,7 +107,10 @@ export const ApiService = {
     lastSaved: string;
   } | null> {
     try {
-      const res = await fetch(`${API_BASE}/db/status`);
+      const res = await fetch(`${API_BASE}/db/status?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       if (!res.ok) return null;
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) return null;
