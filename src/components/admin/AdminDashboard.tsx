@@ -129,8 +129,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 sm:pb-8">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Mobile Tab Selector (< sm) */}
+        <div className="sm:hidden bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-lg flex items-center justify-between gap-2">
+          <label className="text-xs text-amber-400 font-bold shrink-0 flex items-center gap-1.5">
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Módulo:</span>
+          </label>
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as AdminTab)}
+            className="flex-1 bg-slate-950 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            {TABS.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label} {tab.badge !== undefined ? `(${tab.badge})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Admin Navigation Hub (Tabs) */}
         <div className="no-print bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl flex items-center justify-between gap-2 overflow-x-auto">
           <div className="flex items-center gap-1 min-w-max">

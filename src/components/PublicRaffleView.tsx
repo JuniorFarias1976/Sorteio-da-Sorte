@@ -677,11 +677,11 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-center gap-3">
                   <a
                     href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                      `🎟️ Olá! Acabei de garantir o meu bilhete #${newlyCreatedTicket.ticketNumber} no sorteio da ${brand.companyName}! Aceda para participar também: ${brand.raffleUrl}`
+                      `🎟️ Olá! Acabei de garantir o meu bilhete #${newlyCreatedTicket.ticketNumber} no sorteio da ${brand.companyName}! Aceda para participar também: ${typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl}`
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow cursor-pointer transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
                     <span>Partilhar no WhatsApp</span>
