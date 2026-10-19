@@ -472,10 +472,10 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
             {brand.companyName || 'SorteioLive Pro'}
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1 uppercase tracking-tight">
-            {posterConfig.title || 'PARTICIPE DO NOSSO GRANDE SORTEIO!'}
+            {posterConfig.title || 'PARTICIPE NO NOSSO GRANDE SORTEIO!'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-md font-medium">
-            {posterConfig.subtitle || 'Concorra a prêmios incríveis transmitidos 100% ao vivo!'}
+            {posterConfig.subtitle || 'Habilite-se a prémios incríveis transmitidos 100% em direto!'}
           </p>
 
           {/* Schedule Banner in Print */}

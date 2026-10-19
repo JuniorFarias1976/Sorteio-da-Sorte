@@ -106,11 +106,11 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-slate-400 font-semibold">Campos incluídos no PDF:</span>
-          {reportConfig.includePrize && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Prêmio</span>}
+          {reportConfig.includePrize && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Prémio</span>}
           {reportConfig.includeTicket && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Bilhete</span>}
           {reportConfig.includeWinnerName && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Nome</span>}
-          {reportConfig.includeDocument && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ CPF/Doc</span>}
-          {reportConfig.includePhone && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Telefone</span>}
+          {reportConfig.includeDocument && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ NIF/Doc</span>}
+          {reportConfig.includePhone && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Telemóvel</span>}
           {reportConfig.includeEmail && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ E-mail</span>}
           {reportConfig.includeDate && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Data/Hora</span>}
           {reportConfig.includeHash && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-mono">✓ Hash</span>}
@@ -130,7 +130,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar ganhador por nome, prêmio, bilhete premiado ou hash..."
+          placeholder="Pesquisar vencedor por nome, prémio, bilhete premiado ou hash..."
           className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
@@ -142,9 +142,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             <thead className="bg-slate-950/70 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
               <tr>
                 <th className="py-3 px-4">Bilhete</th>
-                <th className="py-3 px-4">Ganhador(a)</th>
-                <th className="py-3 px-4">Prêmio Conquistado</th>
-                <th className="py-3 px-4">Contato / CPF</th>
+                <th className="py-3 px-4">Vencedor(a)</th>
+                <th className="py-3 px-4">Prémio Conquistado</th>
+                <th className="py-3 px-4">Contacto / NIF</th>
                 <th className="py-3 px-4">Data do Sorteio</th>
                 <th className="py-3 px-4">Hash de Auditoria</th>
                 <th className="py-3 px-4 text-right">Certificado</th>
@@ -307,13 +307,13 @@ const EditReportPdfModal: React.FC<EditReportPdfModalProps> = ({
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {[
-                { id: 'includePrize', label: 'Prêmio Sorteado' },
+                { id: 'includePrize', label: 'Prémio Sorteado' },
                 { id: 'includeTicket', label: 'Número do Bilhete' },
-                { id: 'includeWinnerName', label: 'Nome do Ganhador' },
-                { id: 'includeDocument', label: 'CPF / Documento' },
-                { id: 'includePhone', label: 'Telefone / WhatsApp' },
+                { id: 'includeWinnerName', label: 'Nome do Vencedor' },
+                { id: 'includeDocument', label: 'NIF / Documento' },
+                { id: 'includePhone', label: 'Telemóvel / WhatsApp' },
                 { id: 'includeEmail', label: 'E-mail' },
-                { id: 'includeDate', label: 'Data e Hora da Rodada' },
+                { id: 'includeDate', label: 'Data e Hora da Ronda' },
                 { id: 'includeHash', label: 'Hash de Auditoria' },
               ].map((col) => {
                 const key = col.id as keyof ReportPdfConfig;

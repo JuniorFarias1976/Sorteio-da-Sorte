@@ -1,6 +1,6 @@
 {
   "name": "SorteioLive Pro - Plataforma Completa de Sorteios",
-  "description": "Sistema profissional de sorteios em tempo real com painel administrativo, telão de live ao vivo, gestão de prêmios, calendário, disparo de notificações, controle de banidos, relatórios em PDF/Excel e QR Code para impressão.",
+  "description": "Sistema profissional de sorteios em tempo real com painel de administração, ecrã de transmissão em direto, gestão de prémios, calendário de rondas, envio de notificações, relatórios em PDF/Excel e Código QR para impressão.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

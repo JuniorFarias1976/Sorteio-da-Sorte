@@ -163,10 +163,10 @@ export const BackupSyncModal: React.FC<BackupSyncModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>Backup & Sincronização Universal</span>
+                <span>Cópia de Segurança & Sincronização Universal</span>
               </h3>
               <p className="text-xs text-slate-400">
-                Transfira e restaure suas imagens, prêmios e participantes entre quaisquer navegadores e dispositivos
+                Transfira e restaure as suas imagens, prémios e participantes entre quaisquer navegadores e dispositivos
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ export const BackupSyncModal: React.FC<BackupSyncModalProps> = ({
             }`}
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Exportar Backup</span>
+            <span>Exportar Cópia</span>
           </button>
           <button
             type="button"
@@ -199,7 +199,7 @@ export const BackupSyncModal: React.FC<BackupSyncModalProps> = ({
             }`}
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>Importar Arquivo</span>
+            <span>Importar Ficheiro</span>
           </button>
           <button
             type="button"
@@ -234,12 +234,12 @@ export const BackupSyncModal: React.FC<BackupSyncModalProps> = ({
             <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2">
               <span className="text-xs font-bold text-white flex items-center gap-2">
                 <FileJson className="w-4 h-4 text-amber-400" />
-                <span>O que está incluído no seu Backup:</span>
+                <span>O que está incluído na sua Cópia de Segurança:</span>
               </span>
               <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
-                <li>Logomarca da empresa e paleta de cores personalizada</li>
-                <li>Todos os prêmios cadastrados e suas fotos comprimidas</li>
-                <li>Lista de participantes registrados e números da sorte</li>
+                <li>Logótipo da empresa e paleta de cores personalizada</li>
+                <li>Todos os prémios registados e as suas fotos comprimidas</li>
+                <li>Lista de participantes registados e números da sorte</li>
                 <li>Regulamento, 4 horários diários e formulário</li>
               </ul>
             </div>

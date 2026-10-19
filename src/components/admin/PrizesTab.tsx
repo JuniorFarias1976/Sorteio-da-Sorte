@@ -53,7 +53,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
     e.preventDefault();
     setFormError(null);
     if (!title.trim()) {
-      setFormError('Por favor, informe o título do prêmio.');
+      setFormError('Por favor, indique o título do prémio.');
       return;
     }
 
@@ -107,7 +107,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
     { label: 'PlayStation 5', url: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=600&auto=format&fit=crop&q=80' },
     { label: 'Smart TV', url: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600&auto=format&fit=crop&q=80' },
     { label: 'Moto / Veículo', url: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop&q=80' },
-    { label: 'Dinheiro / Pix', url: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?w=600&auto=format&fit=crop&q=80' },
+    { label: 'Transferência Bancária / Dinheiro', url: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?w=600&auto=format&fit=crop&q=80' },
   ];
 
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +117,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
     setFormError(null);
 
     if (!file.type.startsWith('image/')) {
-      setFormError('Por favor, selecione um arquivo de imagem válido (PNG, JPG, WebP, SVG).');
+      setFormError('Por favor, selecione um ficheiro de imagem válido (PNG, JPG, WebP, SVG).');
       return;
     }
 
@@ -143,10 +143,10 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Gift className="w-5 h-5 text-amber-400" />
-            <span>Gestão de Prêmios e Quantidades ({prizes.length})</span>
+            <span>Gestão de Prémios e Quantidades ({prizes.length})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Cadastre os itens que serão sorteados, estipule as unidades disponíveis e acompanhe o estoque de prêmios
+            Registe os itens que serão sorteados, estipule as unidades disponíveis e acompanhe os prémios atribuídos
           </p>
         </div>
 
@@ -155,14 +155,14 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Adicionar Novo Prêmio</span>
+          <span>Adicionar Novo Prémio</span>
         </button>
       </div>
 
       {saveSuccessToast && (
         <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg animate-in fade-in duration-200">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Alterações nos prêmios gravadas com sucesso na Base de Dados e em todos os dispositivos!</span>
+          <span>Alterações nos prémios gravadas com sucesso na Base de Dados e em todos os dispositivos!</span>
         </div>
       )}
 
@@ -187,14 +187,14 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                     <button
                       onClick={() => openEditModal(prize)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                      title="Editar Prêmio"
+                      title="Editar Prémio"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeletingPrize(prize)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                      title="Excluir Prêmio"
+                      title="Eliminar Prémio"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -347,7 +347,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
               {/* Computer File Upload for Prize Image */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-                  Foto / Imagem do Prêmio (Carregar do Computador)
+                  Foto / Imagem do Prémio (Carregar do Computador)
                 </label>
                 
                 <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
@@ -450,10 +450,10 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-400" />
-              <span>Excluir Prêmio</span>
+              <span>Eliminar Prémio</span>
             </h3>
             <p className="text-xs text-slate-300 mb-6 leading-relaxed">
-              Tem certeza que deseja remover o prêmio <strong>{deletingPrize.title}</strong> do catálogo e da base de dados?
+              Tem a certeza de que deseja remover o prémio <strong>{deletingPrize.title}</strong> do catálogo e da base de dados?
             </p>
 
             <div className="flex items-center justify-end gap-3">
@@ -470,7 +470,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                 className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Sim, Excluir</span>
+                <span>Sim, Eliminar</span>
               </button>
             </div>
           </div>

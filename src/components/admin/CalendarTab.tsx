@@ -84,27 +84,27 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
     if (!targetDate) return;
 
     const rounds = [
-      { round: 1, time: '10:00', title: '1º Sorteio do Dia - Rodada Matutina' },
-      { round: 2, time: '14:00', title: '2º Sorteio do Dia - Rodada da Tarde' },
-      { round: 3, time: '18:00', title: '3º Sorteio do Dia - Rodada de Fim de Tarde' },
-      { round: 4, time: '21:00', title: '4º Sorteio do Dia - Grande Rodada Nobre' },
+      { round: 1, time: '10:00', title: '1º Sorteio do Dia - Ronda Matinal' },
+      { round: 2, time: '14:00', title: '2º Sorteio do Dia - Ronda da Tarde' },
+      { round: 3, time: '18:00', title: '3º Sorteio do Dia - Ronda de Fim de Tarde' },
+      { round: 4, time: '21:00', title: '4º Sorteio do Dia - Grande Ronda da Noite' },
     ];
 
     const newSchedules: DrawSchedule[] = rounds.map((r, i) => ({
       id: `sched-${Date.now()}-${i}`,
       title: `${r.title} (${r.time})`,
-      description: `Rodada ${r.round} oficial do dia com distribuição dos prêmios cadastrados.`,
+      description: `Ronda ${r.round} oficial do dia com distribuição dos prémios registados.`,
       scheduledDate: targetDate,
       scheduledTime: r.time,
       status: 'scheduled',
       roundNumber: r.round,
-      roundLabel: `${r.round}ª Rodada - ${r.time}`,
+      roundLabel: `${r.round}ª Ronda - ${r.time}`,
       prizeIds: prizes.map(p => p.id),
       createdAt: new Date().toISOString(),
     }));
 
     onUpdateSchedules([...schedules, ...newSchedules]);
-    setToastMessage(`4 horários (10:00, 14:00, 18:00 e 21:00) foram agendados e salvos no banco de dados para ${targetDate}!`);
+    setToastMessage(`4 horários (10:00, 14:00, 18:00 e 21:00) foram agendados e guardados na base de dados para ${targetDate}!`);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
@@ -216,12 +216,12 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                     {schedule.title}
                   </h3>
                   <p className="text-xs text-slate-400 max-w-2xl">
-                    {schedule.description || 'Sorteio oficial transmitido via Live com prêmios exclusivos.'}
+                    {schedule.description || 'Sorteio oficial transmitido em direto com prémios exclusivos.'}
                   </p>
 
                   {/* Associated Prizes */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                    <span className="text-[11px] text-slate-400">Prêmios em disputa:</span>
+                    <span className="text-[11px] text-slate-400">Prémios em disputa:</span>
                     {assignedPrizes.map((p) => (
                       <span
                         key={p.id}
@@ -231,7 +231,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                       </span>
                     ))}
                     {assignedPrizes.length === 0 && (
-                      <span className="text-[11px] text-slate-500 italic">Todos os prêmios ativos</span>
+                      <span className="text-[11px] text-slate-500 italic">Todos os prémios ativos</span>
                     )}
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
               <span>Agendar Novo Sorteio</span>
             </h3>
             <p className="text-xs text-slate-400 mb-6">
-              Defina o dia, horário e prêmios vinculados a este sorteio.
+              Defina o dia, horário e prémios associados a este sorteio.
             </p>
 
             {/* Error Message inside modal */}
@@ -351,7 +351,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
-                  Prêmios Vinculados a este Sorteio:
+                  Prémios Associados a este Sorteio:
                 </label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 bg-slate-950 rounded-xl border border-slate-800">
                   {prizes.map((p) => {

@@ -36,6 +36,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       },
     };
     setFields(updated);
+    onUpdateFormFields(updated);
   };
 
   const handleToggleRequired = (key: keyof FormFieldsConfig) => {
@@ -52,6 +53,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       },
     };
     setFields(updated);
+    onUpdateFormFields(updated);
   };
 
   const handleUpdateText = (
@@ -67,6 +69,22 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       },
     };
     setFields(updated);
+    onUpdateFormFields(updated);
+  };
+
+  const handleClearAllPlaceholders = () => {
+    const updated: FormFieldsConfig = {
+      ...fields,
+      name: { ...fields.name, placeholder: '' },
+      email: { ...fields.email, placeholder: '' },
+      phone: { ...fields.phone, placeholder: '' },
+      document: { ...fields.document, placeholder: '' },
+      city: { ...fields.city, placeholder: '' },
+    };
+    setFields(updated);
+    onUpdateFormFields(updated);
+    setSaveToast(true);
+    setTimeout(() => setSaveToast(false), 3500);
   };
 
   const handleSave = () => {
@@ -96,8 +114,18 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
+            onClick={handleClearAllPlaceholders}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold border border-amber-500/30 transition-colors cursor-pointer"
+            title="Deixa todos os campos do formulário totalmente limpos, sem qualquer texto de exemplo"
+          >
+            <span>Limpar Todos os Exemplos</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleReset}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
           >
@@ -106,6 +134,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={handleSave}
             className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors cursor-pointer"
           >

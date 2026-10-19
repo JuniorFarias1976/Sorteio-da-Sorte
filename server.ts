@@ -163,6 +163,9 @@ const INITIAL_DATABASE = {
     searchSectionTitle: 'Já se inscreveu? Consulte os seus Bilhetes',
     searchSectionSubtitle: 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados',
     ticketNotice: 'Validação única: limite de 1 inscrição por e-mail',
+    heroBadgeText: 'Sorteio Oficial 2026 • Auditoria em Tempo Real',
+    ticketModalTitle: 'INSCRIÇÃO CONFIRMADA COM SUCESSO!',
+    ticketModalSubtitle: 'O Seu Bilhete Oficial',
   },
   formFields: {
     name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },

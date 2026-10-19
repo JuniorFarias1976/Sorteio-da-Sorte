@@ -144,10 +144,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     const created: Participant = {
       id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       name: newName.trim() || 'Participante',
-      email: normalizedEmail || 'sem-email@sorteiolive.com',
+      email: normalizedEmail || 'sem-email@sorteiolive.pt',
       phone: newPhone.trim() || 'Não informado',
       document: newDoc.trim() || 'Não informado',
-      city: newCity.trim() || 'Brasil',
+      city: newCity.trim() || 'Portugal',
       ticketNumber: ticket,
       createdAt: new Date().toISOString(),
       status: 'active',
@@ -155,7 +155,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
     onUpdateParticipants([created, ...participants]);
     setShowAddModal(false);
-    setSaveSuccessToast(`Participante "${created.name}" (Bilhete #${created.ticketNumber}) gravado com sucesso no Banco de Dados!`);
+    setSaveSuccessToast(`Participante "${created.name}" (Bilhete #${created.ticketNumber}) gravado com sucesso na Base de Dados!`);
     setTimeout(() => setSaveSuccessToast(null), 4000);
   };
 
@@ -165,7 +165,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     const targetName = deletingParticipant.name;
     onUpdateParticipants(participants.filter((p) => p.id !== targetId), targetId);
     setDeletingParticipant(null);
-    setSaveSuccessToast(`Participante "${targetName}" removido com sucesso.`);
+    setSaveSuccessToast(`Participante "${targetName}" eliminado com sucesso.`);
     setTimeout(() => setSaveSuccessToast(null), 3500);
   };
 
@@ -181,9 +181,9 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   };
 
   const handleGenerateBatch = () => {
-    const firstNames = ['Matheus', 'Camila', 'Rafael', 'Larissa', 'Gabriel', 'Beatriz', 'Lucas', 'Mariana', 'Diego', 'Juliana'];
-    const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes'];
-    const cities = ['São Paulo - SP', 'Rio de Janeiro - RJ', 'Belo Horizonte - MG', 'Curitiba - PR', 'Porto Alegre - RS', 'Salvador - BA', 'Fortaleza - CE'];
+    const firstNames = ['Tiago', 'Inês', 'Gonçalo', 'Beatriz', 'Rodrigo', 'Carolina', 'Afonso', 'Leonor', 'Martim', 'Matilde'];
+    const lastNames = ['Silva', 'Santos', 'Ferreira', 'Pereira', 'Oliveira', 'Costa', 'Rodrigues', 'Martins', 'Jesus', 'Sousa'];
+    const cities = ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Setúbal', 'Faro', 'Aveiro', 'Funchal'];
 
     const newBatch: Participant[] = [];
     for (let i = 0; i < 5; i++) {
@@ -193,15 +193,16 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       while (participants.some((p) => p.ticketNumber === randomTicket) || newBatch.some((b) => b.ticketNumber === randomTicket)) {
         randomTicket = Math.floor(10000 + Math.random() * 90000).toString();
       }
-      const phoneDDD = Math.floor(11 + Math.random() * 80);
-      const phoneNum = Math.floor(900000000 + Math.random() * 99999999);
+      const phonePrefix = ['91', '92', '93', '96'][Math.floor(Math.random() * 4)];
+      const phoneSuffix = Math.floor(1000000 + Math.random() * 8999999);
+      const nifNum = Math.floor(200000000 + Math.random() * 99999999);
 
       newBatch.push({
         id: `part-${Date.now()}-${i}`,
         name: `${fName} ${lName}`,
         email: `${fName.toLowerCase()}.${lName.toLowerCase()}${Math.floor(Math.random() * 99)}@gmail.com`,
-        phone: `(${phoneDDD}) ${phoneNum.toString().slice(0, 5)}-${phoneNum.toString().slice(5)}`,
-        document: `${Math.floor(100 + Math.random() * 899)}.${Math.floor(100 + Math.random() * 899)}.${Math.floor(100 + Math.random() * 899)}-${Math.floor(10 + Math.random() * 89)}`,
+        phone: `+351 ${phonePrefix}${phoneSuffix.toString().slice(0, 3)} ${phoneSuffix.toString().slice(3)}`,
+        document: `${nifNum}`,
         city: cities[Math.floor(Math.random() * cities.length)],
         ticketNumber: randomTicket,
         createdAt: new Date().toISOString(),
@@ -397,7 +398,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     <button
                       onClick={() => setDeletingParticipant(p)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                      title="Excluir Participante"
+                      title="Eliminar Participante"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -414,7 +415,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       </div>
                       <h4 className="text-sm font-bold text-white">Formulário e Base de Dados Limpos</h4>
                       <p className="text-xs text-slate-400 leading-relaxed">
-                        Nenhum participante de exemplo cadastrado. O formulário e o banco de dados estão 100% limpos e prontos para receber inscrições reais.
+                        Nenhum participante registado. O formulário e a base de dados estão 100% limpos e prontos para receber inscrições reais.
                       </p>
                       <div className="flex items-center justify-center gap-2 pt-2">
                         <button
@@ -422,7 +423,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                           className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
-                          <span>Cadastrar Novo Participante</span>
+                          <span>Registar Novo Participante</span>
                         </button>
                         <button
                           onClick={handleGenerateBatch}
@@ -438,7 +439,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               ) : filteredParticipants.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-slate-500">
-                    Nenhum participante encontrado com os critérios de busca selecionados.
+                    Nenhum participante encontrado com os critérios de pesquisa selecionados.
                   </td>
                 </tr>
               ) : null}
@@ -454,7 +455,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-amber-400" />
-                <span>Cadastrar Novo Participante Manual</span>
+                <span>Registar Novo Participante Manual</span>
               </h3>
               <button 
                 type="button" 
@@ -604,7 +605,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <span>Remover Participante</span>
             </h3>
             <p className="text-xs text-slate-300 mb-6 leading-relaxed">
-              Tem certeza que deseja excluir o participante <strong>{deletingParticipant.name}</strong> (Bilhete #{deletingParticipant.ticketNumber}) da base de dados do sorteio?
+              Tem a certeza de que deseja eliminar o participante <strong>{deletingParticipant.name}</strong> (Bilhete #{deletingParticipant.ticketNumber}) da base de dados do sorteio?
             </p>
 
             <div className="flex items-center justify-end gap-3">
@@ -621,7 +622,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Sim, Excluir</span>
+                <span>Sim, Eliminar</span>
               </button>
             </div>
           </div>
@@ -637,11 +638,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <span>Remover Todos os Exemplos</span>
             </h3>
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Deseja realmente remover todos os <strong>{participants.length} participantes</strong> e deixar o formulário e o banco de dados 100% limpos?
+              Deseja realmente remover todos os <strong>{participants.length} participantes</strong> e deixar o formulário e a base de dados 100% limpos?
             </p>
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[11px] text-red-300 mb-6 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <span>Esta ação excluirá todos os participantes da nuvem (Firestore), do arquivo local e da memória, deixando o sistema zerado para novos cadastros reais.</span>
+              <span>Esta ação eliminará todos os participantes da base de dados e da memória, deixando o sistema totalmente limpo para novas inscrições reais.</span>
             </div>
 
             <div className="flex items-center justify-end gap-3">
@@ -800,13 +801,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 onClick={() => {
                   onUpdateFormFields(tempFields);
                   setShowFieldsModal(false);
-                  setSaveSuccessToast('Configuração dos campos salva com sucesso e sincronizada com o formulário!');
+                  setSaveSuccessToast('Configuração dos campos guardada com sucesso e sincronizada com o formulário!');
                   setTimeout(() => setSaveSuccessToast(null), 3500);
                 }}
                 className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
               >
                 <Check className="w-4 h-4" />
-                <span>Salvar Configuração</span>
+                <span>Guardar Configuração</span>
               </button>
             </div>
           </div>

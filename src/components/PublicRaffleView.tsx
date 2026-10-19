@@ -626,7 +626,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               <div className="flex items-center justify-between border-b border-amber-500/30 pb-4 mb-4">
                 <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>INSCRIÇÃO CONFIRMADA COM SUCESSO!</span>
+                  <span>{brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!'}</span>
                 </div>
                 <button
                   onClick={() => setNewlyCreatedTicket(null)}
@@ -639,7 +639,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               {/* Golden Ticket Layout */}
               <div className="bg-slate-950 border border-amber-500/50 rounded-2xl p-6 text-center shadow-inner relative">
                 <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">
-                  O Seu Bilhete Oficial
+                  {brand.ticketModalSubtitle || 'O Seu Bilhete Oficial'}
                 </p>
                 <div className="text-5xl sm:text-6xl font-black font-mono text-amber-400 tracking-wider my-2">
                   #{newlyCreatedTicket.ticketNumber}

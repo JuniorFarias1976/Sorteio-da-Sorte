@@ -36,6 +36,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [terms, setTerms] = useState(brand.termsAndConditions);
 
   // App-wide customizable texts
+  const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
   const [roundsBannerTitle, setRoundsBannerTitle] = useState(brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia');
   const [roundsBannerSubtitle, setRoundsBannerSubtitle] = useState(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!');
   const [showRoundsBanner, setShowRoundsBanner] = useState(brand.showRoundsBanner !== false);
@@ -46,6 +47,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [searchSectionTitle, setSearchSectionTitle] = useState(brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes');
   const [searchSectionSubtitle, setSearchSectionSubtitle] = useState(brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados');
   const [ticketNotice, setTicketNotice] = useState(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
+  const [ticketModalTitle, setTicketModalTitle] = useState(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
+  const [ticketModalSubtitle, setTicketModalSubtitle] = useState(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,6 +71,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setSecondaryColor(brand.secondaryColor);
     setAccentColor(brand.accentColor);
     setTerms(brand.termsAndConditions);
+    setHeroBadgeText(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
     setRoundsBannerTitle(brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia');
     setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!');
     setShowRoundsBanner(brand.showRoundsBanner !== false);
@@ -78,6 +82,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setSearchSectionTitle(brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes');
     setSearchSectionSubtitle(brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados');
     setTicketNotice(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
+    setTicketModalTitle(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
+    setTicketModalSubtitle(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
   }, [brand]);
 
   // Initial check of server database status
@@ -193,6 +199,9 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       searchSectionTitle: searchSectionTitle.trim(),
       searchSectionSubtitle: searchSectionSubtitle.trim(),
       ticketNotice: ticketNotice.trim(),
+      heroBadgeText: heroBadgeText.trim(),
+      ticketModalTitle: ticketModalTitle.trim(),
+      ticketModalSubtitle: ticketModalSubtitle.trim(),
     };
 
     onUpdateBrand(updated);
@@ -565,6 +574,52 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 value={searchSectionSubtitle}
                 onChange={(e) => setSearchSectionSubtitle(e.target.value)}
                 placeholder="Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* Confirmação e Destaques Adicionais */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Destaques e Janela de Confirmação de Bilhete
+            </h4>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Etiqueta de Destaque Superior (Badge):
+              </label>
+              <input
+                type="text"
+                value={heroBadgeText}
+                onChange={(e) => setHeroBadgeText(e.target.value)}
+                placeholder="Sorteio Oficial 2026 • Auditoria em Tempo Real"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Título do Modal de Sucesso do Bilhete:
+              </label>
+              <input
+                type="text"
+                value={ticketModalTitle}
+                onChange={(e) => setTicketModalTitle(e.target.value)}
+                placeholder="INSCRIÇÃO CONFIRMADA COM SUCESSO!"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Subtítulo do Bilhete Emitido:
+              </label>
+              <input
+                type="text"
+                value={ticketModalSubtitle}
+                onChange={(e) => setTicketModalSubtitle(e.target.value)}
+                placeholder="O Seu Bilhete Oficial"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
             </div>
