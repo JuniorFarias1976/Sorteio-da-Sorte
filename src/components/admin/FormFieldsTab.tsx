@@ -226,14 +226,26 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-slate-400 uppercase font-semibold mb-1">
-                      Texto de Exemplo (Placeholder):
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] text-slate-400 uppercase font-semibold">
+                        Texto de Exemplo (Placeholder):
+                      </label>
+                      {field.placeholder && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateText(key, 'placeholder', '')}
+                          className="text-[10px] text-slate-500 hover:text-amber-400 underline cursor-pointer"
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="text"
-                      value={field.placeholder}
+                      value={field.placeholder || ''}
                       onChange={(e) => handleUpdateText(key, 'placeholder', e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                      placeholder="Deixe em branco para o campo ficar limpo sem texto de exemplo..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:ring-1 focus:ring-amber-500 outline-none"
                     />
                   </div>
                 </div>

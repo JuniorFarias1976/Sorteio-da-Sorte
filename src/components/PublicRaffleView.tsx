@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Participant, Prize, DrawSchedule, BrandConfig, FormFieldsConfig } from '../types';
 import { 
   Ticket, 
@@ -14,7 +14,9 @@ import {
   QrCode,
   Trophy,
   ArrowRight,
-  AlertTriangle
+  AlertTriangle,
+  Edit3,
+  Check
 } from 'lucide-react';
 import { DEFAULT_FORM_FIELDS } from '../utils/storage';
 import { ApiService } from '../utils/api';
@@ -28,6 +30,8 @@ interface PublicRaffleViewProps {
   formFields?: FormFieldsConfig;
   onRegisterParticipant: (participant: Participant) => void;
   onGoToLive: () => void;
+  onUpdateBrand?: (brand: BrandConfig) => void;
+  isAdmin?: boolean;
 }
 
 export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
@@ -39,7 +43,29 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   formFields = DEFAULT_FORM_FIELDS,
   onRegisterParticipant,
   onGoToLive,
+  onUpdateBrand,
+  isAdmin = false,
 }) => {
+  const [showEditSloganModal, setShowEditSloganModal] = useState(false);
+  const [editCompanyName, setEditCompanyName] = useState(brand.companyName || '');
+  const [editCompanySlogan, setEditCompanySlogan] = useState(brand.companySlogan || '');
+
+  useEffect(() => {
+    setEditCompanyName(brand.companyName || '');
+    setEditCompanySlogan(brand.companySlogan || '');
+  }, [brand.companyName, brand.companySlogan]);
+
+  const handleSaveSlogan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onUpdateBrand) {
+      onUpdateBrand({
+        ...brand,
+        companyName: editCompanyName.trim() || brand.companyName,
+        companySlogan: editCompanySlogan.trim(),
+      });
+    }
+    setShowEditSloganModal(false);
+  };
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -268,12 +294,39 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             )}
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-4">
-            {brand.companyName || 'SorteioLive Pro'}
-          </h1>
-          <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal mb-8">
-            {brand.companySlogan || 'Concorra a prêmios extraordinários em sorteios auditados e transmitidos 100% ao vivo.'}
-          </p>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white">
+              {brand.companyName || 'SorteioLive Pro'}
+            </h1>
+            {onUpdateBrand && (
+              <button
+                type="button"
+                onClick={() => setShowEditSloganModal(true)}
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-400 border border-slate-700 transition-colors shadow-lg cursor-pointer"
+                title="Editar Nome do Sorteio e Frase/Subtítulo"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="max-w-2xl mx-auto mb-8">
+            {brand.companySlogan !== undefined && brand.companySlogan !== '' ? (
+              <p className="text-base sm:text-xl text-slate-300 font-normal leading-relaxed">
+                {brand.companySlogan}
+              </p>
+            ) : null}
+            {onUpdateBrand && (
+              <button
+                type="button"
+                onClick={() => setShowEditSloganModal(true)}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-amber-400 text-xs border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+              >
+                <Edit3 className="w-3 h-3 text-amber-400" />
+                <span>{brand.companySlogan ? 'Alterar frase abaixo do nome' : '+ Adicionar frase/subtítulo abaixo do nome'}</span>
+              </button>
+            )}
+          </div>
 
           {/* 4 Daily Draw Editions Banner */}
           <div className="mt-6 max-w-3xl mx-auto bg-slate-900/95 border-2 border-amber-500/30 p-4 sm:p-5 rounded-3xl shadow-2xl backdrop-blur-md">
@@ -439,7 +492,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     required={formFields.name.required}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={formFields.name.placeholder || 'Ex: Ana Maria da Silva'}
+                    placeholder={formFields.name.placeholder || ''}
                     className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -461,7 +514,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         setEmail(e.target.value);
                         if (duplicateEmailError) setDuplicateEmailError(null);
                       }}
-                      placeholder={formFields.email.placeholder || 'seuemail@exemplo.com'}
+                      placeholder={formFields.email.placeholder || ''}
                       className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                         duplicateEmailError ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700/80'
                       }`}
@@ -483,7 +536,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       required={formFields.phone.required}
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      placeholder={formFields.phone.placeholder || '(11) 99999-9999'}
+                      placeholder={formFields.phone.placeholder || ''}
                       className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
@@ -504,7 +557,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         required={formFields.document.required}
                         value={document}
                         onChange={(e) => handleDocumentChange(e.target.value)}
-                        placeholder={formFields.document.placeholder || '000.000.000-00'}
+                        placeholder={formFields.document.placeholder || ''}
                         className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
@@ -521,7 +574,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         required={formFields.city.required}
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        placeholder={formFields.city.placeholder || 'Ex: São Paulo - SP'}
+                        placeholder={formFields.city.placeholder || ''}
                         className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
@@ -755,6 +808,86 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal: Editar Nome e Subtítulo */}
+      {showEditSloganModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-amber-400" />
+                <span>Editar Nome e Frase / Subtítulo</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowEditSloganModal(false)}
+                className="text-slate-400 hover:text-white p-1 text-xs cursor-pointer"
+              >
+                ✕ Fechar
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSlogan} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Nome do Sorteio / Empresa:
+                </label>
+                <input
+                  type="text"
+                  value={editCompanyName}
+                  onChange={(e) => setEditCompanyName(e.target.value)}
+                  placeholder="Ex: Sorteio Lacer OMD 2026"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase">
+                    Subtítulo / Frase abaixo do Nome:
+                  </label>
+                  {editCompanySlogan && (
+                    <button
+                      type="button"
+                      onClick={() => setEditCompanySlogan('')}
+                      className="text-[11px] text-slate-400 hover:text-amber-400 underline cursor-pointer"
+                    >
+                      Deixar em branco
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  rows={3}
+                  value={editCompanySlogan}
+                  onChange={(e) => setEditCompanySlogan(e.target.value)}
+                  placeholder="Digite a frase exibida abaixo do logotipo e nome (ou deixe vazio para não exibir nada)..."
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Esta frase é exibida logo abaixo de <strong>"{editCompanyName || 'Sorteio'}"</strong>. Se deixar em branco, nenhum texto será mostrado.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowEditSloganModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Salvar Alterações</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

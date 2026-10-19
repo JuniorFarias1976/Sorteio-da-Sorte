@@ -139,7 +139,7 @@
     "messageTemplate": "Olá {nome}! 🎟️ Seu número da sorte é #{bilhete}. O sorteio \"{evento}\" começará em breve com prêmios incríveis! Assista ao vivo: {link_sorteio}"
   },
   "brand": {
-    "companyName": "Mega Sorteios Brasil 2026",
+    "companyName": "Sorteio Lacer OMD 2026",
     "companySlogan": "Sorteios 100% Auditados",
     "logoUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8z8BQz0AEYBxVSF+FABJAD/sY6DeDAAAAAElFTkSuQmCC",
     "primaryColor": "#2563eb",
@@ -155,35 +155,35 @@
     "name": {
       "id": "name",
       "label": "Nome Completo",
-      "placeholder": "Ex: Ana Maria da Silva",
+      "placeholder": "",
       "enabled": true,
       "required": true
     },
     "email": {
       "id": "email",
       "label": "E-mail",
-      "placeholder": "seuemail@exemplo.com",
+      "placeholder": "",
       "enabled": true,
       "required": true
     },
     "phone": {
       "id": "phone",
       "label": "WhatsApp / Telefone",
-      "placeholder": "(11) 99999-9999",
+      "placeholder": "",
       "enabled": true,
       "required": true
     },
     "document": {
       "id": "document",
       "label": "CPF ou Documento",
-      "placeholder": "000.000.000-00",
+      "placeholder": "",
       "enabled": true,
       "required": false
     },
     "city": {
       "id": "city",
       "label": "Cidade / Estado",
-      "placeholder": "Ex: São Paulo - SP",
+      "placeholder": "",
       "enabled": true,
       "required": false
     }
@@ -217,5 +217,5 @@
     "includeHash": true,
     "includeDate": true
   },
-  "version": 1792408121863
+  "version": 1792408999688
 }

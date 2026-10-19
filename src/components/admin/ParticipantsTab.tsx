@@ -763,14 +763,15 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                           </label>
                           <input
                             type="text"
-                            value={field.placeholder}
+                            value={field.placeholder || ''}
                             onChange={(e) => {
                               setTempFields({
                                 ...tempFields,
                                 [key]: { ...field, placeholder: e.target.value },
                               });
                             }}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            placeholder="Deixe vazio para campo limpo..."
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
                           />
                         </div>
                       </div>

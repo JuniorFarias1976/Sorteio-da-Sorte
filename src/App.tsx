@@ -653,6 +653,8 @@ export default function App() {
             formFields={formFields}
             onRegisterParticipant={handleRegisterParticipant}
             onGoToLive={() => setCurrentView('live')}
+            onUpdateBrand={handleUpdateBrand}
+            isAdmin={isAdminUnlocked}
           />
         )}
 

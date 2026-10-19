@@ -155,11 +155,11 @@ const INITIAL_DATABASE = {
     termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com seus bilhetes únicos gerados no momento da inscrição. Vencedores devem apresentar documento oficial com foto e comprovar posse do número sorteado no prazo de até 30 dias corridos.',
   },
   formFields: {
-    name: { id: 'name', label: 'Nome Completo', placeholder: 'Ex: Ana Maria da Silva', enabled: true, required: true },
-    email: { id: 'email', label: 'E-mail', placeholder: 'seuemail@exemplo.com', enabled: true, required: true },
-    phone: { id: 'phone', label: 'WhatsApp / Telefone', placeholder: '(11) 99999-9999', enabled: true, required: true },
-    document: { id: 'document', label: 'CPF ou Documento', placeholder: '000.000.000-00', enabled: true, required: false },
-    city: { id: 'city', label: 'Cidade / Estado', placeholder: 'Ex: São Paulo - SP', enabled: true, required: false },
+    name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },
+    email: { id: 'email', label: 'E-mail', placeholder: '', enabled: true, required: true },
+    phone: { id: 'phone', label: 'WhatsApp / Telefone', placeholder: '', enabled: true, required: true },
+    document: { id: 'document', label: 'CPF ou Documento', placeholder: '', enabled: true, required: false },
+    city: { id: 'city', label: 'Cidade / Estado', placeholder: '', enabled: true, required: false },
   },
   posterConfig: {
     title: 'PARTICIPE DO NOSSO GRANDE SORTEIO!',

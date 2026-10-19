@@ -356,15 +356,30 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-              Slogan / Mensagem de Apresentação
-            </label>
-            <input
-              type="text"
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-white uppercase tracking-wider">
+                Subtítulo / Frase abaixo do Logo e Nome do Sorteio
+              </label>
+              {companySlogan && (
+                <button
+                  type="button"
+                  onClick={() => setCompanySlogan('')}
+                  className="text-[11px] text-slate-400 hover:text-amber-400 cursor-pointer underline"
+                >
+                  Limpar Subtítulo
+                </button>
+              )}
+            </div>
+            <textarea
+              rows={2}
               value={companySlogan}
               onChange={(e) => setCompanySlogan(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="Digite a frase que aparece por baixo do logo e do nome (ex: Concorra a prêmios extraordinários...). Deixe vazio se não quiser exibir nenhum subtítulo."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
             />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Texto exibido na página pública logo abaixo do logotipo e do título <strong>"{companyName || 'Sorteio'}"</strong>. Se deixar vazio, nenhum subtítulo aparecerá.
+            </p>
           </div>
 
           <div>
