@@ -54,3 +54,19 @@
   animation: pulse-glow 2.5s infinite;
 }
 
+/* Mobile Safe Area Insets for modern smartphones */
+.safe-area-pb {
+  padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-pt {
+  padding-top: max(0.25rem, env(safe-area-inset-top));
+}
+
+/* Touch targets and scrolling optimization for mobile devices */
+@media (hover: none) and (pointer: coarse) {
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+}
+

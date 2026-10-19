@@ -523,7 +523,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                 <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
                   <span className="text-slate-400">Valor Estimado:</span>
                   <span className="font-mono font-bold text-emerald-400 text-sm">
-                    {currentPrize.estimatedValue ? `R$ ${currentPrize.estimatedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Inestimável'}
+                    {currentPrize.estimatedValue ? `€ ${currentPrize.estimatedValue.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}` : 'Inestimável'}
                   </span>
                 </div>
               </div>

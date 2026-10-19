@@ -59,49 +59,49 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [nextSchedule]);
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white shadow-xl no-print">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white shadow-xl no-print safe-area-pt">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
         {/* Brand / Logo */}
         <div 
           onClick={() => onViewChange('public')}
-          className="flex items-center gap-3 cursor-pointer group select-none"
+          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group select-none min-w-0"
         >
           {brand.logoUrl ? (
             <img
               src={brand.logoUrl}
               alt={brand.companyName}
-              className="w-11 h-11 rounded-xl object-contain bg-slate-800 p-1 border border-slate-700/60 shadow-md group-hover:scale-105 transition-transform"
+              className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl object-contain bg-slate-800 p-1 border border-slate-700/60 shadow-md group-hover:scale-105 transition-transform shrink-0"
             />
           ) : (
             <div 
               style={{ backgroundColor: brand.primaryColor }}
-              className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-slate-950 text-xl shadow-lg"
+              className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-bold text-slate-950 text-lg sm:text-xl shadow-lg shrink-0"
             >
               ★
             </div>
           )}
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-lg tracking-tight text-white group-hover:text-amber-400 transition-colors">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-bold text-base sm:text-lg tracking-tight text-white group-hover:text-amber-400 transition-colors truncate">
                 {brand.companyName || 'SorteioLive Pro'}
               </span>
-              <span className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded">
+              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded shrink-0">
                 Oficial
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block truncate max-w-[280px]">
+            <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block truncate max-w-[280px]">
               {brand.companySlogan || 'Sorteios e prémios em tempo real'}
             </p>
           </div>
         </div>
 
         {/* Center: Live Sync & Status Indicator */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2">
           {onManualSync && (
             <button
               onClick={onManualSync}
               disabled={isSyncing}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
               title="Clique para sincronizar os dados em tempo real com a base de dados central"
             >
               <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
@@ -114,15 +114,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           {nextSchedule && timeLeft && (
             <div 
               onClick={() => onViewChange('live')}
-              className="flex items-center gap-2 px-3 py-1 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg cursor-pointer transition-colors"
               title="Clique para aceder à Sala de Transmissão em Direto"
             >
               <div className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
               </div>
-              <div className="text-xs">
-                <span className="text-slate-400 mr-1.5 font-medium">Próximo:</span>
+              <div className="text-[11px] sm:text-xs">
+                <span className="text-slate-400 mr-1 font-medium hidden xs:inline">Próximo:</span>
                 <span className="font-mono font-bold text-amber-400">
                   {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
                   {String(timeLeft.hours).padStart(2, '0')}:
@@ -134,8 +134,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Navigation Switcher Tabs */}
-        <nav className="flex items-center bg-slate-950/70 p-1.5 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
+        {/* Navigation Switcher Tabs (Desktop) */}
+        <nav className="hidden sm:flex items-center bg-slate-950/70 p-1.5 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
           <button
             onClick={() => onViewChange('public')}
             className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${

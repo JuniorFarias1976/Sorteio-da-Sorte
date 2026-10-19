@@ -23,6 +23,7 @@ import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { Lock, Key, ShieldCheck, CheckCircle2, AlertCircle, X, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -642,7 +643,7 @@ export default function App() {
       )}
 
       {/* Main Active View */}
-      <main className="flex-1">
+      <main className="flex-1 pb-16 sm:pb-0">
         {currentView === 'public' && (
           <PublicRaffleView
             brand={brand}
@@ -702,8 +703,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer (Hidden on print) */}
-      <footer className="no-print bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+      {/* Footer (Hidden on print, extra bottom space on mobile for navigation bar) */}
+      <footer className="no-print bg-slate-950 border-t border-slate-900 py-6 pb-24 sm:pb-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-400">{brand.companyName || 'SorteioLive Pro'}</span>
@@ -754,6 +755,16 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Dedicated Mobile Bottom App Bar (Optimized for Smartphones) */}
+      <MobileBottomNav
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        brand={brand}
+        isAdminUnlocked={isAdminUnlocked}
+        onRequestUnlockAdmin={() => setShowAdminModal(true)}
+        nextSchedule={nextSchedule}
+      />
     </div>
   );
 }

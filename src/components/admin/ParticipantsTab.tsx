@@ -347,8 +347,77 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       </div>
 
       {/* Participants Table */}
+      {/* Participants Container: Mobile Cards (<md) & Desktop Table (>=md) */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+        {/* Mobile View: Clean Touch Cards */}
+        <div className="md:hidden divide-y divide-slate-800/80">
+          {filteredParticipants.map((p) => (
+            <div key={p.id} className="p-4 space-y-2 hover:bg-slate-800/30 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1">
+                  <Ticket className="w-3.5 h-3.5 opacity-70" />
+                  #{p.ticketNumber}
+                </span>
+                <div className="flex items-center gap-2">
+                  {p.status === 'winner' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
+                      🏆 Contemplado
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      Ativo
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setDeletingParticipant(p)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                    title="Eliminar Participante"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-bold text-white text-sm">{p.name}</p>
+                <p className="text-slate-400 text-xs">{p.email}</p>
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 mt-1">
+                  <span>📱 {p.phone || 'Sem telemóvel'}</span>
+                  <span>📍 {p.city || 'Portugal'}</span>
+                  {p.document && <span>🆔 {p.document}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {participants.length === 0 ? (
+            <div className="p-6 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-amber-400">
+                <Users className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-white">Formulário e Base Limpos</h4>
+              <p className="text-xs text-slate-400">
+                Nenhum participante registado. Pronto para receber novas inscrições pelo telemóvel ou computador.
+              </p>
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  onClick={handleOpenAddModal}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Registar Novo Participante</span>
+                </button>
+              </div>
+            </div>
+          ) : filteredParticipants.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-500">
+              Nenhum participante encontrado para esta pesquisa.
+            </div>
+          ) : null}
+        </div>
+
+        {/* Desktop View: Full Data Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/70 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
               <tr>
@@ -392,7 +461,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-4 text-slate-400 text-[11px]">
-                    {new Date(p.createdAt).toLocaleDateString('pt-BR')} {new Date(p.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(p.createdAt).toLocaleDateString('pt-PT')} {new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
