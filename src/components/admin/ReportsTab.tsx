@@ -382,7 +382,7 @@ const EditReportPdfModal: React.FC<EditReportPdfModalProps> = ({
                   onChange={(e) =>
                     setForm({ ...form, protocolPrefix: e.target.value })
                   }
-                  placeholder="Ex: SRT-, AUDIT-"
+                  placeholder=""
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-500 outline-none"
                 />
               </div>

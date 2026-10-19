@@ -293,7 +293,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleCreateSchedule} className="space-y-4">
+            <form onSubmit={handleCreateSchedule} className="space-y-4" autoComplete="off">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
                   Título do Sorteio *
@@ -303,7 +303,8 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Super Live de Domingo - Edição Ouro"
+                  placeholder=""
+                  autoComplete="off"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -316,7 +317,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Transmissão aberta para todos os inscritos com anúncio dos vencedores..."
+                  placeholder=""
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>

@@ -92,7 +92,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
             <span>Configuração dos Campos de Inscrição</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Defina quais informações solicitar aos participantes: marque como Obrigatório, Opcional ou Oculte o que não for necessário
+            Defina que informações solicitar aos participantes: marque como Obrigatório, Opcional ou Oculte o que não for necessário
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Restaurar Padrão</span>
+            <span>Repor Predefinições</span>
           </button>
 
           <button
@@ -110,7 +110,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
             className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors cursor-pointer"
           >
             <Check className="w-4 h-4" />
-            <span>Salvar Alterações</span>
+            <span>Guardar Alterações</span>
           </button>
         </div>
       </div>
@@ -118,7 +118,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       {saveToast && (
         <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-bold flex items-center gap-2 animate-fadeIn">
           <Check className="w-4 h-4" />
-          <span>Configuração dos campos salva com sucesso! O formulário público já está atualizado.</span>
+          <span>Configuração dos campos guardada com sucesso! O formulário público já se encontra atualizado.</span>
         </div>
       )}
 
@@ -256,12 +256,12 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       </div>
 
       <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl flex items-center justify-between text-xs text-slate-400">
-        <span>* O campo de E-mail é mantido como validador único antifraude para garantir que cada pessoa concorra com apenas um bilhete.</span>
+        <span>* O campo de E-mail é mantido como validador único antifraude para garantir que cada participante concorra com apenas um bilhete.</span>
         <button
           onClick={handleSave}
-          className="text-amber-400 hover:text-amber-300 font-bold"
+          className="text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
         >
-          Aplicar agora
+          Guardar Agora
         </button>
       </div>
     </div>

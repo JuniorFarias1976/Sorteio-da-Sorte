@@ -476,7 +476,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleAddParticipant} className="space-y-4">
+            <form onSubmit={handleAddParticipant} className="space-y-4" autoComplete="off">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
                   Nome Completo {formFields.name.required && '*'}
@@ -485,7 +485,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Ex: Carlos Eduardo Silva"
+                  placeholder=""
+                  autoComplete="off"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -499,19 +500,21 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="email@exemplo.com"
+                    placeholder=""
+                    autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    WhatsApp / Telefone {formFields.phone.required && '*'}
+                    Telemóvel / Contacto {formFields.phone.required && '*'}
                   </label>
                   <input
                     type="text"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="(11) 99999-9999"
+                    placeholder=""
+                    autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -520,25 +523,27 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    CPF ou Documento {formFields.document.required && '*'}
+                    NIF ou Documento {formFields.document.required && '*'}
                   </label>
                   <input
                     type="text"
                     value={newDoc}
                     onChange={(e) => setNewDoc(e.target.value)}
-                    placeholder="000.000.000-00"
+                    placeholder=""
+                    autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    Cidade / UF {formFields.city.required && '*'}
+                    Localidade / Concelho {formFields.city.required && '*'}
                   </label>
                   <input
                     type="text"
                     value={newCity}
                     onChange={(e) => setNewCity(e.target.value)}
-                    placeholder="Ex: São Paulo - SP"
+                    placeholder=""
+                    autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -552,7 +557,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   type="text"
                   value={customTicket}
                   onChange={(e) => setCustomTicket(e.target.value)}
-                  placeholder="Ex: 55443"
+                  placeholder=""
+                  autoComplete="off"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>

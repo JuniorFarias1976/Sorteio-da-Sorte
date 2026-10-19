@@ -87,6 +87,21 @@ export interface BrandConfig {
   contactEmail: string;
   termsAndConditions: string;
   forceResetLogo?: boolean;
+
+  // Total application texts control
+  heroBadgeText?: string;
+  roundsBannerTitle?: string;
+  roundsBannerSubtitle?: string;
+  showRoundsBanner?: boolean;
+  formTitle?: string;
+  formSubtitle?: string;
+  formButtonText?: string;
+  prizesSectionTitle?: string;
+  searchSectionTitle?: string;
+  searchSectionSubtitle?: string;
+  ticketNotice?: string;
+  ticketModalTitle?: string;
+  ticketModalSubtitle?: string;
 }
 
 export interface ParticipantFieldConfig {

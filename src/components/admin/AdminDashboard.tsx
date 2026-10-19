@@ -118,14 +118,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const TABS = [
-    { id: 'participants' as AdminTab, label: 'Participantes & Base', icon: Users, badge: participants.length },
-    { id: 'prizes' as AdminTab, label: 'Prêmios & Quantidades', icon: Gift, badge: prizes.length },
-    { id: 'calendar' as AdminTab, label: 'Calendário & 4 Horários', icon: CalendarIcon, badge: schedules.length },
+    { id: 'participants' as AdminTab, label: 'Participantes & Inscrições', icon: Users, badge: participants.length },
+    { id: 'prizes' as AdminTab, label: 'Prémios & Quantidades', icon: Gift, badge: prizes.length },
+    { id: 'calendar' as AdminTab, label: 'Calendário & 4 Rondas', icon: CalendarIcon, badge: schedules.length },
     { id: 'fields' as AdminTab, label: 'Campos do Formulário', icon: SlidersHorizontal },
     { id: 'notifications' as AdminTab, label: 'Notificações Automáticas', icon: Bell },
-    { id: 'qrcode' as AdminTab, label: 'QR Code para Impressão', icon: QrCode },
+    { id: 'qrcode' as AdminTab, label: 'Código QR para Impressão', icon: QrCode },
     { id: 'reports' as AdminTab, label: 'Relatórios & Auditoria PDF', icon: FileCheck2, badge: winners.length },
-    { id: 'brand' as AdminTab, label: 'Logo & Cores da Marca', icon: Palette },
+    { id: 'brand' as AdminTab, label: 'Logótipo, Cores & Textos', icon: Palette },
   ];
 
   return (
@@ -170,44 +170,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={onManualSync}
                 disabled={isSyncing}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-500/80 text-[11px] text-emerald-300 font-mono shadow-inner cursor-pointer transition-all disabled:opacity-50"
-                title="Clique para sincronizar os dados em tempo real com o banco de dados central (data/database.json)"
+                title="Clique para sincronizar os dados em tempo real com a base de dados central (data/database.json)"
               >
                 <Database className={`w-3.5 h-3.5 text-emerald-400 shrink-0 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
-                <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'DB Ativo (Sincronizar)'}</span>
-                <span className="sm:hidden">{isSyncing ? '...' : 'DB'}</span>
+                <span className="hidden sm:inline">{isSyncing ? 'A sincronizar...' : 'BD Ativa (Sincronizar)'}</span>
+                <span className="sm:hidden">{isSyncing ? '...' : 'BD'}</span>
               </button>
             ) : (
               <div 
                 className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300 font-mono shadow-inner"
-                title="Banco de dados central ativo e sincronizado em data/database.json"
+                title="Base de dados central ativa e sincronizada em data/database.json"
               >
                 <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>DB Ativo</span>
+                <span>BD Ativa</span>
               </div>
             )}
 
             <button
               onClick={() => setShowBackupModal(true)}
               className="px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-amber-400 hover:text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-amber-500/30 transition-all shadow cursor-pointer active:scale-98"
-              title="Backup e Sincronização direta de dados e imagens entre quaisquer navegadores"
+              title="Cópia de segurança e sincronização de dados entre navegadores"
             >
               <Cloud className="w-3.5 h-3.5" />
-              <span>Backup & Sync</span>
+              <span>Cópia de Segurança</span>
             </button>
 
             <button
               onClick={onGoToLive}
               className="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
-              title="Abrir Telão da Live"
+              title="Abrir Ecrã da Transmissão em Direto"
             >
               <Tv className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">Telão da Live</span>
+              <span className="hidden xl:inline">Ecrã em Direto</span>
             </button>
 
             <button
               onClick={onResetAllData}
               className="p-2 text-slate-500 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
-              title="Restaurar dados de demonstração padrão"
+              title="Repor dados de demonstração predefinidos"
             >
               <RotateCcw className="w-4 h-4" />
             </button>

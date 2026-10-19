@@ -348,13 +348,13 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
             {/* 4. Highlight Prizes */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                Destaque dos Prêmios:
+                Destaque dos Prémios:
               </label>
               <input
                 type="text"
-                value={posterConfig.prizeHighlight || 'iPhone 16 Pro Max · PlayStation 5 · Smart TV · Moto 0km · Pix'}
+                value={posterConfig.prizeHighlight || 'iPhone 16 Pro Max · PlayStation 5 · Smart TV · Moto 0km'}
                 onChange={(e) => handleUpdateConfig({ prizeHighlight: e.target.value })}
-                placeholder="Ex: iPhone, PS5, Smart TV, Pix..."
+                placeholder=""
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-500 outline-none"
               />
             </div>
@@ -368,7 +368,7 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
                 type="text"
                 value={posterConfig.scheduleHighlight || '4 Sorteios no mesmo dia: 10:00 · 14:00 · 18:00 · 21:00'}
                 onChange={(e) => handleUpdateConfig({ scheduleHighlight: e.target.value })}
-                placeholder="Ex: 4 rodadas diárias..."
+                placeholder=""
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-500 outline-none"
               />
             </div>

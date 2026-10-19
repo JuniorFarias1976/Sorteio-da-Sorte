@@ -90,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block truncate max-w-[280px]">
-              {brand.companySlogan || 'Sorteios e premiações em tempo real'}
+              {brand.companySlogan || 'Sorteios e prémios em tempo real'}
             </p>
           </div>
         </div>
@@ -102,11 +102,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={onManualSync}
               disabled={isSyncing}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
-              title="Clique para sincronizar os dados em tempo real com o banco de dados central"
+              title="Clique para sincronizar os dados em tempo real com a base de dados central"
             >
               <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
-              <span className="hidden lg:inline">{isSyncing ? 'Sincronizando...' : 'Base Sincronizada'}</span>
-              <span className="lg:hidden">{isSyncing ? 'Sync...' : 'DB'}</span>
+              <span className="hidden lg:inline">{isSyncing ? 'A sincronizar...' : 'Base Sincronizada'}</span>
+              <span className="lg:hidden">{isSyncing ? 'Sync...' : 'BD'}</span>
             </button>
           )}
 
@@ -115,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div 
               onClick={() => onViewChange('live')}
               className="flex items-center gap-2 px-3 py-1 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg cursor-pointer transition-colors"
-              title="Clique para ir para a Sala da Live"
+              title="Clique para aceder à Sala de Transmissão em Direto"
             >
               <div className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -158,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Tv className="w-4 h-4" />
             <span className="flex items-center gap-1.5">
-              <span>Telão Live</span>
+              <span>Ecrã em Direto</span>
               <span className="w-2 h-2 rounded-full bg-red-400"></span>
             </span>
           </button>
@@ -173,7 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? 'bg-slate-800 text-amber-400 font-semibold border border-amber-500/40 shadow-md ring-1 ring-amber-500/30'
                     : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'
                 }`}
-                title="Painel de Administrador"
+                title="Painel de Administração"
               >
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
                 <span className="hidden sm:inline">Admin [Alt+C]</span>
@@ -183,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onToggleAdminLock}
                 className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors"
-                title="Ocultar e Bloquear Painel Admin"
+                title="Ocultar e Bloquear Painel de Administrador"
               >
                 ✕
               </button>
@@ -194,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onRequestUnlockAdmin}
                 className="p-2 text-slate-500 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Acessar Painel de Controle de Administrador (ou pressione Alt+C)"
+                title="Aceder ao Painel de Administrador (ou prima Alt+C)"
               >
                 <Key className="w-4 h-4" />
               </button>

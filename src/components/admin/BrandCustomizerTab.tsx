@@ -35,6 +35,18 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [accentColor, setAccentColor] = useState(brand.accentColor);
   const [terms, setTerms] = useState(brand.termsAndConditions);
 
+  // App-wide customizable texts
+  const [roundsBannerTitle, setRoundsBannerTitle] = useState(brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia');
+  const [roundsBannerSubtitle, setRoundsBannerSubtitle] = useState(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!');
+  const [showRoundsBanner, setShowRoundsBanner] = useState(brand.showRoundsBanner !== false);
+  const [formTitle, setFormTitle] = useState(brand.formTitle || 'Garanta o seu Bilhete da Sorte');
+  const [formSubtitle, setFormSubtitle] = useState(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
+  const [formButtonText, setFormButtonText] = useState(brand.formButtonText || 'Registar Inscrição e Obter Bilhete');
+  const [prizesSectionTitle, setPrizesSectionTitle] = useState(brand.prizesSectionTitle || 'Prémios Desta Edição');
+  const [searchSectionTitle, setSearchSectionTitle] = useState(brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes');
+  const [searchSectionSubtitle, setSearchSectionSubtitle] = useState(brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados');
+  const [ticketNotice, setTicketNotice] = useState(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
+
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
@@ -56,6 +68,16 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setSecondaryColor(brand.secondaryColor);
     setAccentColor(brand.accentColor);
     setTerms(brand.termsAndConditions);
+    setRoundsBannerTitle(brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia');
+    setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!');
+    setShowRoundsBanner(brand.showRoundsBanner !== false);
+    setFormTitle(brand.formTitle || 'Garanta o seu Bilhete da Sorte');
+    setFormSubtitle(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
+    setFormButtonText(brand.formButtonText || 'Registar Inscrição e Obter Bilhete');
+    setPrizesSectionTitle(brand.prizesSectionTitle || 'Prémios Desta Edição');
+    setSearchSectionTitle(brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes');
+    setSearchSectionSubtitle(brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados');
+    setTicketNotice(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
   }, [brand]);
 
   // Initial check of server database status
@@ -154,13 +176,23 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
     const updated: BrandConfig = {
       ...brand,
-      companyName: companyName.trim() || 'SorteioLive Pro',
+      companyName: companyName.trim() || 'Sorteio Lacer OMD 2026',
       companySlogan: companySlogan.trim(),
       logoUrl: logoUrl.trim() || DEFAULT_BRAND_LOGO,
       primaryColor,
       secondaryColor,
       accentColor,
       termsAndConditions: terms.trim(),
+      roundsBannerTitle: roundsBannerTitle.trim(),
+      roundsBannerSubtitle: roundsBannerSubtitle.trim(),
+      showRoundsBanner,
+      formTitle: formTitle.trim(),
+      formSubtitle: formSubtitle.trim(),
+      formButtonText: formButtonText.trim(),
+      prizesSectionTitle: prizesSectionTitle.trim(),
+      searchSectionTitle: searchSectionTitle.trim(),
+      searchSectionSubtitle: searchSectionSubtitle.trim(),
+      ticketNotice: ticketNotice.trim(),
     };
 
     onUpdateBrand(updated);
@@ -168,7 +200,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     // Give visual confirmation of database write
     setTimeout(() => {
       setIsSaving(false);
-      setSavedSuccessMessage('Todas as alterações de marca e cores foram gravadas com sucesso na Base de Dados!');
+      setSavedSuccessMessage('Todas as alterações de marca, textos e definições foram guardadas com sucesso na Base de Dados!');
       checkDatabaseLiveStatus();
       setTimeout(() => setSavedSuccessMessage(null), 4000);
     }, 400);
@@ -189,10 +221,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Palette className="w-5 h-5 text-amber-400" />
-            <span>Identidade Visual, Logo & Cores da Marca</span>
+            <span>Personalização da Marca, Logótipo e Textos Globais</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Personalize a logomarca da sua empresa e altere as cores de destaque de toda a interface do sorteio
+            Controlo total sobre os nomes, frases de destaque (por baixo do logótipo), faixas, textos do formulário e cores de toda a aplicação
           </p>
         </div>
 
@@ -206,7 +238,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
-          <span>{isSaving ? 'Gravando na Base de Dados...' : 'Gravar Alterações na Base de Dados'}</span>
+          <span>{isSaving ? 'A Gravar na Base de Dados...' : 'Guardar Alterações na Base de Dados'}</span>
         </button>
       </div>
 
@@ -344,7 +376,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-              Nome da Empresa / Organizador *
+              Nome da Empresa / Organizador do Sorteio *
             </label>
             <input
               type="text"
@@ -355,10 +387,14 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             />
           </div>
 
-          <div>
+          {/* Slogan / Subtítulo por baixo do logo e nome */}
+          <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/30">
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-white uppercase tracking-wider">
-                Subtítulo / Frase abaixo do Logo e Nome do Sorteio
+              <label className="block text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>Subtítulo / Frase abaixo do Logótipo e Nome</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-normal normal-case">
+                  Destaque Principal
+                </span>
               </label>
               {companySlogan && (
                 <button
@@ -366,7 +402,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   onClick={() => setCompanySlogan('')}
                   className="text-[11px] text-slate-400 hover:text-amber-400 cursor-pointer underline"
                 >
-                  Limpar Subtítulo
+                  Limpar
                 </button>
               )}
             </div>
@@ -374,12 +410,164 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               rows={2}
               value={companySlogan}
               onChange={(e) => setCompanySlogan(e.target.value)}
-              placeholder="Digite a frase que aparece por baixo do logo e do nome (ex: Concorra a prêmios extraordinários...). Deixe vazio se não quiser exibir nenhum subtítulo."
+              placeholder="Insira a frase exibida por baixo do logótipo e do nome (ou deixe vazio para não exibir nada)..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              Texto exibido na página pública logo abaixo do logotipo e do título <strong>"{companyName || 'Sorteio'}"</strong>. Se deixar vazio, nenhum subtítulo aparecerá.
+              Texto que surge na página pública logo abaixo do logótipo e do nome <strong>"{companyName || 'Sorteio'}"</strong>. Se deixar vazio, nenhum subtítulo aparecerá.
             </p>
+          </div>
+
+          {/* Faixa das 4 Rondas Diárias */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-white uppercase tracking-wider">
+                Faixa dos 4 Horários / Rondas
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={showRoundsBanner}
+                  onChange={(e) => setShowRoundsBanner(e.target.checked)}
+                  className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                />
+                <span>Exibir Faixa</span>
+              </label>
+            </div>
+
+            {showRoundsBanner && (
+              <div className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                    Título da Faixa:
+                  </label>
+                  <input
+                    type="text"
+                    value={roundsBannerTitle}
+                    onChange={(e) => setRoundsBannerTitle(e.target.value)}
+                    placeholder="4 Sorteios Oficiais no Mesmo Dia"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                    Mensagem / Subtítulo da Faixa:
+                  </label>
+                  <input
+                    type="text"
+                    value={roundsBannerSubtitle}
+                    onChange={(e) => setRoundsBannerSubtitle(e.target.value)}
+                    placeholder="O seu bilhete concorre automaticamente em todas as 4 rondas diárias!"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Textos do Formulário de Inscrição */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Textos do Formulário de Inscrição
+            </h4>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Título do Formulário:
+              </label>
+              <input
+                type="text"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="Garanta o seu Bilhete da Sorte"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Subtítulo do Formulário:
+              </label>
+              <input
+                type="text"
+                value={formSubtitle}
+                onChange={(e) => setFormSubtitle(e.target.value)}
+                placeholder="Preencha os seus dados reais para receber a confirmação e o seu número"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Texto do Botão de Inscrição:
+              </label>
+              <input
+                type="text"
+                value={formButtonText}
+                onChange={(e) => setFormButtonText(e.target.value)}
+                placeholder="Registar Inscrição e Obter Bilhete"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Nota de Validação Única:
+              </label>
+              <input
+                type="text"
+                value={ticketNotice}
+                onChange={(e) => setTicketNotice(e.target.value)}
+                placeholder="Validação única: limite de 1 inscrição por e-mail"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* Títulos das Secções */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Títulos das Secções (Prémios & Consulta)
+            </h4>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Título da Secção de Prémios:
+              </label>
+              <input
+                type="text"
+                value={prizesSectionTitle}
+                onChange={(e) => setPrizesSectionTitle(e.target.value)}
+                placeholder="Prémios Desta Edição"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Título da Secção de Consulta:
+              </label>
+              <input
+                type="text"
+                value={searchSectionTitle}
+                onChange={(e) => setSearchSectionTitle(e.target.value)}
+                placeholder="Já se inscreveu? Consulte os seus Bilhetes"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Subtítulo da Consulta:
+              </label>
+              <input
+                type="text"
+                value={searchSectionSubtitle}
+                onChange={(e) => setSearchSectionSubtitle(e.target.value)}
+                placeholder="Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
           </div>
 
           <div>

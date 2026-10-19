@@ -28,16 +28,26 @@ const STORAGE_KEYS = {
 export const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48" fill="%230f172a" stroke="%23f59e0b" stroke-width="4"/><path d="M32 30h36v18c0 10-8 18-18 18s-18-8-18-18V30z" fill="%23f59e0b"/><path d="M26 34c-4 0-8 4-8 9s4 9 8 9h6v-6h-6c-1 0-2-1-2-3s1-3 2-3h6v-6h-6zm48 0h-6v6h6c1 0 2 1 2 3s-1 3-2 3h-6v6h6c4 0 8-4 8-9s-4-9-8-9z" fill="%23fbbf24"/><path d="M46 66h8v12h-8z" fill="%23d97706"/><path d="M36 78h28v6H36z" fill="%23f59e0b"/><polygon points="50,37 52.5,43 59,43.5 54,48 55.5,54.5 50,51 44.5,54.5 46,48 41,43.5 47.5,43" fill="%23ffffff"/></svg>`;
 
 export const DEFAULT_BRAND: BrandConfig = {
-  companyName: 'Megavolt Prêmios & Sorteios',
-  companySlogan: 'Transparência, emoção e grandes prêmios ao vivo',
+  companyName: 'Sorteio Lacer OMD 2026',
+  companySlogan: 'Sorteios 100% Auditados',
   logoUrl: DEFAULT_BRAND_LOGO,
-  primaryColor: '#f59e0b', // Amber 500
-  secondaryColor: '#d97706', // Amber 600
-  accentColor: '#10b981', // Emerald 500
+  primaryColor: '#2563eb', // Blue
+  secondaryColor: '#d97706',
+  accentColor: '#10b981',
   backgroundTheme: 'dark',
-  raffleUrl: window.location.origin,
-  contactEmail: 'contato@megavoltsorteios.com.br',
-  termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com seus bilhetes únicos gerados no momento da inscrição. Vencedores devem apresentar documento oficial com foto e comprovar posse do número sorteado no prazo de até 30 dias corridos.',
+  raffleUrl: typeof window !== 'undefined' ? window.location.origin : 'https://sorteiolive.app',
+  contactEmail: 'contacto@sorteiolive.pt',
+  termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.',
+  roundsBannerTitle: '4 Sorteios Oficiais no Mesmo Dia',
+  roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!',
+  showRoundsBanner: true,
+  formTitle: 'Garanta o seu Bilhete da Sorte',
+  formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
+  formButtonText: 'Registar Inscrição e Obter Bilhete',
+  prizesSectionTitle: 'Prémios Desta Edição',
+  searchSectionTitle: 'Já se inscreveu? Consulte os seus Bilhetes',
+  searchSectionSubtitle: 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados',
+  ticketNotice: 'Validação única: limite de 1 inscrição por e-mail',
 };
 
 export const DEFAULT_PRIZES: Prize[] = [
@@ -98,49 +108,49 @@ export const DEFAULT_PARTICIPANTS: Participant[] = [];
 export const DEFAULT_SCHEDULES: DrawSchedule[] = [
   {
     id: 'sched-round-1',
-    title: '1º Sorteio do Dia - Rodada Matutina (10:00)',
-    description: 'Abertura das rodadas diárias com sorteio do primeiro lote de prêmios.',
+    title: '1º Sorteio do Dia - Ronda Matinal (10:00)',
+    description: 'Abertura das rondas diárias com sorteio do primeiro lote de prémios.',
     scheduledDate: '2026-10-18',
     scheduledTime: '10:00',
     status: 'scheduled',
     roundNumber: 1,
-    roundLabel: '1ª Rodada - 10:00',
+    roundLabel: '1ª Ronda - 10:00',
     prizeIds: ['prz-5', 'prz-2'],
     createdAt: '2026-10-10T12:00:00Z',
   },
   {
     id: 'sched-round-2',
-    title: '2º Sorteio do Dia - Rodada da Tarde (14:00)',
-    description: 'Segunda rodada diária com prêmios de tecnologia e Pix imediato.',
+    title: '2º Sorteio do Dia - Ronda da Tarde (14:00)',
+    description: 'Segunda ronda diária com prémios de tecnologia e prémios imediatos.',
     scheduledDate: '2026-10-18',
     scheduledTime: '14:00',
     status: 'scheduled',
     roundNumber: 2,
-    roundLabel: '2ª Rodada - 14:00',
+    roundLabel: '2ª Ronda - 14:00',
     prizeIds: ['prz-3', 'prz-5'],
     createdAt: '2026-10-10T12:05:00Z',
   },
   {
     id: 'sched-round-3',
-    title: '3º Sorteio do Dia - Rodada de Fim de Tarde (18:00)',
-    description: 'Terceira rodada com disputa do PlayStation 5 e Smart TV.',
+    title: '3º Sorteio do Dia - Ronda do Fim de Tarde (18:00)',
+    description: 'Terceira ronda com disputa de tecnologia de ponta e Smart TV.',
     scheduledDate: '2026-10-18',
     scheduledTime: '18:00',
     status: 'scheduled',
     roundNumber: 3,
-    roundLabel: '3ª Rodada - 18:00',
+    roundLabel: '3ª Ronda - 18:00',
     prizeIds: ['prz-2', 'prz-1'],
     createdAt: '2026-10-10T12:10:00Z',
   },
   {
     id: 'sched-round-4',
-    title: '4º Sorteio do Dia - Grande Rodada Nobre da Noite (21:00)',
-    description: 'A grande rodada final do dia com Moto Honda CG 160 0KM e iPhone 16 Pro Max!',
+    title: '4º Sorteio do Dia - Grande Ronda da Noite (21:00)',
+    description: 'A grande ronda final do dia com os maiores prémios!',
     scheduledDate: '2026-10-18',
     scheduledTime: '21:00',
     status: 'scheduled',
     roundNumber: 4,
-    roundLabel: '4ª Rodada - 21:00 (Final)',
+    roundLabel: '4ª Ronda - 21:00 (Final)',
     prizeIds: ['prz-4', 'prz-1', 'prz-5'],
     createdAt: '2026-10-10T12:15:00Z',
   },
@@ -148,28 +158,7 @@ export const DEFAULT_SCHEDULES: DrawSchedule[] = [
 
 export const DEFAULT_WINNERS: DrawWinner[] = [];
 
-export const DEFAULT_NOTIFICATIONS: NotificationLog[] = [
-  {
-    id: 'notif-1',
-    channel: 'whatsapp',
-    recipientCount: 13,
-    sentAt: '2026-10-11T19:00:00Z',
-    status: 'sent',
-    timingLabel: '1 hora antes',
-    eventTitle: 'Sorteio Prévia de Aquecimento',
-    messageTemplate: 'Olá {nome}! O seu sorteio começa em 1 hora! Seu bilhete da sorte é {bilhete}. Acesse o telão da live no link: {link_sorteio}',
-  },
-  {
-    id: 'notif-2',
-    channel: 'email',
-    recipientCount: 13,
-    sentAt: '2026-10-11T19:45:00Z',
-    status: 'sent',
-    timingLabel: '15 minutos antes',
-    eventTitle: 'Sorteio Prévia de Aquecimento',
-    messageTemplate: 'Atenção {nome}: A sala ao vivo está aberta! Conecte-se agora para acompanhar a roleta rodar: {link_sorteio}',
-  },
-];
+export const DEFAULT_NOTIFICATIONS: NotificationLog[] = [];
 
 export const DEFAULT_SETTINGS: NotificationSettings = {
   autoNotify24h: true,
@@ -179,23 +168,23 @@ export const DEFAULT_SETTINGS: NotificationSettings = {
   whatsappEnabled: true,
   emailEnabled: true,
   smsEnabled: false,
-  messageTemplate: 'Olá {nome}! 🎟️ Seu número da sorte é #{bilhete}. O sorteio "{evento}" começará em breve com prêmios incríveis! Assista ao vivo: {link_sorteio}',
+  messageTemplate: 'Olá {nome}! 🎟️ O seu bilhete da sorte é #{bilhete}. O sorteio "{evento}" começará em breve com prémios fantásticos! Aceda em direto: {link_sorteio}',
 };
 
 export const DEFAULT_FORM_FIELDS: FormFieldsConfig = {
   name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },
   email: { id: 'email', label: 'E-mail', placeholder: '', enabled: true, required: true },
-  phone: { id: 'phone', label: 'WhatsApp / Telefone', placeholder: '', enabled: true, required: true },
-  document: { id: 'document', label: 'CPF ou Documento', placeholder: '', enabled: true, required: false },
-  city: { id: 'city', label: 'Cidade / Estado', placeholder: '', enabled: true, required: false },
+  phone: { id: 'phone', label: 'Telemóvel / Contacto', placeholder: '', enabled: true, required: true },
+  document: { id: 'document', label: 'NIF ou Documento', placeholder: '', enabled: true, required: false },
+  city: { id: 'city', label: 'Localidade / Concelho', placeholder: '', enabled: true, required: false },
 };
 
 export const DEFAULT_POSTER_CONFIG: QRCodePosterConfig = {
-  title: 'PARTICIPE DO NOSSO GRANDE SORTEIO!',
-  subtitle: 'Concorra a prêmios incríveis transmitidos 100% ao vivo!',
-  step1: 'Aponte a câmera do seu celular para o QR Code acima.',
-  step2: 'Preencha seus dados reais e receba seu Número da Sorte oficial.',
-  step3: 'Assista à transmissão ao vivo e confira se foi premiado!',
+  title: 'PARTICIPE NO NOSSO GRANDE SORTEIO!',
+  subtitle: 'Habilite-se a prémios incríveis transmitidos 100% em direto!',
+  step1: 'Aponte a câmara do seu telemóvel para o Código QR acima.',
+  step2: 'Preencha os seus dados reais e receba o seu Número da Sorte oficial.',
+  step3: 'Assista à transmissão em direto e confirme se foi premiado!',
   footerLeft: 'Inscrição 100% Gratuita',
   footerRight: 'Sorteio Seguro & Auditado',
   showDate: true,
@@ -203,11 +192,11 @@ export const DEFAULT_POSTER_CONFIG: QRCodePosterConfig = {
 };
 
 export const DEFAULT_REPORT_CONFIG: ReportPdfConfig = {
-  title: 'ATA E AUDITORIA OFICIAL DE SORTEIO',
+  title: 'AUTO E AUDITORIA OFICIAL DE SORTEIO',
   subtitle: 'RELATÓRIO CONSOLIDADO DE VENCEDORES HOMOLOGADOS',
   protocolPrefix: 'SRT-',
   statementText: 'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento divulgado aos participantes.',
-  organizerSignTitle: 'Assinatura do Organizador / Diretor',
+  organizerSignTitle: 'Assinatura do Organizador / Direção',
   auditorSignTitle: 'Assinatura da Comissão de Auditoria',
   includeTicket: true,
   includeWinnerName: true,

@@ -259,10 +259,10 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
               <Gift className="w-5 h-5 text-amber-400" />
-              <span>{editingPrize ? 'Editar Prêmio' : 'Adicionar Novo Prêmio'}</span>
+              <span>{editingPrize ? 'Editar Prémio' : 'Adicionar Novo Prémio'}</span>
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Defina os detalhes, quantidade e imagem do prêmio a ser sorteado.
+              Defina os detalhes, quantidade e imagem do prémio a ser sorteado.
             </p>
 
             {formError && (
@@ -272,17 +272,18 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Título do Prêmio *
+                  Título do Prémio *
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: PlayStation 5 Slim 1TB"
+                  placeholder=""
+                  autoComplete="off"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -295,7 +296,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Aparelho novo, lacrado, acompanha 2 controles..."
+                  placeholder=""
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -317,7 +318,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    Valor Estimado (R$)
+                    Valor Estimado (€)
                   </label>
                   <input
                     type="number"
@@ -435,7 +436,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
                   className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{editingPrize ? 'Salvar Alterações' : 'Gravar Prêmio no Banco'}</span>
+                  <span>{editingPrize ? 'Guardar Alterações' : 'Guardar Prémio na Base de Dados'}</span>
                 </button>
               </div>
             </form>

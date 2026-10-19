@@ -87,20 +87,17 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [searchResults, setSearchResults] = useState<Participant[] | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Phone masking
+  // Phone handling - clean and flexible for Portugal (9 digits) and international numbers
   const handlePhoneChange = (val: string) => {
-    const raw = val.replace(/\D/g, '').slice(0, 11);
-    if (raw.length <= 10) {
-      setPhone(raw.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3'));
-    } else {
-      setPhone(raw.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3'));
-    }
+    // Keep digits, spaces and +
+    const clean = val.replace(/[^\d+ -]/g, '').slice(0, 16);
+    setPhone(clean);
   };
 
-  // CPF masking
+  // Document handling - flexible for NIF (9 digits) and Cartão de Cidadão / BI
   const handleDocumentChange = (val: string) => {
-    const raw = val.replace(/\D/g, '').slice(0, 11);
-    setDocument(raw.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4'));
+    const clean = val.replace(/[^\w -]/g, '').slice(0, 18);
+    setDocument(clean);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -182,7 +179,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           email: normalizedEmail,
           phone: phone.trim() || 'Não informado',
           document: document.trim() || 'Não informado',
-          city: city.trim() || 'Brasil',
+          city: city.trim() || 'Portugal',
           ticketNumber: ticket,
           createdAt: new Date().toISOString(),
           status: 'active',
@@ -296,7 +293,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
           <div className="flex items-center justify-center gap-3 mb-3">
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white">
-              {brand.companyName || 'SorteioLive Pro'}
+              {brand.companyName || 'Sorteio Lacer OMD 2026'}
             </h1>
             {onUpdateBrand && (
               <button
@@ -329,72 +326,74 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           </div>
 
           {/* 4 Daily Draw Editions Banner */}
-          <div className="mt-6 max-w-3xl mx-auto bg-slate-900/95 border-2 border-amber-500/30 p-4 sm:p-5 rounded-3xl shadow-2xl backdrop-blur-md">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                  4 Sorteios Oficiais no Mesmo Dia
+          {brand.showRoundsBanner !== false && (
+            <div className="mt-6 max-w-3xl mx-auto bg-slate-900/95 border-2 border-amber-500/30 p-4 sm:p-5 rounded-3xl shadow-2xl backdrop-blur-md">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                    {brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia'}
+                  </span>
+                </div>
+                <span className="text-[11px] text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  Data Oficial: {nextSchedule ? new Date(`${nextSchedule.scheduledDate}T00:00:00`).toLocaleDateString('pt-PT') : 'Hoje'}
                 </span>
               </div>
-              <span className="text-[11px] text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                Data Oficial: {nextSchedule ? new Date(`${nextSchedule.scheduledDate}T00:00:00`).toLocaleDateString('pt-BR') : 'Hoje'}
-              </span>
-            </div>
 
-            {/* 4 slots grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {(schedules.length >= 4 ? schedules.slice(0, 4) : [
-                { id: '1', roundNumber: 1, scheduledTime: '10:00', title: '1º Sorteio', status: 'scheduled' },
-                { id: '2', roundNumber: 2, scheduledTime: '14:00', title: '2º Sorteio', status: 'scheduled' },
-                { id: '3', roundNumber: 3, scheduledTime: '18:00', title: '3º Sorteio', status: 'scheduled' },
-                { id: '4', roundNumber: 4, scheduledTime: '21:00', title: '4º Sorteio', status: 'scheduled' },
-              ]).map((sch, idx) => {
-                const isLive = sch.status === 'live';
-                const isCompleted = sch.status === 'completed';
-                return (
-                  <div
-                    key={sch.id}
-                    onClick={onGoToLive}
-                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer group hover:scale-102 ${
-                      isLive
-                        ? 'bg-red-500/20 border-red-500 ring-2 ring-red-500/30'
-                        : isCompleted
-                        ? 'bg-slate-950/60 border-slate-800 opacity-60'
-                        : 'bg-slate-950 border-slate-800 hover:border-amber-500/50'
-                    }`}
-                  >
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-amber-400 block mb-0.5">
-                      {idx + 1}ª Rodada
-                    </span>
-                    <div className="text-lg sm:text-xl font-mono font-black text-amber-400 group-hover:text-amber-300">
-                      {sch.scheduledTime}
+              {/* 4 slots grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {(schedules.length >= 4 ? schedules.slice(0, 4) : [
+                  { id: '1', roundNumber: 1, scheduledTime: '10:00', title: '1º Sorteio', status: 'scheduled' },
+                  { id: '2', roundNumber: 2, scheduledTime: '14:00', title: '2º Sorteio', status: 'scheduled' },
+                  { id: '3', roundNumber: 3, scheduledTime: '18:00', title: '3º Sorteio', status: 'scheduled' },
+                  { id: '4', roundNumber: 4, scheduledTime: '21:00', title: '4º Sorteio', status: 'scheduled' },
+                ]).map((sch, idx) => {
+                  const isLive = sch.status === 'live';
+                  const isCompleted = sch.status === 'completed';
+                  return (
+                    <div
+                      key={sch.id}
+                      onClick={onGoToLive}
+                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer group hover:scale-102 ${
+                        isLive
+                          ? 'bg-red-500/20 border-red-500 ring-2 ring-red-500/30'
+                          : isCompleted
+                          ? 'bg-slate-950/60 border-slate-800 opacity-60'
+                          : 'bg-slate-950 border-slate-800 hover:border-amber-500/50'
+                      }`}
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-amber-400 block mb-0.5">
+                        {idx + 1}ª Ronda
+                      </span>
+                      <div className="text-lg sm:text-xl font-mono font-black text-amber-400 group-hover:text-amber-300">
+                        {sch.scheduledTime}
+                      </div>
+                      <span className={`inline-block mt-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                        isLive 
+                          ? 'bg-red-500 text-white animate-pulse'
+                          : isCompleted
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : 'bg-slate-800 text-slate-300'
+                      }`}>
+                        {isLive ? 'Em Direto Agora' : isCompleted ? 'Realizado' : 'Agendado'}
+                      </span>
                     </div>
-                    <span className={`inline-block mt-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                      isLive 
-                        ? 'bg-red-500 text-white animate-pulse'
-                        : isCompleted
-                        ? 'bg-emerald-500/20 text-emerald-400'
-                        : 'bg-slate-800 text-slate-300'
-                    }`}>
-                      {isLive ? 'Ao Vivo Agora' : isCompleted ? 'Realizado' : 'Agendado'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400">
-              <span className="text-[11px]">Seu bilhete concorre automaticamente em todas as 4 rodadas diárias!</span>
-              <button
-                onClick={onGoToLive}
-                className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 text-[11px]"
-              >
-                <span>Acessar Transmissão</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
+              <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400">
+                <span className="text-[11px]">{brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!'}</span>
+                <button
+                  onClick={onGoToLive}
+                  className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 text-[11px]"
+                >
+                  <span>Aceder à Transmissão</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -413,22 +412,22 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white">
-                  Garanta seu Bilhete da Sorte
+                  {brand.formTitle || 'Garanta o seu Bilhete da Sorte'}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-400">
-                  Preencha seus dados reais para receber a confirmação e seu número
+                  {brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número'}
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4" autoComplete="off">
               {/* Duplicate Email Warning Banner */}
               {duplicateEmailError && (
                 <div className="p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/50 text-amber-200 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-sm text-amber-400">
                       <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-                      <span>ATENÇÃO: E-MAIL JÁ CADASTRADO NO SISTEMA!</span>
+                      <span>ATENÇÃO: E-MAIL JÁ REGISTADO NO SISTEMA!</span>
                     </div>
                     <button
                       type="button"
@@ -493,7 +492,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={formFields.name.placeholder || ''}
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
               )}
@@ -515,12 +517,15 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         if (duplicateEmailError) setDuplicateEmailError(null);
                       }}
                       placeholder={formFields.email.placeholder || ''}
-                      className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                         duplicateEmailError ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700/80'
                       }`}
                     />
                     <span className="text-[10px] text-slate-500 mt-1 block">
-                      Validação única: limite de 1 inscrição por e-mail
+                      {brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail'}
                     </span>
                   </div>
                 )}
@@ -537,7 +542,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       placeholder={formFields.phone.placeholder || ''}
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      autoComplete="off"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 )}
@@ -558,7 +564,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         value={document}
                         onChange={(e) => handleDocumentChange(e.target.value)}
                         placeholder={formFields.document.placeholder || ''}
-                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        autoComplete="off"
+                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
                   )}
@@ -575,7 +582,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         placeholder={formFields.city.placeholder || ''}
-                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        autoComplete="off"
+                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
                   )}
@@ -591,7 +599,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
                   />
                   <span>
-                    Concordo com os regulamentos do sorteio e autorizo o envio de notificações sobre a transmissão ao vivo.
+                    Concordo com os regulamentos do sorteio e autorizo o envio de notificações sobre a transmissão em direto.
                   </span>
                 </label>
               </div>
@@ -603,7 +611,11 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 className="w-full py-4 px-6 rounded-xl font-bold text-slate-950 text-base shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Sparkles className="w-5 h-5 fill-current" />
-                <span>{isSubmitting ? 'REGISTRANDO INSCRIÇÃO...' : 'GERAR MEU NÚMERO DA SORTE'}</span>
+                <span>
+                  {isSubmitting 
+                    ? 'A REGISTAR INSCRIÇÃO...' 
+                    : (brand.formButtonText ? brand.formButtonText.toUpperCase() : 'REGISTAR INSCRIÇÃO E OBTER BILHETE')}
+                </span>
               </button>
             </form>
           </div>
@@ -618,7 +630,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
                 <button
                   onClick={() => setNewlyCreatedTicket(null)}
-                  className="text-slate-400 hover:text-white text-xs underline"
+                  className="text-slate-400 hover:text-white text-xs underline cursor-pointer"
                 >
                   Fechar
                 </button>
@@ -627,7 +639,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               {/* Golden Ticket Layout */}
               <div className="bg-slate-950 border border-amber-500/50 rounded-2xl p-6 text-center shadow-inner relative">
                 <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">
-                  Seu Bilhete Oficial
+                  O Seu Bilhete Oficial
                 </p>
                 <div className="text-5xl sm:text-6xl font-black font-mono text-amber-400 tracking-wider my-2">
                   #{newlyCreatedTicket.ticketNumber}
@@ -642,22 +654,22 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-center gap-3">
                   <a
                     href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                      `🎟️ Olá! Acabei de garantir meu bilhete #${newlyCreatedTicket.ticketNumber} no sorteio da ${brand.companyName}! Acesse para participar também: ${brand.raffleUrl}`
+                      `🎟️ Olá! Acabei de garantir o meu bilhete #${newlyCreatedTicket.ticketNumber} no sorteio da ${brand.companyName}! Aceda para participar também: ${brand.raffleUrl}`
                     )}`}
                     target="_blank"
                     rel="noreferrer"
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow"
                   >
                     <Share2 className="w-4 h-4" />
-                    <span>Compartilhar no WhatsApp</span>
+                    <span>Partilhar no WhatsApp</span>
                   </a>
 
                   <button
                     onClick={() => window.print()}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-2"
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer"
                   >
                     <Ticket className="w-4 h-4" />
-                    <span>Imprimir Comprovante</span>
+                    <span>Imprimir Comprovativo</span>
                   </button>
                 </div>
               </div>
@@ -668,26 +680,26 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
               <Search className="w-4 h-4 text-amber-400" />
-              <span>Já se inscreveu? Consulte seus Bilhetes</span>
+              <span>{brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes'}</span>
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Digite seu CPF, telefone ou e-mail para verificar seus números cadastrados
+              {brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados'}
             </p>
 
-            <form onSubmit={handleSearchTickets} className="flex gap-2">
+            <form onSubmit={handleSearchTickets} className="flex gap-2" autoComplete="off">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Digite CPF, telefone, e-mail ou bilhete..."
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Insira NIF, telemóvel, e-mail ou número de bilhete..."
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <button
                 type="submit"
                 className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Search className="w-4 h-4" />
-                <span>Buscar</span>
+                <span>Pesquisar</span>
               </button>
             </form>
 
@@ -709,14 +721,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           #{p.ticketNumber}
                         </span>
                         <p className="text-[10px] text-slate-500 mt-0.5">
-                          {p.status === 'winner' ? '🏆 CONTEMPLADO' : p.status === 'banned' ? '❌ Restrito' : '✓ Concorrendo'}
+                          {p.status === 'winner' ? '🏆 CONTEMPLADO' : p.status === 'banned' ? '❌ Restrito' : '✓ A Concorrer'}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <p className="text-xs text-slate-500 text-center py-2">
-                    Nenhum bilhete encontrado para essa pesquisa. Verifique os dados digitados.
+                    Nenhum bilhete encontrado para esta pesquisa. Verifique os dados inseridos.
                   </p>
                 )}
               </div>
@@ -729,10 +741,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-400" />
-              <span>Prêmios Desta Edição</span>
+              <span>{brand.prizesSectionTitle || 'Prémios Desta Edição'}</span>
             </h2>
             <span className="text-xs text-slate-400">
-              {prizes.length} prêmios cadastrados
+              {prizes.length} prémios registados
             </span>
           </div>
 
@@ -764,7 +776,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                          {index + 1}º Prêmio
+                          {index + 1}º Prémio
                         </span>
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
                           isExhausted 
@@ -784,10 +796,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
                     <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
                       <span className="text-[10px] text-slate-500">
-                        {prize.drawnQuantity} já {prize.drawnQuantity === 1 ? 'sorteado' : 'sorteados'}
+                        {prize.drawnQuantity} já {prize.drawnQuantity === 1 ? 'atribuído' : 'atribuídos'}
                       </span>
                       <span className="font-bold text-emerald-400">
-                        {prize.estimatedValue ? `R$ ${prize.estimatedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+                        {prize.estimatedValue ? `€ ${prize.estimatedValue.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}` : ''}
                       </span>
                     </div>
                   </div>
@@ -827,7 +839,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveSlogan} className="space-y-4">
+            <form onSubmit={handleSaveSlogan} className="space-y-4" autoComplete="off">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
                   Nome do Sorteio / Empresa:
@@ -836,7 +848,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   type="text"
                   value={editCompanyName}
                   onChange={(e) => setEditCompanyName(e.target.value)}
-                  placeholder="Ex: Sorteio Lacer OMD 2026"
+                  placeholder="Nome do sorteio..."
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -860,7 +872,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   rows={3}
                   value={editCompanySlogan}
                   onChange={(e) => setEditCompanySlogan(e.target.value)}
-                  placeholder="Digite a frase exibida abaixo do logotipo e nome (ou deixe vazio para não exibir nada)..."
+                  placeholder="Frase ou subtítulo exibido abaixo do logótipo e nome (ou deixe vazio)..."
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
@@ -881,7 +893,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Salvar Alterações</span>
+                  <span>Guardar Alterações</span>
                 </button>
               </div>
             </form>

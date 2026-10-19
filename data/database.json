@@ -149,7 +149,17 @@
     "raffleUrl": "",
     "contactEmail": "contato@megavoltsorteios.com.br",
     "termsAndConditions": "Sorteio autorizado e auditado em tempo real. Cada participante concorre com seus bilhetes únicos gerados no momento da inscrição. Vencedores devem apresentar documento oficial com foto e comprovar posse do número sorteado no prazo de até 30 dias corridos.",
-    "forceResetLogo": true
+    "forceResetLogo": true,
+    "roundsBannerTitle": "4 Sorteios Oficiais no Mesmo Dia",
+    "roundsBannerSubtitle": "O seu bilhete concorre automaticamente em todas as 4 rondas diárias!",
+    "showRoundsBanner": true,
+    "formTitle": "Garanta o seu Bilhete da Sorte",
+    "formSubtitle": "Preencha os seus dados reais para receber a confirmação e o seu número",
+    "formButtonText": "Registar Inscrição e Obter Bilhete",
+    "prizesSectionTitle": "Prémios Desta Edição",
+    "searchSectionTitle": "Já se inscreveu? Consulte os seus Bilhetes",
+    "searchSectionSubtitle": "Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados",
+    "ticketNotice": "Validação única: limite de 1 inscrição por e-mail"
   },
   "formFields": {
     "name": {
@@ -168,21 +178,21 @@
     },
     "phone": {
       "id": "phone",
-      "label": "WhatsApp / Telefone",
+      "label": "Telemóvel / Contacto",
       "placeholder": "",
       "enabled": true,
       "required": true
     },
     "document": {
       "id": "document",
-      "label": "CPF ou Documento",
+      "label": "NIF ou Documento",
       "placeholder": "",
       "enabled": true,
       "required": false
     },
     "city": {
       "id": "city",
-      "label": "Cidade / Estado",
+      "label": "Localidade / Concelho",
       "placeholder": "",
       "enabled": true,
       "required": false
@@ -217,5 +227,5 @@
     "includeHash": true,
     "includeDate": true
   },
-  "version": 1792408999688
+  "version": 1792409462933
 }
