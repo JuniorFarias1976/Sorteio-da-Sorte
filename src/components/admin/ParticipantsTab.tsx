@@ -14,8 +14,7 @@ import {
   AlertCircle,
   X,
   Database,
-  Ticket,
-  MessageSquare
+  Ticket
 } from 'lucide-react';
 
 interface ParticipantsTabProps {
@@ -79,18 +78,6 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     const matchStatus = statusFilter === 'all' ? true : p.status === statusFilter;
     return matchQuery && matchStatus;
   });
-
-  const handleSendWhatsApp = (participant: Participant) => {
-    const rawPhone = participant.phone || '';
-    const cleanPhone = rawPhone.replace(/\D/g, '');
-    const siteUrl = brand.raffleUrl || (typeof window !== 'undefined' ? window.location.origin : '');
-    const msg = `Olá ${participant.name}! 🎟️ O seu bilhete oficial da sorte para o ${brand.companyName || 'Sorteio Lacer OMD 2026'} é #${participant.ticketNumber}.\n\n📅 Sorteios oficiais nos dias 22 e 23 de Outubro às 10:00 e 16:00!\n📺 Acompanhe a transmissão oficial ao vivo no link:\n${siteUrl}`;
-    
-    const targetUrl = cleanPhone 
-      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
-  };
 
   const handleOpenAddModal = () => {
     setFormError(null);
@@ -400,15 +387,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   {p.document && <span>🆔 {p.document}</span>}
                 </div>
 
-                <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-800/80">
-                  <button
-                    onClick={() => handleSendWhatsApp(p)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold cursor-pointer"
-                    title={`Enviar Alerta via WhatsApp para ${p.name}`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Alerta WhatsApp</span>
-                  </button>
+                <div className="flex items-center justify-end pt-2.5 mt-2 border-t border-slate-800/80">
                   <button
                     onClick={() => setDeletingParticipant(p)}
                     className="p-1 rounded-lg text-slate-500 hover:text-red-400 text-xs flex items-center gap-1 cursor-pointer"
@@ -496,14 +475,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     {new Date(p.createdAt).toLocaleDateString('pt-PT')} {new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => handleSendWhatsApp(p)}
-                        className="p-1.5 rounded-lg text-emerald-400 hover:text-white hover:bg-emerald-600/40 border border-emerald-500/30 transition-colors cursor-pointer"
-                        title={`Enviar Alerta com bilhete via WhatsApp para ${p.name}`}
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center justify-end">
                       <button
                         onClick={() => setDeletingParticipant(p)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"

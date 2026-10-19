@@ -311,7 +311,7 @@ const EditReportPdfModal: React.FC<EditReportPdfModalProps> = ({
                 { id: 'includeTicket', label: 'Número do Bilhete' },
                 { id: 'includeWinnerName', label: 'Nome do Vencedor' },
                 { id: 'includeDocument', label: 'NIF / Documento' },
-                { id: 'includePhone', label: 'Telemóvel / WhatsApp' },
+                { id: 'includePhone', label: 'Telemóvel / Telefone' },
                 { id: 'includeEmail', label: 'E-mail' },
                 { id: 'includeDate', label: 'Data e Hora da Ronda' },
                 { id: 'includeHash', label: 'Hash de Auditoria' },

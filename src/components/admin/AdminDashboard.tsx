@@ -14,7 +14,6 @@ import {
 import { ParticipantsTab } from './ParticipantsTab';
 import { PrizesTab } from './PrizesTab';
 import { CalendarTab } from './CalendarTab';
-import { NotificationsTab } from './NotificationsTab';
 import { FormFieldsTab } from './FormFieldsTab';
 import { QRCodeTab } from './QRCodeTab';
 import { ReportsTab } from './ReportsTab';
@@ -25,7 +24,6 @@ import {
   Users, 
   Gift, 
   Calendar as CalendarIcon, 
-  Bell, 
   SlidersHorizontal, 
   QrCode, 
   FileCheck2, 
@@ -70,7 +68,6 @@ export type AdminTab =
   | 'prizes' 
   | 'calendar' 
   | 'fields'
-  | 'notifications' 
   | 'qrcode' 
   | 'reports' 
   | 'brand';
@@ -120,9 +117,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const TABS = [
     { id: 'participants' as AdminTab, label: 'Participantes & Inscrições', icon: Users, badge: participants.length },
     { id: 'prizes' as AdminTab, label: 'Prémios & Quantidades', icon: Gift, badge: prizes.length },
-    { id: 'calendar' as AdminTab, label: 'Calendário & 4 Rondas', icon: CalendarIcon, badge: schedules.length },
+    { id: 'calendar' as AdminTab, label: 'Calendário & Sorteios', icon: CalendarIcon, badge: schedules.length },
     { id: 'fields' as AdminTab, label: 'Campos do Formulário', icon: SlidersHorizontal },
-    { id: 'notifications' as AdminTab, label: 'Notificações Automáticas', icon: Bell },
     { id: 'qrcode' as AdminTab, label: 'Código QR para Impressão', icon: QrCode },
     { id: 'reports' as AdminTab, label: 'Relatórios & Auditoria PDF', icon: FileCheck2, badge: winners.length },
     { id: 'brand' as AdminTab, label: 'Logótipo, Cores & Textos', icon: Palette },
@@ -266,18 +262,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <FormFieldsTab
               formFields={formFields}
               onUpdateFormFields={onUpdateFormFields}
-            />
-          )}
-
-          {activeTab === 'notifications' && (
-            <NotificationsTab
-              participants={participants}
-              notificationLogs={notificationLogs}
-              settings={notificationSettings}
-              brand={brand}
-              schedules={schedules}
-              onUpdateSettings={onUpdateNotificationSettings}
-              onAddNotificationLog={onAddNotificationLog}
             />
           )}
 

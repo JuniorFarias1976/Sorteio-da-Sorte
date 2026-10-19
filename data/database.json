@@ -1,5 +1,17 @@
 {
-  "participants": [],
+  "participants": [
+    {
+      "id": "part-1792423039717-773",
+      "name": "Jose Junior",
+      "email": "joseramaojr@gmail.com",
+      "phone": "937129276",
+      "document": "Teste",
+      "city": "teste",
+      "ticketNumber": "38572",
+      "createdAt": "2026-10-19T15:17:19.717Z",
+      "status": "active"
+    }
+  ],
   "prizes": [
     {
       "id": "prz-1",
@@ -111,27 +123,15 @@
     }
   ],
   "winners": [],
-  "notifications": [
-    {
-      "id": "notif-1",
-      "channel": "whatsapp",
-      "recipientCount": 13,
-      "sentAt": "2026-10-11T19:00:00Z",
-      "status": "sent",
-      "timingLabel": "1 hora antes",
-      "eventTitle": "Sorteio Prévia de Aquecimento",
-      "messageTemplate": "Olá {nome}! O seu sorteio começa em 1 hora! Seu bilhete da sorte é {bilhete}. Acesse o telão da live no link: {link_sorteio}"
-    }
-  ],
+  "notifications": [],
   "settings": {
-    "autoNotify24h": true,
-    "autoNotify1h": true,
-    "autoNotify15m": true,
-    "autoNotifyStart": true,
-    "whatsappEnabled": true,
-    "emailEnabled": true,
+    "autoNotify24h": false,
+    "autoNotify1h": false,
+    "autoNotify15m": false,
+    "autoNotifyStart": false,
+    "emailEnabled": false,
     "smsEnabled": false,
-    "messageTemplate": "Olá {nome}! 🎟️ Seu número da sorte é #{bilhete}. O sorteio \"{evento}\" começará em breve com prêmios incríveis! Assista ao vivo: {link_sorteio}"
+    "messageTemplate": ""
   },
   "brand": {
     "companyName": "Sorteio Lacer OMD 2026",
@@ -144,7 +144,6 @@
     "raffleUrl": "",
     "contactEmail": "contacto@sorteiolive.pt",
     "termsAndConditions": "Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.",
-    "forceResetLogo": true,
     "roundsBannerTitle": "2 Sorteios Oficiais por Dia",
     "roundsBannerSubtitle": "O seu bilhete concorre automaticamente em todas as rondas e datas programadas!",
     "showRoundsBanner": true,
@@ -157,7 +156,8 @@
     "ticketNotice": "Validação única: limite de 1 inscrição por e-mail",
     "heroBadgeText": "Sorteio Oficial 2026 • Auditoria em Tempo Real",
     "ticketModalTitle": "INSCRIÇÃO CONFIRMADA COM SUCESSO!",
-    "ticketModalSubtitle": "O Seu Bilhete Oficial"
+    "ticketModalSubtitle": "O Seu Bilhete Oficial",
+    "forceResetLogo": true
   },
   "formFields": {
     "name": {
@@ -225,5 +225,5 @@
     "includeHash": true,
     "includeDate": true
   },
-  "version": 1792409462933
+  "version": 1792423049784
 }

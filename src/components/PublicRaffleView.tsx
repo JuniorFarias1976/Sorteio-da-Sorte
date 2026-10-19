@@ -8,7 +8,7 @@ import {
   Clock, 
   Gift, 
   ShieldCheck, 
-  Share2, 
+  Copy, 
   Sparkles, 
   AlertCircle,
   QrCode,
@@ -80,6 +80,16 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
   // Success ticket modal
   const [newlyCreatedTicket, setNewlyCreatedTicket] = useState<Participant | null>(null);
+  const [copiedTicket, setCopiedTicket] = useState(false);
+
+  const handleCopyTicket = (ticketNum: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(ticketNum).then(() => {
+        setCopiedTicket(true);
+        setTimeout(() => setCopiedTicket(false), 2500);
+      });
+    }
+  };
 
   // Duplicate email restriction modal
   const [duplicateEmailError, setDuplicateEmailError] = useState<Participant | null>(null);
@@ -659,7 +669,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     >
                       regulamentos e termos oficiais do sorteio
                     </button>{' '}
-                    e autorizo o envio de notificações sobre a transmissão em direto.
+                    para participação oficial nos sorteios.
                   </span>
                 </label>
               </div>
@@ -712,17 +722,13 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </p>
 
                 <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-center gap-3">
-                  <a
-                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                      `🎟️ Olá! Acabei de garantir o meu bilhete #${newlyCreatedTicket.ticketNumber} no sorteio da ${brand.companyName}! Aceda para participar também: ${typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl}`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow cursor-pointer transition-colors"
+                  <button
+                    onClick={() => handleCopyTicket(newlyCreatedTicket.ticketNumber)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl text-xs font-bold flex items-center gap-2 shadow cursor-pointer transition-colors border border-amber-500/30"
                   >
-                    <Share2 className="w-4 h-4" />
-                    <span>Partilhar no WhatsApp</span>
-                  </a>
+                    {copiedTicket ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedTicket ? 'Número Copiado!' : 'Copiar Número do Bilhete'}</span>
+                  </button>
 
                   <button
                     onClick={() => window.print()}

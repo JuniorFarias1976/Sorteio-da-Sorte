@@ -56,13 +56,13 @@ export interface DrawWinner {
 
 export interface NotificationLog {
   id: string;
-  channel: 'whatsapp' | 'email' | 'sms';
+  channel: 'email' | 'sms';
   recipientCount: number;
   sentAt: string;
   status: 'sent' | 'pending' | 'failed';
   messageTemplate: string;
   eventTitle: string;
-  timingLabel: string; // e.g. "24 horas antes", "1 hora antes", "Imediato"
+  timingLabel: string;
 }
 
 export interface NotificationSettings {
@@ -70,7 +70,6 @@ export interface NotificationSettings {
   autoNotify1h: boolean;
   autoNotify15m: boolean;
   autoNotifyStart: boolean;
-  whatsappEnabled: boolean;
   emailEnabled: boolean;
   smsEnabled: boolean;
   messageTemplate: string;

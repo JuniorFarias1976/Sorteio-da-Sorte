@@ -163,23 +163,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               <span>Toque no botão <strong>Partilhar</strong> (ícone com seta para cima) e selecione <strong>"Adicionar ao Ecrã Principal"</strong>.</span>
             </div>
 
-            {/* WhatsApp Share */}
-            <a
-              href={`whatsapp://send?text=${encodeURIComponent(
-                `🎟️ Participe no sorteio oficial da ${brand.companyName || 'SorteioLive'}! Inscrição gratuita e 2 sorteios diários transmitidos em direto: ${typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl}`
-              )}`}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Partilhar no WhatsApp</span>
-            </a>
-
             {/* Copy Link */}
             <button
               onClick={handleCopyLink}
-              className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors border border-amber-500/20"
             >
               {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Ticket className="w-4 h-4" />}
               <span>{copiedLink ? 'Link Copiado com Sucesso!' : 'Copiar Link para o Telemóvel'}</span>

@@ -164,14 +164,13 @@ export const DEFAULT_WINNERS: DrawWinner[] = [];
 export const DEFAULT_NOTIFICATIONS: NotificationLog[] = [];
 
 export const DEFAULT_SETTINGS: NotificationSettings = {
-  autoNotify24h: true,
-  autoNotify1h: true,
-  autoNotify15m: true,
-  autoNotifyStart: true,
-  whatsappEnabled: true,
-  emailEnabled: true,
+  autoNotify24h: false,
+  autoNotify1h: false,
+  autoNotify15m: false,
+  autoNotifyStart: false,
+  emailEnabled: false,
   smsEnabled: false,
-  messageTemplate: 'Olá {nome}! 🎟️ O seu bilhete da sorte é #{bilhete}. O sorteio "{evento}" começará em breve com prémios fantásticos! Aceda em direto: {link_sorteio}',
+  messageTemplate: '',
 };
 
 export const DEFAULT_FORM_FIELDS: FormFieldsConfig = {
