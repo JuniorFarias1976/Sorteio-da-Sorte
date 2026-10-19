@@ -10,7 +10,9 @@ import {
   Clock, 
   Eye, 
   Sparkles, 
-  AlertCircle 
+  AlertCircle,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 
 interface NotificationsTabProps {
@@ -295,8 +297,27 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
               }`}
             >
               <Send className="w-4 h-4" />
-              <span>{isSending ? 'Disparando Notificações...' : `Enviar Alerta para Todos (${activeParticipants.length} Contatos)`}</span>
+              <span>{isSending ? 'Disparando Notificações...' : `Registar Envio em Lote (${activeParticipants.length} Contatos)`}</span>
             </button>
+
+            {/* Guia de Como Enviar Alertas por WhatsApp */}
+            <div className="p-4 bg-slate-950/80 border border-emerald-500/30 rounded-2xl space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                <MessageSquare className="w-4 h-4" />
+                <span>Como o Aplicativo Envia Alertas pelo WhatsApp:</span>
+              </div>
+              <ul className="text-xs text-slate-300 space-y-2 list-disc pl-4 leading-relaxed">
+                <li>
+                  <strong className="text-white">Envio 1-a-1 com 1 Clique (Aba &quot;Participantes&quot;):</strong> Ao lado de cada inscrito na tabela de participantes, clique em <strong className="text-emerald-400">&quot;Alerta WhatsApp&quot;</strong>. O WhatsApp Web ou móvel abre automaticamente com o número preenchido e mensagem formatada (nome, bilhete e link).
+                </li>
+                <li>
+                  <strong className="text-white">Lista de Transmissão WhatsApp Business:</strong> Crie uma Lista de Transmissão no WhatsApp do seu telemóvel e cole a mensagem com o link oficial da transmissão ao vivo.
+                </li>
+                <li>
+                  <strong className="text-white">Disparo Automático via Gateway / API:</strong> É possível conectar serviços como <strong className="text-amber-400">Z-API, Evolution API ou Twilio</strong> para envio 100% automático em segundo plano no momento da inscrição ou no início do sorteio.
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 

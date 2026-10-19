@@ -37,8 +37,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
   // App-wide customizable texts
   const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
-  const [roundsBannerTitle, setRoundsBannerTitle] = useState(brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia');
-  const [roundsBannerSubtitle, setRoundsBannerSubtitle] = useState(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!');
+  const [roundsBannerTitle, setRoundsBannerTitle] = useState(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
+  const [roundsBannerSubtitle, setRoundsBannerSubtitle] = useState(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
   const [showRoundsBanner, setShowRoundsBanner] = useState(brand.showRoundsBanner !== false);
   const [formTitle, setFormTitle] = useState(brand.formTitle || 'Garanta o seu Bilhete da Sorte');
   const [formSubtitle, setFormSubtitle] = useState(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
@@ -72,8 +72,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setAccentColor(brand.accentColor);
     setTerms(brand.termsAndConditions);
     setHeroBadgeText(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
-    setRoundsBannerTitle(brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia');
-    setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!');
+    setRoundsBannerTitle(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
+    setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
     setShowRoundsBanner(brand.showRoundsBanner !== false);
     setFormTitle(brand.formTitle || 'Garanta o seu Bilhete da Sorte');
     setFormSubtitle(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');

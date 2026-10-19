@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandConfig, DrawSchedule } from '../types';
-import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw, Key } from 'lucide-react';
+import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw } from 'lucide-react';
 
 interface NavbarProps {
   currentView: 'public' | 'live' | 'admin';
@@ -30,6 +30,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   onManualSync,
 }) => {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+  const [logoTapCount, setLogoTapCount] = useState<number>(0);
+
+  const handleLogoClick = () => {
+    onViewChange('public');
+    const nextCount = logoTapCount + 1;
+    setLogoTapCount(nextCount);
+    if (nextCount >= 3) {
+      setLogoTapCount(0);
+      onRequestUnlockAdmin?.();
+    }
+    setTimeout(() => setLogoTapCount(0), 1200);
+  };
 
   useEffect(() => {
     if (!nextSchedule) {
@@ -61,10 +73,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white shadow-xl no-print safe-area-pt">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
-        {/* Brand / Logo */}
+        {/* Brand / Logo (Triple-click/tap discreetly unlocks Admin) */}
         <div 
-          onClick={() => onViewChange('public')}
+          onClick={handleLogoClick}
           className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group select-none min-w-0"
+          title={brand.companyName || 'SorteioLive Pro'}
         >
           {brand.logoUrl ? (
             <img
@@ -95,9 +108,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center: Live Sync & Status Indicator */}
+        {/* Center: Live Sync (Admin only) */}
         <div className="flex items-center gap-2">
-          {onManualSync && (
+          {isAdminUnlocked && onManualSync && (
             <button
               onClick={onManualSync}
               disabled={isSyncing}
@@ -188,18 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ✕
               </button>
             </div>
-          ) : (
-            /* Discrete Admin Access button visible across any browser */
-            <div className="flex items-center pl-1 ml-1 border-l border-slate-800">
-              <button
-                onClick={onRequestUnlockAdmin}
-                className="p-2 text-slate-500 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Aceder ao Painel de Administrador (ou prima Alt+C)"
-              >
-                <Key className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+          ) : null}
         </nav>
       </div>
     </header>

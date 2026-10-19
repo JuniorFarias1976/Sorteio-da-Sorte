@@ -15,7 +15,6 @@ import {
   Trophy,
   ArrowRight,
   AlertTriangle,
-  Edit3,
   Check
 } from 'lucide-react';
 import { DEFAULT_FORM_FIELDS } from '../utils/storage';
@@ -500,7 +499,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     </div>
                     <div className="text-right text-xs">
                       <p className="font-bold text-white">{duplicateEmailError.name}</p>
-                      <p className="text-[11px] text-emerald-400">✓ Concorrendo em todas as 4 rodadas</p>
+                      <p className="text-[11px] text-emerald-400">✓ Concorrendo em todos os sorteios programados</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-1">

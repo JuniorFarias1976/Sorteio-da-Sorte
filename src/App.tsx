@@ -708,11 +708,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-400">{brand.companyName || 'SorteioLive Pro'}</span>
-            <span>· 4 Sorteios Diários Oficiais Auditados</span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Banco de Dados Sincronizado
-            </span>
+            <span>· 2 Sorteios Diários Oficiais Auditados</span>
           </div>
 
           <div className="flex items-center gap-4 text-slate-400">
@@ -728,30 +724,28 @@ export default function App() {
             >
               Telão Ao Vivo
             </button>
-            <button
-              onClick={handleManualSync}
-              className="hover:text-emerald-400 flex items-center gap-1 transition-colors cursor-pointer"
-              title="Sincronizar dados com o banco de dados central"
-            >
-              <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
-              <span>Sincronizar</span>
-            </button>
+            {isAdminUnlocked && (
+              <button
+                onClick={handleManualSync}
+                className="hover:text-emerald-400 flex items-center gap-1 transition-colors cursor-pointer"
+                title="Sincronizar dados com o banco de dados central"
+              >
+                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+                <span>Sincronizar</span>
+              </button>
+            )}
 
-            {/* In-app accessible admin trigger */}
-            <button
-              onClick={() => {
-                if (isAdminUnlocked) {
-                  setCurrentView('admin');
-                } else {
-                  setShowAdminModal(true);
-                }
-              }}
-              className="text-slate-500 hover:text-amber-400 text-xs flex items-center gap-1 transition-colors cursor-pointer"
-              title="Acesso de Administrador"
-            >
-              <Lock className="w-3 h-3" />
-              <span>Painel Admin</span>
-            </button>
+            {/* In-app admin shortcut (visible only when admin is already unlocked) */}
+            {isAdminUnlocked && (
+              <button
+                onClick={() => setCurrentView('admin')}
+                className="text-amber-400 hover:text-amber-300 text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                title="Aceder ao Painel de Administrador"
+              >
+                <Lock className="w-3 h-3" />
+                <span>Painel Admin</span>
+              </button>
+            )}
           </div>
         </div>
       </footer>

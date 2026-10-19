@@ -451,13 +451,20 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                 return (
                   <button
                     key={s.id}
-                    onClick={() => handleSelectSchedule(s.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                    onClick={() => {
+                      if (isAdmin) handleSelectSchedule(s.id);
+                    }}
+                    disabled={!isAdmin}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                      isAdmin ? 'cursor-pointer' : 'cursor-default'
+                    } ${
                       isSelected
                         ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        : isAdmin
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        : 'text-slate-500 opacity-60'
                     }`}
-                    title={`${s.title} • ${formatScheduleFullDate(s.scheduledDate)} às ${s.scheduledTime}`}
+                    title={isAdmin ? `${s.title} • ${formatScheduleFullDate(s.scheduledDate)} às ${s.scheduledTime}` : `Sessão: ${s.title}`}
                   >
                     <span className="font-mono text-[11px] opacity-90">{shortDate}</span>
                     <span className="font-bold">{s.scheduledTime}</span>

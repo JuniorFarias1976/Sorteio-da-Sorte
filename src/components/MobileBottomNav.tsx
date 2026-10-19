@@ -118,26 +118,22 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </span>
         </button>
 
-        {/* 4. Painel Admin */}
-        <button
-          onClick={() => {
-            if (isAdminUnlocked) {
-              onViewChange('admin');
-            } else {
-              onRequestUnlockAdmin();
-            }
-          }}
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
-            currentView === 'admin'
-              ? 'text-amber-400 font-bold'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <div className={`p-1 rounded-lg ${currentView === 'admin' ? 'bg-amber-500/20 ring-1 ring-amber-500/30' : ''}`}>
-            {isAdminUnlocked ? <ShieldCheck className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-          </div>
-          <span className="text-[10px] mt-0.5 tracking-tight">Admin</span>
-        </button>
+        {/* 4. Painel Admin (visível apenas para o administrador após autenticação) */}
+        {isAdminUnlocked && (
+          <button
+            onClick={() => onViewChange('admin')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              currentView === 'admin'
+                ? 'text-amber-400 font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${currentView === 'admin' ? 'bg-amber-500/20 ring-1 ring-amber-500/30' : ''}`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] mt-0.5 tracking-tight">Admin</span>
+          </button>
+        )}
       </nav>
 
       {/* Share / Install Modal for Mobile */}
@@ -170,7 +166,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             {/* WhatsApp Share */}
             <a
               href={`whatsapp://send?text=${encodeURIComponent(
-                `🎟️ Participe no sorteio oficial da ${brand.companyName || 'SorteioLive'}! Inscrição gratuita e 4 sorteios diários transmitidos em direto: ${typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl}`
+                `🎟️ Participe no sorteio oficial da ${brand.companyName || 'SorteioLive'}! Inscrição gratuita e 2 sorteios diários transmitidos em direto: ${typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl}`
               )}`}
               target="_blank"
               rel="noreferrer"
