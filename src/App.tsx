@@ -278,17 +278,31 @@ export default function App() {
   }, [applyServerData]);
 
   // Persist state updates to Cloud Firestore, local storage, central server API, and broadcast across tabs
-  const handleUpdateParticipants = (data: Participant[]) => {
+  const handleUpdateParticipants = (data: Participant[], deletedId?: string) => {
     setParticipants(data);
     try { StorageService.saveParticipants(data); } catch {}
+    if (deletedId) {
+      FirestoreService.deleteParticipant(deletedId).catch(() => {});
+    }
     FirestoreService.saveParticipantsBatch(data).catch(() => {});
     ApiService.saveData({ participants: data });
     broadcastCrossTab({ participants: data });
   };
 
-  const handleUpdatePrizes = (data: Prize[]) => {
+  const handleClearAllParticipants = () => {
+    setParticipants([]);
+    try { StorageService.saveParticipants([]); } catch {}
+    FirestoreService.clearAllParticipants().catch(() => {});
+    ApiService.saveData({ participants: [] });
+    broadcastCrossTab({ participants: [] });
+  };
+
+  const handleUpdatePrizes = (data: Prize[], deletedId?: string) => {
     setPrizes(data);
     try { StorageService.savePrizes(data); } catch {}
+    if (deletedId) {
+      FirestoreService.deletePrize(deletedId).catch(() => {});
+    }
     FirestoreService.savePrizesBatch(data).catch(() => {});
     ApiService.saveData({ prizes: data });
     broadcastCrossTab({ prizes: data });
@@ -668,6 +682,7 @@ export default function App() {
             posterConfig={posterConfig}
             reportConfig={reportConfig}
             onUpdateParticipants={handleUpdateParticipants}
+            onClearAllParticipants={handleClearAllParticipants}
             onUpdatePrizes={handleUpdatePrizes}
             onUpdateSchedules={handleUpdateSchedules}
             onUpdateWinners={handleUpdateWinners}

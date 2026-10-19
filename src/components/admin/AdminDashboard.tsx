@@ -48,8 +48,9 @@ interface AdminDashboardProps {
   formFields: FormFieldsConfig;
   posterConfig?: QRCodePosterConfig;
   reportConfig?: ReportPdfConfig;
-  onUpdateParticipants: (participants: Participant[]) => void;
-  onUpdatePrizes: (prizes: Prize[]) => void;
+  onUpdateParticipants: (participants: Participant[], deletedId?: string) => void;
+  onUpdatePrizes: (prizes: Prize[], deletedId?: string) => void;
+  onClearAllParticipants?: () => void;
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
   onUpdateWinners: (winners: DrawWinner[]) => void;
   onAddNotificationLog: (log: NotificationLog) => void;
@@ -87,6 +88,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   reportConfig,
   onUpdateParticipants,
   onUpdatePrizes,
+  onClearAllParticipants,
   onUpdateSchedules,
   onUpdateWinners,
   onAddNotificationLog,
@@ -221,6 +223,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               formFields={formFields}
               onUpdateParticipants={onUpdateParticipants}
               onUpdateFormFields={onUpdateFormFields}
+              onClearAllParticipants={onClearAllParticipants}
             />
           )}
 

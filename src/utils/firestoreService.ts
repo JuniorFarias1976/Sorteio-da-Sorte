@@ -242,13 +242,42 @@ export const FirestoreService = {
     await deleteDoc(doc(db, 'participants', participantId));
   },
 
-  // Batch save participants (e.g. initial seed or bulk generation)
-  async saveParticipantsBatch(participants: Participant[]): Promise<void> {
-    const batch = writeBatch(db);
-    for (const p of participants) {
-      batch.set(doc(db, 'participants', p.id), p);
+  // Clear all participants from Firestore collection
+  async clearAllParticipants(): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'participants'));
+      if (snap.empty) return;
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to clear participants from Firestore:', err);
     }
-    await batch.commit();
+  },
+
+  // Full synchronization of participants collection (handles additions, updates, and DELETIONS)
+  async saveParticipantsBatch(participants: Participant[]): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'participants'));
+      const keepIds = new Set(participants.map((p) => p.id));
+      const batch = writeBatch(db);
+
+      // 1. Delete documents that are no longer in the array
+      snap.docs.forEach((docSnap) => {
+        if (!keepIds.has(docSnap.id)) {
+          batch.delete(docSnap.ref);
+        }
+      });
+
+      // 2. Set/update all active participants
+      for (const p of participants) {
+        batch.set(doc(db, 'participants', p.id), p);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to sync participants batch to Firestore:', err);
+    }
   },
 
   // Save single prize
@@ -261,13 +290,40 @@ export const FirestoreService = {
     await deleteDoc(doc(db, 'prizes', prizeId));
   },
 
-  // Batch save prizes
-  async savePrizesBatch(prizes: Prize[]): Promise<void> {
-    const batch = writeBatch(db);
-    for (const p of prizes) {
-      batch.set(doc(db, 'prizes', p.id), p);
+  // Clear all prizes from Firestore collection
+  async clearAllPrizes(): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'prizes'));
+      if (snap.empty) return;
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to clear prizes from Firestore:', err);
     }
-    await batch.commit();
+  },
+
+  // Full synchronization of prizes collection (handles additions, updates, and DELETIONS)
+  async savePrizesBatch(prizes: Prize[]): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'prizes'));
+      const keepIds = new Set(prizes.map((p) => p.id));
+      const batch = writeBatch(db);
+
+      snap.docs.forEach((docSnap) => {
+        if (!keepIds.has(docSnap.id)) {
+          batch.delete(docSnap.ref);
+        }
+      });
+
+      for (const p of prizes) {
+        batch.set(doc(db, 'prizes', p.id), p);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to sync prizes batch to Firestore:', err);
+    }
   },
 
   // Save schedule
@@ -280,13 +336,27 @@ export const FirestoreService = {
     await deleteDoc(doc(db, 'schedules', scheduleId));
   },
 
-  // Batch save schedules
+  // Full synchronization of schedules collection (handles additions, updates, and DELETIONS)
   async saveSchedulesBatch(schedules: DrawSchedule[]): Promise<void> {
-    const batch = writeBatch(db);
-    for (const s of schedules) {
-      batch.set(doc(db, 'schedules', s.id), s);
+    try {
+      const snap = await getDocs(collection(db, 'schedules'));
+      const keepIds = new Set(schedules.map((s) => s.id));
+      const batch = writeBatch(db);
+
+      snap.docs.forEach((docSnap) => {
+        if (!keepIds.has(docSnap.id)) {
+          batch.delete(docSnap.ref);
+        }
+      });
+
+      for (const s of schedules) {
+        batch.set(doc(db, 'schedules', s.id), s);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to sync schedules batch to Firestore:', err);
     }
-    await batch.commit();
   },
 
   // Save winner
@@ -299,13 +369,40 @@ export const FirestoreService = {
     await deleteDoc(doc(db, 'winners', winnerId));
   },
 
-  // Batch save winners
-  async saveWinnersBatch(winners: DrawWinner[]): Promise<void> {
-    const batch = writeBatch(db);
-    for (const w of winners) {
-      batch.set(doc(db, 'winners', w.id), w);
+  // Clear all winners from Firestore collection
+  async clearAllWinners(): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'winners'));
+      if (snap.empty) return;
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to clear winners from Firestore:', err);
     }
-    await batch.commit();
+  },
+
+  // Full synchronization of winners collection (handles additions, updates, and DELETIONS)
+  async saveWinnersBatch(winners: DrawWinner[]): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'winners'));
+      const keepIds = new Set(winners.map((w) => w.id));
+      const batch = writeBatch(db);
+
+      snap.docs.forEach((docSnap) => {
+        if (!keepIds.has(docSnap.id)) {
+          batch.delete(docSnap.ref);
+        }
+      });
+
+      for (const w of winners) {
+        batch.set(doc(db, 'winners', w.id), w);
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to sync winners batch to Firestore:', err);
+    }
   },
 
   // Check email uniqueness on Firestore

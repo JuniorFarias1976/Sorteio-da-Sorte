@@ -5,7 +5,7 @@ import { compressImageFile } from '../../utils/imageCompressor';
 
 interface PrizesTabProps {
   prizes: Prize[];
-  onUpdatePrizes: (prizes: Prize[]) => void;
+  onUpdatePrizes: (prizes: Prize[], deletedId?: string) => void;
 }
 
 export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) => {
@@ -95,7 +95,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({ prizes, onUpdatePrizes }) 
   const handleConfirmDelete = () => {
     if (!deletingPrize) return;
     const targetId = deletingPrize.id;
-    onUpdatePrizes(prizes.filter((p) => p.id !== targetId));
+    onUpdatePrizes(prizes.filter((p) => p.id !== targetId), targetId);
     setDeletingPrize(null);
     setSaveSuccessToast(true);
     setTimeout(() => setSaveSuccessToast(false), 3500);

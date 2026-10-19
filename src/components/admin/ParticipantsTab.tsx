@@ -21,8 +21,9 @@ interface ParticipantsTabProps {
   participants: Participant[];
   brand: BrandConfig;
   formFields: FormFieldsConfig;
-  onUpdateParticipants: (updated: Participant[]) => void;
+  onUpdateParticipants: (updated: Participant[], deletedId?: string) => void;
   onUpdateFormFields: (fields: FormFieldsConfig) => void;
+  onClearAllParticipants?: () => void;
 }
 
 export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
@@ -31,9 +32,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   formFields,
   onUpdateParticipants,
   onUpdateFormFields,
+  onClearAllParticipants,
 }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner'>('all');
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
   
   // Feedback banners
   const [saveSuccessToast, setSaveSuccessToast] = useState<string | null>(null);
@@ -160,10 +163,21 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     if (!deletingParticipant) return;
     const targetId = deletingParticipant.id;
     const targetName = deletingParticipant.name;
-    onUpdateParticipants(participants.filter((p) => p.id !== targetId));
+    onUpdateParticipants(participants.filter((p) => p.id !== targetId), targetId);
     setDeletingParticipant(null);
     setSaveSuccessToast(`Participante "${targetName}" removido com sucesso.`);
     setTimeout(() => setSaveSuccessToast(null), 3500);
+  };
+
+  const handleConfirmClearAll = () => {
+    if (onClearAllParticipants) {
+      onClearAllParticipants();
+    } else {
+      onUpdateParticipants([]);
+    }
+    setShowClearAllModal(false);
+    setSaveSuccessToast('Todos os participantes e exemplos foram apagados! Base limpa com sucesso.');
+    setTimeout(() => setSaveSuccessToast(null), 4000);
   };
 
   const handleGenerateBatch = () => {
@@ -258,6 +272,17 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             <FileText className="w-4 h-4" />
             <span>Exportar PDF</span>
           </button>
+
+          {participants.length > 0 && (
+            <button
+              onClick={() => setShowClearAllModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/70 hover:bg-red-900/90 text-red-300 border border-red-800/80 text-xs font-semibold shadow transition-colors cursor-pointer"
+              title="Remover todos os exemplos e participantes para deixar a base e o formulário limpos"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <span>Limpar Exemplos ({participants.length})</span>
+            </button>
+          )}
 
           <button
             onClick={handleGenerateBatch}
@@ -380,13 +405,43 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </tr>
               ))}
 
-              {filteredParticipants.length === 0 && (
+              {participants.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-amber-400">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white">Formulário e Base de Dados Limpos</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Nenhum participante de exemplo cadastrado. O formulário e o banco de dados estão 100% limpos e prontos para receber inscrições reais.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                          onClick={handleOpenAddModal}
+                          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Cadastrar Novo Participante</span>
+                        </button>
+                        <button
+                          onClick={handleGenerateBatch}
+                          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>+5 Simulação (Teste)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredParticipants.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-slate-500">
                     Nenhum participante encontrado com os critérios de busca selecionados.
                   </td>
                 </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
         </div>
@@ -561,6 +616,43 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Sim, Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Clear All / Remove Examples */}
+      {showClearAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-red-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              <span>Remover Todos os Exemplos</span>
+            </h3>
+            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+              Deseja realmente remover todos os <strong>{participants.length} participantes</strong> e deixar o formulário e o banco de dados 100% limpos?
+            </p>
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[11px] text-red-300 mb-6 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <span>Esta ação excluirá todos os participantes da nuvem (Firestore), do arquivo local e da memória, deixando o sistema zerado para novos cadastros reais.</span>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowClearAllModal(false)}
+                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearAll}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Limpar Tudo</span>
               </button>
             </div>
           </div>
