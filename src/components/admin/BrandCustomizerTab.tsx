@@ -468,7 +468,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     value={roundsBannerTitle}
                     onChange={(e) => setRoundsBannerTitle(e.target.value)}
                     onBlur={() => syncAndSave()}
-                    placeholder="4 Sorteios Oficiais no Mesmo Dia"
+                    placeholder="2 Sorteios Oficiais por Dia"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>
@@ -481,7 +481,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     value={roundsBannerSubtitle}
                     onChange={(e) => setRoundsBannerSubtitle(e.target.value)}
                     onBlur={() => syncAndSave()}
-                    placeholder="O seu bilhete concorre automaticamente em todas as 4 rondas diárias!"
+                    placeholder="O seu bilhete concorre automaticamente em todas as rondas e datas programadas!"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>

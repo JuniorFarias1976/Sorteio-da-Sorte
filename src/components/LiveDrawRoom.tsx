@@ -19,7 +19,9 @@ import {
   ShieldAlert, 
   Flame,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
 
@@ -48,7 +50,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [currentDisplayTicket, setCurrentDisplayTicket] = useState<string>(winners[0]?.participantTicket || '00000');
   const [currentDisplayName, setCurrentDisplayName] = useState<string>(winners[0]?.participantName || 'AGUARDANDO SORTEIO...');
-  const [currentDisplayCity, setCurrentDisplayCity] = useState<string>(winners[0] ? 'CONTEMPLADO' : 'BRASIL');
+  const [currentDisplayCity, setCurrentDisplayCity] = useState<string>(winners[0]?.participantCity || winners[0]?.participantDocument || '');
   const [latestWinner, setLatestWinner] = useState<DrawWinner | null>(winners[0] || null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -60,17 +62,64 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const eligibleParticipants = participants.filter(p => p.status === 'active');
   const currentPrize = prizes.find(p => p.id === selectedPrizeId) || prizes[0];
 
-  // Daily 4-round active schedule
-  const [selectedRound, setSelectedRound] = useState<number>(1);
+  // Active Draw Schedule selection (supports dynamic schedules configured in calendar)
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string>(
+    schedules.find(s => s.status === 'live')?.id || 
+    schedules.find(s => s.status === 'scheduled')?.id || 
+    schedules[0]?.id || ''
+  );
+
+  useEffect(() => {
+    if (schedules.length > 0 && (!selectedScheduleId || !schedules.some(s => s.id === selectedScheduleId))) {
+      const best = schedules.find(s => s.status === 'live') || schedules.find(s => s.status === 'scheduled') || schedules[0];
+      if (best) setSelectedScheduleId(best.id);
+    }
+  }, [schedules, selectedScheduleId]);
+
+  const activeSchedule = schedules.find(s => s.id === selectedScheduleId) || schedules[0];
+
+  const handleSelectSchedule = (schedId: string) => {
+    setSelectedScheduleId(schedId);
+    const target = schedules.find(s => s.id === schedId);
+    if (target && target.prizeIds && target.prizeIds.length > 0) {
+      const matchPrize = prizes.find(p => target.prizeIds.includes(p.id));
+      if (matchPrize) {
+        setSelectedPrizeId(matchPrize.id);
+      }
+    }
+  };
+
+  const formatScheduleFullDate = (dateStr?: string) => {
+    if (!dateStr) return 'Data Oficial';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return d.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatScheduleShortDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}`;
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const selectedRound = activeSchedule?.roundNumber || 1;
+
   const remainingPrizeQuantity = currentPrize ? currentPrize.totalQuantity - currentPrize.drawnQuantity : 0;
   const isPrizeExhausted = remainingPrizeQuantity <= 0;
-
-  const DAILY_ROUNDS = [
-    { round: 1, time: '10:00', label: '1º Sorteio (10:00)' },
-    { round: 2, time: '14:00', label: '2º Sorteio (14:00)' },
-    { round: 3, time: '18:00', label: '3º Sorteio (18:00)' },
-    { round: 4, time: '21:00', label: '4º Sorteio (21:00)' },
-  ];
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -116,7 +165,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     ApiService.getLiveState().then((state) => {
       if (!state) return;
       if (state.prizeId) setSelectedPrizeId(state.prizeId);
-      if (state.round) setSelectedRound(state.round);
+      if (state.round) {
+        const matched = schedules.find(s => s.roundNumber === state.round);
+        if (matched) setSelectedScheduleId(matched.id);
+      }
       if (state.isDrawing) setIsDrawing(true);
       if (state.countdown !== null) setCountdown(state.countdown);
       if (state.currentDisplayTicket) setCurrentDisplayTicket(state.currentDisplayTicket);
@@ -132,7 +184,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
         if (data.type === 'START_DRAW') {
           setSelectedPrizeId(data.prizeId);
-          setSelectedRound(data.round || 1);
+          if (data.round) {
+            const matched = schedules.find(s => s.roundNumber === data.round);
+            if (matched) setSelectedScheduleId(matched.id);
+          }
           setLatestWinner(null);
           setIsDrawing(true);
           setCountdown(3);
@@ -159,7 +214,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           setCountdown(null);
           setCurrentDisplayTicket(data.winner.participantTicket);
           setCurrentDisplayName(data.winner.participantName);
-          setCurrentDisplayCity(data.winner.participantDocument || 'CONTEMPLADO');
+          setCurrentDisplayCity(data.winner.participantCity || data.winner.participantDocument || '');
           setLatestWinner(data.winner);
           onWinnerAnnounced(data.winner);
           onPrizeQuantityDrawn(data.winner.prizeId);
@@ -171,7 +226,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           setLatestWinner(null);
           setCurrentDisplayTicket('-----');
           setCurrentDisplayName('AGUARDANDO SORTEIO...');
-          setCurrentDisplayCity('BRASIL');
+          setCurrentDisplayCity('');
         }
       },
     });
@@ -190,7 +245,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
             setLatestWinner(null);
             setCurrentDisplayTicket('-----');
             setCurrentDisplayName('AGUARDANDO SORTEIO...');
-            setCurrentDisplayCity('BRASIL');
+            setCurrentDisplayCity('');
           }
         };
       } catch (e) {
@@ -320,7 +375,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
         const newWinnerRecord: DrawWinner = {
           id: `win-${Date.now()}`,
-          drawTitle: currentPrize.title,
+          drawId: activeSchedule?.id || 'live-draw',
+          drawTitle: activeSchedule 
+            ? `${activeSchedule.title} (${activeSchedule.scheduledDate} às ${activeSchedule.scheduledTime})`
+            : currentPrize.title,
           participantId: chosenWinnerParticipant.id,
           participantName: chosenWinnerParticipant.name,
           participantEmail: chosenWinnerParticipant.email,
@@ -354,7 +412,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     setLatestWinner(null);
     setCurrentDisplayTicket('-----');
     setCurrentDisplayName('AGUARDANDO SORTEIO...');
-    setCurrentDisplayCity('BRASIL');
+    setCurrentDisplayCity('');
     broadcastEvent({ type: 'LIVE_RESET' });
     try {
       await ApiService.resetLive();
@@ -384,21 +442,32 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
             </div>
           )}
 
-          {/* 4 Daily Rounds Switcher */}
-          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
-            {DAILY_ROUNDS.map((r) => (
-              <button
-                key={r.round}
-                onClick={() => setSelectedRound(r.round)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  selectedRound === r.round
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>{r.round}º ({r.time})</span>
-              </button>
-            ))}
+          {/* Dynamic Schedules Switcher (Showing Days and Times) */}
+          <div className="flex flex-wrap items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1 max-w-full overflow-x-auto">
+            {schedules.length > 0 ? (
+              schedules.map((s) => {
+                const isSelected = selectedScheduleId === s.id;
+                const shortDate = formatScheduleShortDate(s.scheduledDate);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => handleSelectSchedule(s.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                    title={`${s.title} • ${formatScheduleFullDate(s.scheduledDate)} às ${s.scheduledTime}`}
+                  >
+                    <span className="font-mono text-[11px] opacity-90">{shortDate}</span>
+                    <span className="font-bold">{s.scheduledTime}</span>
+                    <span className="hidden md:inline text-[11px]">({s.title})</span>
+                  </button>
+                );
+              })
+            ) : (
+              <span className="text-xs text-slate-400 px-2 py-1">Sem sorteios agendados</span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-slate-300">
@@ -547,9 +616,31 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
             <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700/80 text-xs font-semibold text-amber-400 mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700/80 text-xs font-semibold text-amber-400 mb-4">
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span>GLOBO ELETRÔNICO DE SORTEIOS</span>
+              </div>
+
+              {/* Active Scheduled Draw Day & Time Information Banner */}
+              <div className="mb-6 max-w-xl mx-auto p-3.5 rounded-2xl bg-slate-950/90 border border-amber-500/30 shadow-lg text-center">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400/90 mb-1">
+                  Sessão Oficial Programada
+                </div>
+                <div className="text-base sm:text-lg font-black text-white mb-2">
+                  {activeSchedule ? activeSchedule.title : 'Sorteio Oficial'}
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-bold">
+                    <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-slate-400 font-normal">Dia:</span>
+                    <span className="text-white capitalize">{formatScheduleFullDate(activeSchedule?.scheduledDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-bold">
+                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-slate-400 font-normal">Horário:</span>
+                    <span className="font-mono text-amber-400 font-extrabold text-sm">{activeSchedule?.scheduledTime || '10:00'}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Countdown overlay if active */}
@@ -574,14 +665,20 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                     </div>
                   </div>
 
-                  {/* Name and City Display */}
+                  {/* Name and City Display (Never displays Brasil) */}
                   <div className="py-3 px-6 bg-slate-950/70 border border-slate-800 rounded-2xl max-w-md mx-auto mb-6">
                     <h4 className="text-xl sm:text-2xl font-bold text-white truncate">
                       {currentDisplayName}
                     </h4>
-                    <p className="text-xs text-amber-400/90 font-medium tracking-wide mt-1 uppercase">
-                      📍 {currentDisplayCity}
-                    </p>
+                    {currentDisplayCity && currentDisplayCity.toUpperCase() !== 'BRASIL' ? (
+                      <p className="text-xs text-amber-400/90 font-medium tracking-wide mt-1 uppercase">
+                        📍 {currentDisplayCity}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-1">
+                        {latestWinner ? 'Contemplado Oficial Homologado' : 'Aguardando sorteio oficial'}
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -589,26 +686,33 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
               {/* Draw Action Button (Exclusively for Admin) vs Viewer Status Card */}
               <div className="mt-8">
                 {isAdmin ? (
-                  <button
-                    onClick={startDrawRoutine}
-                    disabled={isDrawing || countdown !== null || isPrizeExhausted}
-                    className={`w-full max-w-md mx-auto py-5 px-8 rounded-2xl font-black text-lg sm:text-xl tracking-wider uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${
-                      isPrizeExhausted
-                        ? 'bg-red-950/60 text-red-400 border border-red-500/50 cursor-not-allowed opacity-90'
-                        : isDrawing || countdown !== null
-                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                        : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 hover:brightness-110 active:scale-98 shadow-amber-500/25 cursor-pointer ring-4 ring-amber-500/20'
-                    }`}
-                  >
-                    <Flame className="w-6 h-6 fill-current animate-pulse" />
-                    <span>
-                      {isPrizeExhausted
-                        ? 'PRÊMIO TOTALMENTE ESGOTADO'
-                        : isDrawing
-                        ? 'GIRANDO GLOBO...'
-                        : `SORTEAR ${DAILY_ROUNDS.find(r => r.round === selectedRound)?.label.toUpperCase()}!`}
-                    </span>
-                  </button>
+                  <div>
+                    <button
+                      onClick={startDrawRoutine}
+                      disabled={isDrawing || countdown !== null || isPrizeExhausted}
+                      className={`w-full max-w-md mx-auto py-5 px-8 rounded-2xl font-black text-lg sm:text-xl tracking-wider uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${
+                        isPrizeExhausted
+                          ? 'bg-red-950/60 text-red-400 border border-red-500/50 cursor-not-allowed opacity-90'
+                          : isDrawing || countdown !== null
+                          ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                          : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 hover:brightness-110 active:scale-98 shadow-amber-500/25 cursor-pointer ring-4 ring-amber-500/20'
+                      }`}
+                    >
+                      <Flame className="w-6 h-6 fill-current animate-pulse shrink-0" />
+                      <span>
+                        {isPrizeExhausted
+                          ? 'PRÊMIO TOTALMENTE ESGOTADO'
+                          : isDrawing
+                          ? 'GIRANDO GLOBO...'
+                          : `SORTEAR: ${activeSchedule ? `${activeSchedule.scheduledTime} - ${activeSchedule.title}` : 'SORTEIO OFICIAL'}!`}
+                      </span>
+                    </button>
+                    {activeSchedule && (
+                      <p className="text-xs text-amber-400/80 font-mono mt-2 text-center">
+                        📅 Agendado para {formatScheduleFullDate(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <div className="py-4 px-6 rounded-2xl bg-slate-900/90 border border-slate-800/80 max-w-md mx-auto text-center shadow-xl">
                     <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-1.5">

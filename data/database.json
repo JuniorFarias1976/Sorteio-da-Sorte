@@ -3,12 +3,12 @@
   "prizes": [
     {
       "id": "prz-1",
-      "title": "iPhone 16 Pro Max 256GB Titânio",
-      "description": "Aparelho novo na caixa lacrada com garantia Apple Brasil de 1 ano.",
-      "totalQuantity": 2,
+      "title": "LACER HIDRO - Irrigador bucal portátil",
+      "description": "Limpeza profunda e eficaz, 3 níveis de pressão, design ergonómico e bateria recarregável.",
+      "totalQuantity": 4,
       "drawnQuantity": 0,
-      "imageUrl": "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80",
-      "estimatedValue": 9899,
+      "imageUrl": "https://images.unsplash.com/photo-1559599101-f09722fb4948?w=600&auto=format&fit=crop&q=80",
+      "estimatedValue": 89.9,
       "drawOrder": 1
     },
     {
@@ -55,64 +55,59 @@
   "schedules": [
     {
       "id": "sched-round-1",
-      "title": "1º Sorteio do Dia - Rodada Matutina (10:00)",
-      "description": "Abertura das rodadas diárias com sorteio do primeiro lote de prêmios.",
-      "scheduledDate": "2026-10-18",
+      "title": "Sorteio Manhã",
+      "description": "Primeira ronda matutina oficial de sorteio de prémios.",
+      "scheduledDate": "2026-10-22",
       "scheduledTime": "10:00",
       "status": "scheduled",
       "roundNumber": 1,
-      "roundLabel": "1ª Rodada - 10:00",
+      "roundLabel": "1ª Ronda (Manhã) - 10:00",
       "prizeIds": [
-        "prz-5",
-        "prz-2"
+        "prz-1"
       ],
-      "createdAt": "2026-10-10T12:00:00Z"
+      "createdAt": "2026-10-18T10:00:00Z"
     },
     {
       "id": "sched-round-2",
-      "title": "2º Sorteio do Dia - Rodada da Tarde (14:00)",
-      "description": "Segunda rodada diária com prêmios de tecnologia e Pix imediato.",
-      "scheduledDate": "2026-10-18",
-      "scheduledTime": "14:00",
+      "title": "Sorteio Tarde",
+      "description": "Segunda ronda oficial da tarde de sorteio de prémios.",
+      "scheduledDate": "2026-10-22",
+      "scheduledTime": "16:00",
       "status": "scheduled",
       "roundNumber": 2,
-      "roundLabel": "2ª Rodada - 14:00",
+      "roundLabel": "2ª Ronda (Tarde) - 16:00",
       "prizeIds": [
-        "prz-3",
-        "prz-5"
+        "prz-1"
       ],
-      "createdAt": "2026-10-10T12:05:00Z"
+      "createdAt": "2026-10-18T10:05:00Z"
     },
     {
       "id": "sched-round-3",
-      "title": "3º Sorteio do Dia - Rodada de Fim de Tarde (18:00)",
-      "description": "Terceira rodada com disputa do PlayStation 5 e Smart TV.",
-      "scheduledDate": "2026-10-18",
-      "scheduledTime": "18:00",
+      "title": "Sorteio 2.º Dia Manhã",
+      "description": "Terceira ronda oficial - segundo dia matutino.",
+      "scheduledDate": "2026-10-23",
+      "scheduledTime": "10:00",
       "status": "scheduled",
-      "roundNumber": 3,
-      "roundLabel": "3ª Rodada - 18:00",
+      "roundNumber": 1,
+      "roundLabel": "2º Dia (Manhã) - 10:00",
       "prizeIds": [
-        "prz-2",
         "prz-1"
       ],
-      "createdAt": "2026-10-10T12:10:00Z"
+      "createdAt": "2026-10-18T10:10:00Z"
     },
     {
       "id": "sched-round-4",
-      "title": "4º Sorteio do Dia - Grande Rodada Nobre da Noite (21:00)",
-      "description": "A grande rodada final do dia com Moto Honda CG 160 0KM e iPhone 16 Pro Max!",
-      "scheduledDate": "2026-10-18",
-      "scheduledTime": "21:00",
+      "title": "Sorteio 2.º Dia Tarde",
+      "description": "Quarta ronda oficial - segundo dia à tarde.",
+      "scheduledDate": "2026-10-23",
+      "scheduledTime": "16:00",
       "status": "scheduled",
-      "roundNumber": 4,
-      "roundLabel": "4ª Rodada - 21:00 (Final)",
+      "roundNumber": 2,
+      "roundLabel": "2º Dia (Tarde) - 16:00",
       "prizeIds": [
-        "prz-4",
-        "prz-1",
-        "prz-5"
+        "prz-1"
       ],
-      "createdAt": "2026-10-10T12:15:00Z"
+      "createdAt": "2026-10-18T10:15:00Z"
     }
   ],
   "winners": [],
@@ -150,8 +145,8 @@
     "contactEmail": "contacto@sorteiolive.pt",
     "termsAndConditions": "Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.",
     "forceResetLogo": true,
-    "roundsBannerTitle": "4 Sorteios Oficiais no Mesmo Dia",
-    "roundsBannerSubtitle": "O seu bilhete concorre automaticamente em todas as 4 rondas diárias!",
+    "roundsBannerTitle": "2 Sorteios Oficiais por Dia",
+    "roundsBannerSubtitle": "O seu bilhete concorre automaticamente em todas as rondas e datas programadas!",
     "showRoundsBanner": true,
     "formTitle": "Garanta o seu Bilhete da Sorte",
     "formSubtitle": "Preencha os seus dados reais para receber a confirmação e o seu número",

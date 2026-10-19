@@ -47,6 +47,7 @@ export interface DrawWinner {
   participantPhone: string;
   participantTicket: string;
   participantDocument: string;
+  participantCity?: string;
   prizeId: string;
   prizeTitle: string;
   wonAt: string;

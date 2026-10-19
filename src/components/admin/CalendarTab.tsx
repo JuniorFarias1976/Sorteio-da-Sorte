@@ -79,6 +79,33 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
     }
   };
 
+  const handleCreate2DailyRounds = () => {
+    const targetDate = prompt('Para qual data deseja agendar os 2 sorteios diários (AAAA-MM-DD)?', scheduledDate);
+    if (!targetDate) return;
+
+    const rounds = [
+      { round: 1, time: '10:00', title: 'Sorteio Manhã' },
+      { round: 2, time: '16:00', title: 'Sorteio Tarde' },
+    ];
+
+    const newSchedules: DrawSchedule[] = rounds.map((r, i) => ({
+      id: `sched-${Date.now()}-${i}`,
+      title: `${r.title} (${r.time})`,
+      description: `Ronda ${r.round} oficial do dia (${r.time}) com distribuição de prémios.`,
+      scheduledDate: targetDate,
+      scheduledTime: r.time,
+      status: 'scheduled',
+      roundNumber: r.round,
+      roundLabel: `${r.round}ª Ronda - ${r.time}`,
+      prizeIds: prizes.map(p => p.id),
+      createdAt: new Date().toISOString(),
+    }));
+
+    onUpdateSchedules([...schedules, ...newSchedules]);
+    setToastMessage(`2 sorteios oficiais (10:00 e 16:00) foram agendados e salvos para ${targetDate}!`);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
   const handleCreate4DailyRounds = () => {
     const targetDate = prompt('Para qual data deseja agendar os 4 horários diários (AAAA-MM-DD)?', scheduledDate);
     if (!targetDate) return;
@@ -130,18 +157,18 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
             <span>Calendário de Sorteios & Horários ({schedules.length})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Agende os 4 horários diários no mesmo dia (10h, 14h, 18h e 21h) e controle as datas das transmissões
+            Agende os 2 sorteios diários (Manhã 10h e Tarde 16h) e controle as datas e horários com precisão
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleCreate4DailyRounds}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-bold shadow transition-colors"
-            title="Criar automaticamente as 4 rodadas (10h, 14h, 18h e 21h) no mesmo dia"
+            onClick={handleCreate2DailyRounds}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold shadow transition-colors"
+            title="Criar rapidamente 2 sorteios (10:00 e 16:00) para uma data"
           >
-            <Clock className="w-4 h-4" />
-            <span>+ 4 Horários no Mesmo Dia</span>
+            <Clock className="w-4 h-4 text-amber-400" />
+            <span>+ 2 Sorteios Diários (10h & 16h)</span>
           </button>
 
           <button

@@ -46,26 +46,29 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   onUpdateBrand,
   isAdmin = false,
 }) => {
-  const [showEditSloganModal, setShowEditSloganModal] = useState(false);
-  const [editCompanyName, setEditCompanyName] = useState(brand.companyName || '');
-  const [editCompanySlogan, setEditCompanySlogan] = useState(brand.companySlogan || '');
-
-  useEffect(() => {
-    setEditCompanyName(brand.companyName || '');
-    setEditCompanySlogan(brand.companySlogan || '');
-  }, [brand.companyName, brand.companySlogan]);
-
-  const handleSaveSlogan = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onUpdateBrand) {
-      onUpdateBrand({
-        ...brand,
-        companyName: editCompanyName.trim() || brand.companyName,
-        companySlogan: editCompanySlogan.trim(),
-      });
+  const formatScheduleFullDate = (dateStr?: string) => {
+    if (!dateStr) return 'Data Oficial';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return d.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
     }
-    setShowEditSloganModal(false);
   };
+
+  // Group schedules by scheduledDate to display 2 draws per day
+  const schedulesByDate = schedules.reduce<Record<string, DrawSchedule[]>>((acc, sch) => {
+    const dateKey = sch.scheduledDate || '2026-10-22';
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(sch);
+    return acc;
+  }, {});
+
+  const scheduledDates = Object.keys(schedulesByDate).sort();
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -306,16 +309,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white">
               {brand.companyName || 'Sorteio Lacer OMD 2026'}
             </h1>
-            {isAdmin && onUpdateBrand && (
-              <button
-                type="button"
-                onClick={() => setShowEditSloganModal(true)}
-                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-400 border border-slate-700 transition-colors shadow-lg cursor-pointer"
-                title="Editar Nome do Sorteio e Frase/Subtítulo"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-            )}
           </div>
 
           <div className="max-w-2xl mx-auto mb-8">
@@ -324,83 +317,128 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 {brand.companySlogan}
               </p>
             ) : null}
-            {isAdmin && onUpdateBrand && (
-              <button
-                type="button"
-                onClick={() => setShowEditSloganModal(true)}
-                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-amber-400 text-xs border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
-              >
-                <Edit3 className="w-3 h-3 text-amber-400" />
-                <span>{brand.companySlogan ? 'Alterar frase abaixo do nome' : '+ Adicionar frase/subtítulo abaixo do nome'}</span>
-              </button>
-            )}
           </div>
 
-          {/* 4 Daily Draw Editions Banner */}
+          {/* Official 2 Draws Per Day Schedule Banner */}
           {brand.showRoundsBanner !== false && (
-            <div className="mt-6 max-w-3xl mx-auto bg-slate-900/95 border-2 border-amber-500/30 p-4 sm:p-5 rounded-3xl shadow-2xl backdrop-blur-md">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+            <div className="mt-8 max-w-4xl mx-auto bg-slate-900/95 border-2 border-amber-500/30 p-5 sm:p-6 rounded-3xl shadow-2xl backdrop-blur-md text-left">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3.5 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
+                      {brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia'}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Datas e horários oficiais das rondas de prémios
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                    {brand.roundsBannerTitle || '4 Sorteios Oficiais no Mesmo Dia'}
+                  <span className="inline-flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/25">
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{nextSchedule ? `Próximo: ${nextSchedule.scheduledTime} (${nextSchedule.scheduledDate.slice(5)})` : '2 Sorteios / Dia'}</span>
                   </span>
                 </div>
-                <span className="text-[11px] text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                  Data Oficial: {nextSchedule ? new Date(`${nextSchedule.scheduledDate}T00:00:00`).toLocaleDateString('pt-PT') : 'Hoje'}
-                </span>
               </div>
 
-              {/* 4 slots grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {(schedules.length >= 4 ? schedules.slice(0, 4) : [
-                  { id: '1', roundNumber: 1, scheduledTime: '10:00', title: '1º Sorteio', status: 'scheduled' },
-                  { id: '2', roundNumber: 2, scheduledTime: '14:00', title: '2º Sorteio', status: 'scheduled' },
-                  { id: '3', roundNumber: 3, scheduledTime: '18:00', title: '3º Sorteio', status: 'scheduled' },
-                  { id: '4', roundNumber: 4, scheduledTime: '21:00', title: '4º Sorteio', status: 'scheduled' },
-                ]).map((sch, idx) => {
-                  const isLive = sch.status === 'live';
-                  const isCompleted = sch.status === 'completed';
+              {/* Day by Day Grid with 2 Draws per day */}
+              <div className="space-y-4">
+                {(scheduledDates.length > 0 ? scheduledDates : ['2026-10-22', '2026-10-23']).map((dateStr, dayIndex) => {
+                  const daySchedules = schedulesByDate[dateStr] || [
+                    { id: `fb-${dayIndex}-1`, title: 'Sorteio Manhã', scheduledTime: '10:00', status: 'scheduled', roundNumber: 1, scheduledDate: dateStr, description: '', prizeIds: [], createdAt: '' },
+                    { id: `fb-${dayIndex}-2`, title: 'Sorteio Tarde', scheduledTime: '16:00', status: 'scheduled', roundNumber: 2, scheduledDate: dateStr, description: '', prizeIds: [], createdAt: '' },
+                  ];
+
                   return (
-                    <div
-                      key={sch.id}
-                      onClick={onGoToLive}
-                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer group hover:scale-102 ${
-                        isLive
-                          ? 'bg-red-500/20 border-red-500 ring-2 ring-red-500/30'
-                          : isCompleted
-                          ? 'bg-slate-950/60 border-slate-800 opacity-60'
-                          : 'bg-slate-950 border-slate-800 hover:border-amber-500/50'
-                      }`}
-                    >
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-amber-400 block mb-0.5">
-                        {idx + 1}ª Ronda
-                      </span>
-                      <div className="text-lg sm:text-xl font-mono font-black text-amber-400 group-hover:text-amber-300">
-                        {sch.scheduledTime}
+                    <div key={dateStr} className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-4">
+                      {/* Day Header */}
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/60">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs uppercase font-mono">
+                            {dayIndex + 1}º Dia
+                          </span>
+                          <span className="text-xs sm:text-sm font-bold text-white capitalize">
+                            {formatScheduleFullDate(dateStr)}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          {daySchedules.length} sorteios agendados
+                        </span>
                       </div>
-                      <span className={`inline-block mt-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                        isLive 
-                          ? 'bg-red-500 text-white animate-pulse'
-                          : isCompleted
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-slate-800 text-slate-300'
-                      }`}>
-                        {isLive ? 'Em Direto Agora' : isCompleted ? 'Realizado' : 'Agendado'}
-                      </span>
+
+                      {/* Draws of the Day (2 draws per day) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {daySchedules.map((sch) => {
+                          const isLive = sch.status === 'live';
+                          const isCompleted = sch.status === 'completed';
+                          const assignedPrize = sch.prizeIds && sch.prizeIds.length > 0 
+                            ? prizes.find(p => sch.prizeIds.includes(p.id)) 
+                            : null;
+
+                          return (
+                            <div
+                              key={sch.id}
+                              onClick={onGoToLive}
+                              className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-3 ${
+                                isLive
+                                  ? 'bg-red-500/20 border-red-500 ring-2 ring-red-500/30'
+                                  : isCompleted
+                                  ? 'bg-slate-900/60 border-slate-800/80 opacity-60'
+                                  : 'bg-slate-900/90 border-slate-800 hover:border-amber-500/50 hover:bg-slate-850'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors truncate">
+                                    {sch.title}
+                                  </span>
+                                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${
+                                    isLive 
+                                      ? 'bg-red-500 text-white animate-pulse'
+                                      : isCompleted
+                                      ? 'bg-emerald-500/20 text-emerald-400'
+                                      : 'bg-slate-800 text-amber-400/90 border border-slate-700'
+                                  }`}>
+                                    {isLive ? 'Ao Vivo' : isCompleted ? 'Realizado' : 'Agendado'}
+                                  </span>
+                                </div>
+                                {assignedPrize && (
+                                  <p className="text-[11px] text-slate-400 truncate flex items-center gap-1">
+                                    <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+                                    <span className="truncate">{assignedPrize.title}</span>
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="text-right shrink-0">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                                  Horário
+                                </span>
+                                <span className="text-xl sm:text-2xl font-mono font-black text-amber-400 group-hover:text-amber-300">
+                                  {sch.scheduledTime}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400">
-                <span className="text-[11px]">{brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!'}</span>
+              <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                <span className="text-[11px]">{brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!'}</span>
                 <button
                   onClick={onGoToLive}
-                  className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 text-[11px]"
+                  className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1.5 text-xs cursor-pointer group"
                 >
-                  <span>Aceder à Transmissão</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <span>Aceder à Transmissão em Direto</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
@@ -844,85 +882,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         </div>
       </div>
 
-      {/* Modal: Editar Nome e Subtítulo */}
-      {showEditSloganModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-amber-400" />
-                <span>Editar Nome e Frase / Subtítulo</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowEditSloganModal(false)}
-                className="text-slate-400 hover:text-white p-1 text-xs cursor-pointer"
-              >
-                ✕ Fechar
-              </button>
-            </div>
 
-            <form onSubmit={handleSaveSlogan} className="space-y-4" autoComplete="off">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Nome do Sorteio / Empresa:
-                </label>
-                <input
-                  type="text"
-                  value={editCompanyName}
-                  onChange={(e) => setEditCompanyName(e.target.value)}
-                  placeholder="Nome do sorteio..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-slate-300 uppercase">
-                    Subtítulo / Frase abaixo do Nome:
-                  </label>
-                  {editCompanySlogan && (
-                    <button
-                      type="button"
-                      onClick={() => setEditCompanySlogan('')}
-                      className="text-[11px] text-slate-400 hover:text-amber-400 underline cursor-pointer"
-                    >
-                      Deixar em branco
-                    </button>
-                  )}
-                </div>
-                <textarea
-                  rows={3}
-                  value={editCompanySlogan}
-                  onChange={(e) => setEditCompanySlogan(e.target.value)}
-                  placeholder="Frase ou subtítulo exibido abaixo do logótipo e nome (ou deixe vazio)..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Esta frase é exibida logo abaixo de <strong>"{editCompanyName || 'Sorteio'}"</strong>. Se deixar em branco, nenhum texto será mostrado.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowEditSloganModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Guardar Alterações</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Modal: Regulamento e Termos Oficiais do Sorteio */}
       {showTermsModal && (
