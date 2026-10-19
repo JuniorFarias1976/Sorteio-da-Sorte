@@ -82,6 +82,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   // Duplicate email restriction modal
   const [duplicateEmailError, setDuplicateEmailError] = useState<Participant | null>(null);
 
+  // Terms and conditions modal
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   // Search Ticket State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Participant[] | null>(null);
@@ -223,7 +226,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         email: normalizedEmail,
         phone: phone.trim() || 'Não informado',
         document: document.trim() || 'Não informado',
-        city: city.trim() || 'Brasil',
+        city: city.trim() || 'Portugal',
         ticketNumber: ticket,
         createdAt: new Date().toISOString(),
         status: 'active',
@@ -273,6 +276,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         ></div>
 
         <div className="relative z-10 max-w-4xl mx-auto">
+          {/* Hero Badge */}
+          {brand.heroBadgeText && (
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs sm:text-sm font-semibold mb-6 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{brand.heroBadgeText}</span>
+            </div>
+          )}
+
           {/* Logo */}
           <div className="flex justify-center mb-6">
             {brand.logoUrl ? (
@@ -295,7 +306,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white">
               {brand.companyName || 'Sorteio Lacer OMD 2026'}
             </h1>
-            {onUpdateBrand && (
+            {isAdmin && onUpdateBrand && (
               <button
                 type="button"
                 onClick={() => setShowEditSloganModal(true)}
@@ -313,7 +324,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 {brand.companySlogan}
               </p>
             ) : null}
-            {onUpdateBrand && (
+            {isAdmin && onUpdateBrand && (
               <button
                 type="button"
                 onClick={() => setShowEditSloganModal(true)}
@@ -599,7 +610,19 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
                   />
                   <span>
-                    Concordo com os regulamentos do sorteio e autorizo o envio de notificações sobre a transmissão em direto.
+                    Concordo com os{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowTermsModal(true);
+                      }}
+                      className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
+                    >
+                      regulamentos e termos oficiais do sorteio
+                    </button>{' '}
+                    e autorizo o envio de notificações sobre a transmissão em direto.
                   </span>
                 </label>
               </div>
@@ -897,6 +920,55 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Regulamento e Termos Oficiais do Sorteio */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+              <div className="flex items-center gap-2 text-white">
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base sm:text-lg font-bold">Regulamento Oficial & Condições do Sorteio</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="text-slate-400 hover:text-white p-1 text-xs cursor-pointer rounded-lg hover:bg-slate-800"
+              >
+                ✕ Fechar
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 font-sans whitespace-pre-line">
+                {brand.termsAndConditions || 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.'}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-400">
+                  <span className="font-bold text-slate-200 block mb-0.5">Empresa Organizadora:</span>
+                  <span>{brand.companyName || 'Sorteio Lacer OMD 2026'}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-400">
+                  <span className="font-bold text-slate-200 block mb-0.5">Contacto / Suporte:</span>
+                  <span>{brand.contactEmail || 'contacto@sorteiolive.pt'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">Auditoria criptográfica ativa · 100% em direto</span>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-lg"
+              >
+                Compreendi e Aceito
+              </button>
+            </div>
           </div>
         </div>
       )}

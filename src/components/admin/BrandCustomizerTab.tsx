@@ -169,50 +169,55 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setTimeout(() => checkDatabaseLiveStatus(), 800);
   };
 
-  const handleApplyPreset = (theme: { name: string; primary: string; secondary: string; accent: string }) => {
-    setPrimaryColor(theme.primary);
-    setSecondaryColor(theme.secondary);
-    setAccentColor(theme.accent);
-  };
-
-  const handleSaveAll = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSavedSuccessMessage(null);
-
+  const syncAndSave = (overrides: Partial<BrandConfig> = {}, showToast = false) => {
     const updated: BrandConfig = {
       ...brand,
-      companyName: companyName.trim() || 'Sorteio Lacer OMD 2026',
-      companySlogan: companySlogan.trim(),
-      logoUrl: logoUrl.trim() || DEFAULT_BRAND_LOGO,
-      primaryColor,
-      secondaryColor,
-      accentColor,
-      termsAndConditions: terms.trim(),
-      roundsBannerTitle: roundsBannerTitle.trim(),
-      roundsBannerSubtitle: roundsBannerSubtitle.trim(),
-      showRoundsBanner,
-      formTitle: formTitle.trim(),
-      formSubtitle: formSubtitle.trim(),
-      formButtonText: formButtonText.trim(),
-      prizesSectionTitle: prizesSectionTitle.trim(),
-      searchSectionTitle: searchSectionTitle.trim(),
-      searchSectionSubtitle: searchSectionSubtitle.trim(),
-      ticketNotice: ticketNotice.trim(),
-      heroBadgeText: heroBadgeText.trim(),
-      ticketModalTitle: ticketModalTitle.trim(),
-      ticketModalSubtitle: ticketModalSubtitle.trim(),
+      companyName: (overrides.companyName !== undefined ? overrides.companyName : companyName).trim() || 'Sorteio Lacer OMD 2026',
+      companySlogan: (overrides.companySlogan !== undefined ? overrides.companySlogan : companySlogan).trim(),
+      logoUrl: (overrides.logoUrl !== undefined ? overrides.logoUrl : logoUrl).trim() || DEFAULT_BRAND_LOGO,
+      primaryColor: overrides.primaryColor ?? primaryColor,
+      secondaryColor: overrides.secondaryColor ?? secondaryColor,
+      accentColor: overrides.accentColor ?? accentColor,
+      termsAndConditions: (overrides.termsAndConditions !== undefined ? overrides.termsAndConditions : terms).trim(),
+      roundsBannerTitle: (overrides.roundsBannerTitle !== undefined ? overrides.roundsBannerTitle : roundsBannerTitle).trim(),
+      roundsBannerSubtitle: (overrides.roundsBannerSubtitle !== undefined ? overrides.roundsBannerSubtitle : roundsBannerSubtitle).trim(),
+      showRoundsBanner: overrides.showRoundsBanner !== undefined ? overrides.showRoundsBanner : showRoundsBanner,
+      formTitle: (overrides.formTitle !== undefined ? overrides.formTitle : formTitle).trim(),
+      formSubtitle: (overrides.formSubtitle !== undefined ? overrides.formSubtitle : formSubtitle).trim(),
+      formButtonText: (overrides.formButtonText !== undefined ? overrides.formButtonText : formButtonText).trim(),
+      prizesSectionTitle: (overrides.prizesSectionTitle !== undefined ? overrides.prizesSectionTitle : prizesSectionTitle).trim(),
+      searchSectionTitle: (overrides.searchSectionTitle !== undefined ? overrides.searchSectionTitle : searchSectionTitle).trim(),
+      searchSectionSubtitle: (overrides.searchSectionSubtitle !== undefined ? overrides.searchSectionSubtitle : searchSectionSubtitle).trim(),
+      ticketNotice: (overrides.ticketNotice !== undefined ? overrides.ticketNotice : ticketNotice).trim(),
+      heroBadgeText: (overrides.heroBadgeText !== undefined ? overrides.heroBadgeText : heroBadgeText).trim(),
+      ticketModalTitle: (overrides.ticketModalTitle !== undefined ? overrides.ticketModalTitle : ticketModalTitle).trim(),
+      ticketModalSubtitle: (overrides.ticketModalSubtitle !== undefined ? overrides.ticketModalSubtitle : ticketModalSubtitle).trim(),
     };
 
     onUpdateBrand(updated);
 
-    // Give visual confirmation of database write
-    setTimeout(() => {
-      setIsSaving(false);
-      setSavedSuccessMessage('Todas as alterações de marca, textos e definições foram guardadas com sucesso na Base de Dados!');
-      checkDatabaseLiveStatus();
-      setTimeout(() => setSavedSuccessMessage(null), 4000);
-    }, 400);
+    if (showToast) {
+      setIsSaving(true);
+      setSavedSuccessMessage(null);
+      setTimeout(() => {
+        setIsSaving(false);
+        setSavedSuccessMessage('Todas as alterações foram guardadas com sucesso na Base de Dados e já estão visíveis para todos os participantes!');
+        checkDatabaseLiveStatus();
+        setTimeout(() => setSavedSuccessMessage(null), 4000);
+      }, 350);
+    }
+  };
+
+  const handleApplyPreset = (theme: { name: string; primary: string; secondary: string; accent: string }) => {
+    setPrimaryColor(theme.primary);
+    setSecondaryColor(theme.secondary);
+    setAccentColor(theme.accent);
+    syncAndSave({ primaryColor: theme.primary, secondaryColor: theme.secondary, accentColor: theme.accent }, true);
+  };
+
+  const handleSaveAll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    syncAndSave({}, true);
   };
 
   const PRESET_THEMES = [
@@ -392,6 +397,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               required
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
+              onBlur={() => syncAndSave()}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
@@ -408,7 +414,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               {companySlogan && (
                 <button
                   type="button"
-                  onClick={() => setCompanySlogan('')}
+                  onClick={() => {
+                    setCompanySlogan('');
+                    syncAndSave({ companySlogan: '' });
+                  }}
                   className="text-[11px] text-slate-400 hover:text-amber-400 cursor-pointer underline"
                 >
                   Limpar
@@ -419,6 +428,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               rows={2}
               value={companySlogan}
               onChange={(e) => setCompanySlogan(e.target.value)}
+              onBlur={() => syncAndSave()}
               placeholder="Insira a frase exibida por baixo do logótipo e do nome (ou deixe vazio para não exibir nada)..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed"
             />
@@ -437,7 +447,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 <input
                   type="checkbox"
                   checked={showRoundsBanner}
-                  onChange={(e) => setShowRoundsBanner(e.target.checked)}
+                  onChange={(e) => {
+                    setShowRoundsBanner(e.target.checked);
+                    syncAndSave({ showRoundsBanner: e.target.checked });
+                  }}
                   className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
                 />
                 <span>Exibir Faixa</span>
@@ -454,6 +467,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     type="text"
                     value={roundsBannerTitle}
                     onChange={(e) => setRoundsBannerTitle(e.target.value)}
+                    onBlur={() => syncAndSave()}
                     placeholder="4 Sorteios Oficiais no Mesmo Dia"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
@@ -466,6 +480,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     type="text"
                     value={roundsBannerSubtitle}
                     onChange={(e) => setRoundsBannerSubtitle(e.target.value)}
+                    onBlur={() => syncAndSave()}
                     placeholder="O seu bilhete concorre automaticamente em todas as 4 rondas diárias!"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
@@ -488,6 +503,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Garanta o seu Bilhete da Sorte"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -501,6 +517,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={formSubtitle}
                 onChange={(e) => setFormSubtitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Preencha os seus dados reais para receber a confirmação e o seu número"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -514,6 +531,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={formButtonText}
                 onChange={(e) => setFormButtonText(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Registar Inscrição e Obter Bilhete"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -527,6 +545,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={ticketNotice}
                 onChange={(e) => setTicketNotice(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Validação única: limite de 1 inscrição por e-mail"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -547,6 +566,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={prizesSectionTitle}
                 onChange={(e) => setPrizesSectionTitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Prémios Desta Edição"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -560,6 +580,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={searchSectionTitle}
                 onChange={(e) => setSearchSectionTitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Já se inscreveu? Consulte os seus Bilhetes"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -573,6 +594,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={searchSectionSubtitle}
                 onChange={(e) => setSearchSectionSubtitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -593,6 +615,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={heroBadgeText}
                 onChange={(e) => setHeroBadgeText(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="Sorteio Oficial 2026 • Auditoria em Tempo Real"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -606,6 +629,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={ticketModalTitle}
                 onChange={(e) => setTicketModalTitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="INSCRIÇÃO CONFIRMADA COM SUCESSO!"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -619,6 +643,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="text"
                 value={ticketModalSubtitle}
                 onChange={(e) => setTicketModalSubtitle(e.target.value)}
+                onBlur={() => syncAndSave()}
                 placeholder="O Seu Bilhete Oficial"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
@@ -633,6 +658,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               rows={3}
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
+              onBlur={() => syncAndSave()}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
@@ -684,7 +710,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 <input
                   type="color"
                   value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  onChange={(e) => {
+                    setPrimaryColor(e.target.value);
+                    syncAndSave({ primaryColor: e.target.value });
+                  }}
                   className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
                 />
               </div>
@@ -700,7 +729,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 <input
                   type="color"
                   value={secondaryColor}
-                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  onChange={(e) => {
+                    setSecondaryColor(e.target.value);
+                    syncAndSave({ secondaryColor: e.target.value });
+                  }}
                   className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
                 />
               </div>
@@ -716,7 +748,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 <input
                   type="color"
                   value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
+                  onChange={(e) => {
+                    setAccentColor(e.target.value);
+                    syncAndSave({ accentColor: e.target.value });
+                  }}
                   className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
                 />
               </div>
@@ -740,7 +775,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 style={{ color: accentColor }}
                 className="text-xs font-mono font-bold"
               >
-                R$ 10.000,00 Contemplado
+                € 10.000,00 Contemplado
               </span>
             </div>
           </div>
