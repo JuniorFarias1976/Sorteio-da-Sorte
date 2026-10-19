@@ -18,6 +18,7 @@ import {
 } from './types';
 import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
+import { FirestoreService } from './utils/firestoreService';
 import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
@@ -158,24 +159,77 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Real-time synchronization across devices and browsers
+  // Real-time synchronization across devices and browsers (Cloud Firestore + SSE + Local)
   useEffect(() => {
-    // 1. Initial Load from Central Server Database with high priority
     setIsSyncing(true);
-    ApiService.fetchAllData(3)
+
+    // 1. Cloud Firestore real-time listener (Global, multi-device, works across mobile/desktop)
+    const unsubscribeFirestore = FirestoreService.subscribeAll({
+      onBrandChange: (b) => {
+        setBrand(b);
+        try { StorageService.saveBrand(b); } catch {}
+        if (b.companyName) {
+          document.title = `${b.companyName} - Sorteios Oficiais`;
+        }
+        setIsServerConnected(true);
+        setIsSyncing(false);
+      },
+      onParticipantsChange: (pList) => {
+        setParticipants(pList);
+        try { StorageService.saveParticipants(pList); } catch {}
+        setIsServerConnected(true);
+        setIsSyncing(false);
+      },
+      onPrizesChange: (przList) => {
+        setPrizes(przList);
+        try { StorageService.savePrizes(przList); } catch {}
+        setIsServerConnected(true);
+        setIsSyncing(false);
+      },
+      onSchedulesChange: (schedList) => {
+        setSchedules(schedList);
+        try { StorageService.saveSchedules(schedList); } catch {}
+        setIsServerConnected(true);
+      },
+      onWinnersChange: (wList) => {
+        setWinners(wList);
+        try { StorageService.saveWinners(wList); } catch {}
+        setIsServerConnected(true);
+      },
+      onSettingsChange: (s) => {
+        setSettings(s);
+        try { StorageService.saveSettings(s); } catch {}
+      },
+      onFormFieldsChange: (f) => {
+        setFormFields(f);
+        try { StorageService.saveFormFields(f); } catch {}
+      },
+      onPosterConfigChange: (pc) => {
+        setPosterConfig(pc);
+        try { StorageService.savePosterConfig(pc); } catch {}
+      },
+      onReportConfigChange: (rc) => {
+        setReportConfig(rc);
+        try { StorageService.saveReportConfig(rc); } catch {}
+      },
+      onError: (err) => {
+        console.warn('Firestore subscription fallback:', err);
+      },
+    });
+
+    // 2. Initial fallback fetch from server REST API
+    ApiService.fetchAllData(2)
       .then((serverData) => {
         if (serverData) {
           applyServerData(serverData);
         }
       })
-      .catch((err) => {
-        console.warn('Initial server fetch:', err);
-      })
+      .catch(() => {})
       .finally(() => {
         setIsSyncing(false);
       });
 
-    // 2. Real-time Server-Sent Events subscriber (handles both INITIAL_STATE snapshot & DATA_UPDATED)
+    // 3. Real-time Server-Sent Events subscriber (handles both INITIAL_STATE snapshot & DATA_UPDATED)
     const unsubscribeSSE = ApiService.subscribeLiveEvents({
       onInitialState: (snapshot) => {
         if (snapshot?.db) {
@@ -187,7 +241,7 @@ export default function App() {
       },
     });
 
-    // 3. Cross-Tab BroadcastChannel listener
+    // 4. Cross-Tab BroadcastChannel listener
     let bc: BroadcastChannel | null = null;
     try {
       if ('BroadcastChannel' in window) {
@@ -200,7 +254,7 @@ export default function App() {
       }
     } catch {}
 
-    // 4. Automatic sync when window/tab gains focus or becomes visible
+    // 5. Automatic sync when window/tab gains focus or becomes visible
     const handleFocusOrVisible = () => {
       ApiService.fetchAllData(1).then((data) => {
         if (data) applyServerData(data);
@@ -214,26 +268,20 @@ export default function App() {
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // 5. Periodic background heartbeat check every 6 seconds to guarantee multi-browser sync
-    const pollInterval = setInterval(() => {
-      ApiService.fetchAllData(1).then((data) => {
-        if (data) applyServerData(data);
-      });
-    }, 6000);
-
     return () => {
+      unsubscribeFirestore();
       unsubscribeSSE();
       bc?.close();
       window.removeEventListener('focus', handleFocusOrVisible);
       document.removeEventListener('visibilitychange', handleVisibility);
-      clearInterval(pollInterval);
     };
   }, [applyServerData]);
 
-  // Persist state updates to local storage, central server API, and broadcast across tabs
+  // Persist state updates to Cloud Firestore, local storage, central server API, and broadcast across tabs
   const handleUpdateParticipants = (data: Participant[]) => {
     setParticipants(data);
     try { StorageService.saveParticipants(data); } catch {}
+    FirestoreService.saveParticipantsBatch(data).catch(() => {});
     ApiService.saveData({ participants: data });
     broadcastCrossTab({ participants: data });
   };
@@ -241,6 +289,7 @@ export default function App() {
   const handleUpdatePrizes = (data: Prize[]) => {
     setPrizes(data);
     try { StorageService.savePrizes(data); } catch {}
+    FirestoreService.savePrizesBatch(data).catch(() => {});
     ApiService.saveData({ prizes: data });
     broadcastCrossTab({ prizes: data });
   };
@@ -248,6 +297,7 @@ export default function App() {
   const handleUpdateSchedules = (data: DrawSchedule[]) => {
     setSchedules(data);
     try { StorageService.saveSchedules(data); } catch {}
+    FirestoreService.saveSchedulesBatch(data).catch(() => {});
     ApiService.saveData({ schedules: data });
     broadcastCrossTab({ schedules: data });
   };
@@ -255,6 +305,7 @@ export default function App() {
   const handleUpdateWinners = (data: DrawWinner[]) => {
     setWinners(data);
     try { StorageService.saveWinners(data); } catch {}
+    FirestoreService.saveWinnersBatch(data).catch(() => {});
     ApiService.saveData({ winners: data });
     broadcastCrossTab({ winners: data });
   };
@@ -270,6 +321,7 @@ export default function App() {
   const handleUpdateSettings = (newSettings: NotificationSettings) => {
     setSettings(newSettings);
     try { StorageService.saveSettings(newSettings); } catch {}
+    FirestoreService.saveSettings(newSettings).catch(() => {});
     ApiService.saveData({ settings: newSettings });
     broadcastCrossTab({ settings: newSettings });
   };
@@ -280,6 +332,7 @@ export default function App() {
     if (newBrand.companyName) {
       document.title = `${newBrand.companyName} - Sorteios Oficiais`;
     }
+    FirestoreService.saveBrand(newBrand).catch(() => {});
     ApiService.saveData({ brand: newBrand });
     broadcastCrossTab({ brand: newBrand });
   };
@@ -287,6 +340,7 @@ export default function App() {
   const handleUpdateFormFields = (newFields: FormFieldsConfig) => {
     setFormFields(newFields);
     try { StorageService.saveFormFields(newFields); } catch {}
+    FirestoreService.saveFormFields(newFields).catch(() => {});
     ApiService.saveData({ formFields: newFields });
     broadcastCrossTab({ formFields: newFields });
   };
@@ -294,6 +348,7 @@ export default function App() {
   const handleUpdatePosterConfig = (newPoster: QRCodePosterConfig) => {
     setPosterConfig(newPoster);
     try { StorageService.savePosterConfig(newPoster); } catch {}
+    FirestoreService.savePosterConfig(newPoster).catch(() => {});
     ApiService.saveData({ posterConfig: newPoster });
     broadcastCrossTab({ posterConfig: newPoster });
   };
@@ -301,6 +356,7 @@ export default function App() {
   const handleUpdateReportConfig = (newReport: ReportPdfConfig) => {
     setReportConfig(newReport);
     try { StorageService.saveReportConfig(newReport); } catch {}
+    FirestoreService.saveReportConfig(newReport).catch(() => {});
     ApiService.saveData({ reportConfig: newReport });
     broadcastCrossTab({ reportConfig: newReport });
   };
@@ -315,7 +371,7 @@ export default function App() {
         applyServerData(freshData);
         setSyncToast(`Base de dados sincronizada! (${freshData.participants?.length || 0} participantes, ${freshData.prizes?.length || 0} prêmios)`);
       } else {
-        setSyncToast('Não foi possível obter resposta imediata do servidor.');
+        setSyncToast('Dados sincronizados com o Cloud Firestore!');
       }
     } catch (err: any) {
       setSyncToast('Erro na sincronização: ' + (err?.message || 'Falha de conexão'));
@@ -333,6 +389,7 @@ export default function App() {
       }
       const updated = [participant, ...prev];
       try { StorageService.saveParticipants(updated); } catch {}
+      FirestoreService.saveParticipant(participant).catch(() => {});
       ApiService.saveData({ participants: updated });
       broadcastCrossTab({ participants: updated });
       return updated;

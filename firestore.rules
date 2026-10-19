@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // SorteioLive Pro - Multi-Device Live Raffle Engine
+    // Global access for live draws, registration via QR code, and admin sync
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

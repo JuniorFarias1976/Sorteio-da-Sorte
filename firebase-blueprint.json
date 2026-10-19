@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "RaffleConfig": {
+      "title": "RaffleConfig",
+      "description": "Global configuration and brand settings for the SorteioLive platform",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "companySlogan": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "secondaryColor": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "backgroundTheme": { "type": "string" },
+        "raffleUrl": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "termsAndConditions": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyName", "primaryColor"]
+    },
+    "Participant": {
+      "title": "Participant",
+      "description": "Participant registered in the live raffle",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "document": { "type": "string" },
+        "city": { "type": "string" },
+        "ticketNumber": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "winner", "disqualified"] }
+      },
+      "required": ["id", "name", "ticketNumber", "status"]
+    },
+    "Prize": {
+      "title": "Prize",
+      "description": "Prize available for live draw",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "totalQuantity": { "type": "number" },
+        "drawnQuantity": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "estimatedValue": { "type": "number" },
+        "drawOrder": { "type": "number" }
+      },
+      "required": ["id", "title", "totalQuantity", "drawnQuantity"]
+    },
+    "DrawWinner": {
+      "title": "DrawWinner",
+      "description": "Contemplated winner in a live draw round",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "drawId": { "type": "string" },
+        "drawTitle": { "type": "string" },
+        "participantId": { "type": "string" },
+        "participantName": { "type": "string" },
+        "participantEmail": { "type": "string" },
+        "participantPhone": { "type": "string" },
+        "participantTicket": { "type": "string" },
+        "participantDocument": { "type": "string" },
+        "prizeId": { "type": "string" },
+        "prizeTitle": { "type": "string" },
+        "wonAt": { "type": "string", "format": "date-time" },
+        "validationHash": { "type": "string" }
+      },
+      "required": ["id", "participantId", "participantName", "participantTicket", "prizeId", "prizeTitle", "wonAt", "validationHash"]
+    }
+  },
+  "firestore": {
+    "/settings/brand": {
+      "schema": { "$ref": "RaffleConfig" },
+      "description": "Stores the central brand configuration and theme"
+    },
+    "/participants/{participantId}": {
+      "schema": { "$ref": "Participant" },
+      "description": "Stores registered raffle participants"
+    },
+    "/prizes/{prizeId}": {
+      "schema": { "$ref": "Prize" },
+      "description": "Stores available raffle prizes"
+    },
+    "/winners/{winnerId}": {
+      "schema": { "$ref": "DrawWinner" },
+      "description": "Stores confirmed raffle winners"
+    }
+  }
+}
