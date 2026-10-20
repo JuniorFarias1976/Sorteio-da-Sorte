@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Participant, Prize, DrawSchedule, BrandConfig, FormFieldsConfig } from '../types';
+import { Participant, Prize, DrawSchedule, BrandConfig, FormFieldsConfig, DENTAL_SPECIALTIES } from '../types';
 import { 
   Ticket, 
   Search, 
@@ -72,9 +72,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [document, setDocument] = useState('');
+  const [clinic, setClinic] = useState('');
   const [city, setCity] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  const [specialty, setSpecialty] = useState('');
+  const [specialtyOther, setSpecialtyOther] = useState('');
+  const [wantsLacerVisit, setWantsLacerVisit] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [document, setDocument] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
 
@@ -132,12 +137,30 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
       return;
     }
-    if (formFields.document.enabled && formFields.document.required && !document.trim()) {
-      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
+    if (formFields.clinic && formFields.clinic.enabled && formFields.clinic.required && !clinic.trim()) {
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.clinic.label}`);
       return;
     }
     if (formFields.city.enabled && formFields.city.required && !city.trim()) {
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
+      return;
+    }
+    if (formFields.specialty && formFields.specialty.enabled && formFields.specialty.required) {
+      if (!specialty) {
+        setValidationWarning('Por favor, selecione a sua Especialidade.');
+        return;
+      }
+      if (specialty === 'Outra' && !specialtyOther.trim()) {
+        setValidationWarning('Por favor, indique a sua especialidade no campo "Outra".');
+        return;
+      }
+    }
+    if (formFields.document && formFields.document.enabled && formFields.document.required && !document.trim()) {
+      setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
+      return;
+    }
+    if (!acceptedTerms) {
+      setValidationWarning('É obrigatório declarar que leu e aceita o regulamento e a política de privacidade da Lacer.');
       return;
     }
 
@@ -156,6 +179,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
     setIsSubmitting(true);
 
+    const finalSpecialty = specialty === 'Outra' && specialtyOther.trim()
+      ? `Outra: ${specialtyOther.trim()}`
+      : specialty || 'Não especificada';
+
     try {
       // 2. Server-side registration & authoritative duplication check
       const result = await ApiService.registerParticipant({
@@ -163,7 +190,13 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         email: normalizedEmail,
         phone: phone.trim(),
         document: document.trim(),
+        clinic: clinic.trim(),
         city: city.trim(),
+        specialty: finalSpecialty,
+        specialtyOther: specialtyOther.trim(),
+        wantsLacerVisit,
+        marketingConsent,
+        termsAccepted: acceptedTerms,
       });
 
       if (!result.success) {
@@ -193,8 +226,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           name: name.trim() || 'Participante',
           email: normalizedEmail,
           phone: phone.trim() || 'Não informado',
-          document: document.trim() || 'Não informado',
+          document: document.trim() || '',
+          clinic: clinic.trim(),
           city: city.trim() || 'Portugal',
+          specialty: finalSpecialty,
+          specialtyOther: specialtyOther.trim(),
+          wantsLacerVisit,
+          marketingConsent,
+          termsAccepted: acceptedTerms,
           ticketNumber: ticket,
           createdAt: new Date().toISOString(),
           status: 'active',
@@ -208,8 +247,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         setName('');
         setEmail('');
         setPhone('');
-        setDocument('');
+        setClinic('');
         setCity('');
+        setSpecialty('');
+        setSpecialtyOther('');
+        setWantsLacerVisit(false);
+        setMarketingConsent(false);
+        setDocument('');
+        setAcceptedTerms(false);
         return;
       }
 
@@ -223,8 +268,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setName('');
       setEmail('');
       setPhone('');
-      setDocument('');
+      setClinic('');
       setCity('');
+      setSpecialty('');
+      setSpecialtyOther('');
+      setWantsLacerVisit(false);
+      setMarketingConsent(false);
+      setDocument('');
+      setAcceptedTerms(false);
     } catch {
       // Fallback in case of unexpected network failure
       let ticket = Math.floor(10000 + Math.random() * 90000).toString();
@@ -237,8 +288,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         name: name.trim() || 'Participante',
         email: normalizedEmail,
         phone: phone.trim() || 'Não informado',
-        document: document.trim() || 'Não informado',
+        document: document.trim() || '',
+        clinic: clinic.trim(),
         city: city.trim() || 'Portugal',
+        specialty: finalSpecialty,
+        specialtyOther: specialtyOther.trim(),
+        wantsLacerVisit,
+        marketingConsent,
+        termsAccepted: acceptedTerms,
         ticketNumber: ticket,
         createdAt: new Date().toISOString(),
         status: 'active',
@@ -252,9 +309,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setName('');
       setEmail('');
       setPhone('');
+      setClinic('');
+      setCity('');
+      setSpecialty('');
+      setSpecialtyOther('');
+      setWantsLacerVisit(false);
+      setMarketingConsent(false);
       setDocument('');
-      setCity('');
-      setCity('');
+      setAcceptedTerms(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -538,43 +600,48 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
               )}
 
-              {/* Dynamic Name Field */}
-              {formFields.name.enabled && (
+              {/* SEÇÃO 1: Dados de contacto */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-800 pb-2">
+                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-mono">1</span>
+                    <span>Dados de contacto</span>
+                  </h4>
+                </div>
+
+                {/* Nome completo */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    {formFields.name.label} {formFields.name.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                    Nome completo <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="text"
-                    required={formFields.name.required}
+                    required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={formFields.name.placeholder || ''}
+                    placeholder={formFields.name.placeholder || 'Ex: Dr. João Silva'}
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                     className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
-              )}
 
-              {/* Email and Phone Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Dynamic Email Field */}
-                {formFields.email.enabled && (
+                {/* E-mail profissional e Telefone */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      {formFields.email.label} {formFields.email.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                      E-mail profissional <span className="text-amber-400">*</span>
                     </label>
                     <input
                       type="email"
-                      required={formFields.email.required}
+                      required
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
                         if (duplicateEmailError) setDuplicateEmailError(null);
                       }}
-                      placeholder={formFields.email.placeholder || ''}
+                      placeholder={formFields.email.placeholder || 'joao.silva@clinica.pt'}
                       autoComplete="off"
                       autoCorrect="off"
                       spellCheck={false}
@@ -586,20 +653,67 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       {brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail'}
                     </span>
                   </div>
-                )}
 
-                {/* Dynamic Phone Field */}
-                {formFields.phone.enabled && (
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      {formFields.phone.label} {formFields.phone.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                      Telefone <span className="text-amber-400">*</span>
                     </label>
                     <input
                       type="tel"
-                      required={formFields.phone.required}
+                      required
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      placeholder={formFields.phone.placeholder || ''}
+                      placeholder={formFields.phone.placeholder || '912 345 678'}
+                      autoComplete="off"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Clínica / Consultório e Cidade */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Clínica / Consultório
+                    </label>
+                    <input
+                      type="text"
+                      value={clinic}
+                      onChange={(e) => setClinic(e.target.value)}
+                      placeholder="Nome da Clínica ou Consultório"
+                      autoComplete="off"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Cidade <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder={formFields.city.placeholder || 'Ex: Lisboa, Porto, Coimbra...'}
+                      autoComplete="off"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Document / NIF if enabled */}
+                {formFields.document?.enabled && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      {formFields.document.label} {formFields.document.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
+                    </label>
+                    <input
+                      type="text"
+                      required={formFields.document.required}
+                      value={document}
+                      onChange={(e) => handleDocumentChange(e.target.value)}
+                      placeholder={formFields.document.placeholder || ''}
                       autoComplete="off"
                       className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
@@ -607,57 +721,94 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 )}
               </div>
 
-              {/* Document and City Grid */}
-              {(formFields.document.enabled || formFields.city.enabled) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Dynamic Document Field */}
-                  {formFields.document.enabled && (
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                        {formFields.document.label} {formFields.document.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
-                      </label>
-                      <input
-                        type="text"
-                        required={formFields.document.required}
-                        value={document}
-                        onChange={(e) => handleDocumentChange(e.target.value)}
-                        placeholder={formFields.document.placeholder || ''}
-                        autoComplete="off"
-                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  )}
-
-                  {/* Dynamic City Field */}
-                  {formFields.city.enabled && (
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                        {formFields.city.label} {formFields.city.required ? '*' : <span className="text-slate-500 font-normal lowercase">(opcional)</span>}
-                      </label>
-                      <input
-                        type="text"
-                        required={formFields.city.required}
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder={formFields.city.placeholder || ''}
-                        autoComplete="off"
-                        className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  )}
+              {/* SEÇÃO 2: Especialidade */}
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-mono">2</span>
+                    <span>Especialidade</span>
+                    <span className="text-amber-400">*</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-400">Selecione uma opção</span>
                 </div>
-              )}
 
-              <div className="pt-2">
-                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-400">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {DENTAL_SPECIALTIES.map((spec) => {
+                    const isSelected = specialty === spec;
+                    return (
+                      <label
+                        key={spec}
+                        className={`flex items-center gap-3 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-500 text-white font-semibold ring-1 ring-amber-500/30'
+                            : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="specialty"
+                          value={spec}
+                          checked={isSelected}
+                          onChange={() => setSpecialty(spec)}
+                          className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-amber-500"
+                        />
+                        <span className="flex-1">{spec}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* Se 'Outra' for selecionada, campo de texto específico */}
+                {specialty === 'Outra' && (
+                  <div className="mt-2.5 animate-in fade-in duration-200">
+                    <label className="block text-[11px] font-semibold text-amber-400 uppercase tracking-wider mb-1">
+                      Outra Especialidade:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={specialtyOther}
+                      onChange={(e) => setSpecialtyOther(e.target.value)}
+                      placeholder="Indique a sua especialidade..."
+                      className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* SEÇÃO 3: Visita do representante Lacer */}
+              <div className="pt-4 border-t border-slate-800 space-y-2">
+                <h4 className="text-xs font-bold text-slate-200">
+                  Gostaria que um representante da Lacer visitasse a sua clínica para apresentar os nossos produtos?
+                </h4>
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 cursor-pointer text-xs text-slate-300 transition-all">
                   <input
                     type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    checked={wantsLacerVisit}
+                    onChange={(e) => setWantsLacerVisit(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
                   />
-                  <span>
-                    Concordo com os{' '}
+                  <span>Sim, gostaria de agendar uma visita.</span>
+                </label>
+              </div>
+
+              {/* SEÇÃO 4: Consentimentos e Regulamento */}
+              <div className="pt-4 border-t border-slate-800 space-y-3.5">
+                {/* Consentimento Obrigatório */}
+                <div className="space-y-1.5">
+                  <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-300">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 shrink-0 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span className="leading-relaxed">
+                      Declaro que li e aceito o regulamento do sorteio e a política de privacidade da Lacer, e autorizo o tratamento dos meus dados pessoais para a gestão da minha participação no sorteio, nos termos da legislação aplicável de proteção de dados. <span className="text-amber-400 font-bold">*</span>
+                    </span>
+                  </label>
+                  <div className="pl-7">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -665,11 +816,24 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         e.stopPropagation();
                         setShowTermsModal(true);
                       }}
-                      className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
+                      className="text-amber-400 hover:text-amber-300 text-xs font-medium underline inline-flex items-center gap-1 cursor-pointer"
                     >
-                      regulamentos e termos oficiais do sorteio
-                    </button>{' '}
-                    para participação oficial nos sorteios.
+                      <span>Consulte o regulamento completo do sorteio e a política de privacidade</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Consentimento Opcional Marketing */}
+                <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-400 hover:text-slate-300 pt-1">
+                  <input
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="leading-relaxed">
+                    Autorizo a Lacer a contactar-me para receber informação sobre produtos, novidades, eventos e visitas comerciais.
                   </span>
                 </label>
               </div>
@@ -717,9 +881,20 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 <p className="text-lg font-bold text-white">
                   {newlyCreatedTicket.name}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  {newlyCreatedTicket.phone} · {newlyCreatedTicket.city}
-                </p>
+                {newlyCreatedTicket.clinic && (
+                  <p className="text-xs text-amber-300 font-medium mt-0.5">
+                    🏥 {newlyCreatedTicket.clinic}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400 mt-1">
+                  {newlyCreatedTicket.specialty && (
+                    <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
+                      🩺 {newlyCreatedTicket.specialty}
+                    </span>
+                  )}
+                  <span>📍 {newlyCreatedTicket.city}</span>
+                  <span>📱 {newlyCreatedTicket.phone}</span>
+                </div>
 
                 <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-center gap-3">
                   <button

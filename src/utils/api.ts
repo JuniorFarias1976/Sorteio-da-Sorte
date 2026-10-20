@@ -126,7 +126,13 @@ export const ApiService = {
     email: string;
     phone?: string;
     document?: string;
+    clinic?: string;
     city?: string;
+    specialty?: string;
+    specialtyOther?: string;
+    wantsLacerVisit?: boolean;
+    marketingConsent?: boolean;
+    termsAccepted?: boolean;
   }): Promise<{ 
     success: boolean; 
     participant?: Participant; 

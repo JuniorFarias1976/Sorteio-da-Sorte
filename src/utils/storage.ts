@@ -174,11 +174,13 @@ export const DEFAULT_SETTINGS: NotificationSettings = {
 };
 
 export const DEFAULT_FORM_FIELDS: FormFieldsConfig = {
-  name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },
-  email: { id: 'email', label: 'E-mail', placeholder: '', enabled: true, required: true },
-  phone: { id: 'phone', label: 'Telemóvel / Contacto', placeholder: '', enabled: true, required: true },
-  document: { id: 'document', label: 'NIF ou Documento', placeholder: '', enabled: true, required: false },
-  city: { id: 'city', label: 'Localidade / Concelho', placeholder: '', enabled: true, required: false },
+  name: { id: 'name', label: 'Nome completo', placeholder: 'Ex: Dr. João Silva', enabled: true, required: true },
+  email: { id: 'email', label: 'E-mail profissional', placeholder: 'joao.silva@clinica.pt', enabled: true, required: true },
+  phone: { id: 'phone', label: 'Telefone', placeholder: '912 345 678', enabled: true, required: true },
+  clinic: { id: 'clinic', label: 'Clínica / Consultório', placeholder: 'Nome da Clínica ou Consultório', enabled: true, required: false },
+  city: { id: 'city', label: 'Cidade', placeholder: 'Ex: Lisboa, Porto, Coimbra...', enabled: true, required: true },
+  specialty: { id: 'specialty', label: 'Especialidade', placeholder: '', enabled: true, required: true },
+  document: { id: 'document', label: 'NIF ou Cédula Profissional', placeholder: '', enabled: false, required: false },
 };
 
 export const DEFAULT_POSTER_CONFIG: QRCodePosterConfig = {
@@ -194,17 +196,19 @@ export const DEFAULT_POSTER_CONFIG: QRCodePosterConfig = {
 };
 
 export const DEFAULT_REPORT_CONFIG: ReportPdfConfig = {
-  title: 'AUTO E AUDITORIA OFICIAL DE SORTEIO',
+  title: 'ATA E AUDITORIA OFICIAL DE SORTEIO',
   subtitle: 'RELATÓRIO CONSOLIDADO DE VENCEDORES HOMOLOGADOS',
-  protocolPrefix: 'SRT-',
-  statementText: 'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento divulgado aos participantes.',
-  organizerSignTitle: 'Assinatura do Organizador / Direção',
+  protocolPrefix: 'LACER-',
+  statementText: 'Certificamos que o sorteio foi realizado em tempo real utilizando algoritmo pseudo-aleatório criptográfico auditável sem duplicidade ou favorecimento, respeitando integralmente as regras do regulamento oficial da Lacer.',
+  organizerSignTitle: 'Assinatura do Responsável Lacer / Direção',
   auditorSignTitle: 'Assinatura da Comissão de Auditoria',
   includeTicket: true,
   includeWinnerName: true,
   includePrize: true,
   includePhone: true,
-  includeDocument: true,
+  includeDocument: false,
+  includeClinic: true,
+  includeSpecialty: true,
   includeEmail: true,
   includeHash: true,
   includeDate: true,

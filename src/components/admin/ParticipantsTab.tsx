@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Participant, BrandConfig, FormFieldsConfig } from '../../types';
+import { Participant, BrandConfig, FormFieldsConfig, DENTAL_SPECIALTIES } from '../../types';
 import { exportParticipantsToExcel, exportParticipantsToPDF } from '../../utils/export';
 import { 
   Users, 
@@ -14,7 +14,10 @@ import {
   AlertCircle,
   X,
   Database,
-  Ticket
+  Ticket,
+  Building2,
+  Stethoscope,
+  Briefcase
 } from 'lucide-react';
 
 interface ParticipantsTabProps {
@@ -48,7 +51,12 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newDoc, setNewDoc] = useState('');
+  const [newClinic, setNewClinic] = useState('');
   const [newCity, setNewCity] = useState('');
+  const [newSpecialty, setNewSpecialty] = useState<string>(DENTAL_SPECIALTIES[0]);
+  const [newSpecialtyOther, setNewSpecialtyOther] = useState('');
+  const [newWantsLacerVisit, setNewWantsLacerVisit] = useState(false);
+  const [newMarketingConsent, setNewMarketingConsent] = useState(true);
   const [customTicket, setCustomTicket] = useState('');
   const [allowExtraTicket, setAllowExtraTicket] = useState(false);
 
@@ -71,6 +79,8 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       (p.name || '').toLowerCase().includes(query) ||
       (p.email || '').toLowerCase().includes(query) ||
       (p.phone || '').includes(query) ||
+      (p.clinic || '').toLowerCase().includes(query) ||
+      (p.specialty || '').toLowerCase().includes(query) ||
       (p.document || '').includes(query) ||
       (p.ticketNumber || '').toLowerCase().includes(query) ||
       (p.city || '').toLowerCase().includes(query);
@@ -85,7 +95,12 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     setNewEmail('');
     setNewPhone('');
     setNewDoc('');
+    setNewClinic('');
     setNewCity('');
+    setNewSpecialty(DENTAL_SPECIALTIES[0]);
+    setNewSpecialtyOther('');
+    setNewWantsLacerVisit(false);
+    setNewMarketingConsent(true);
     setCustomTicket('');
     setAllowExtraTicket(false);
     setShowAddModal(true);
@@ -108,7 +123,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       setFormError(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
       return;
     }
-    if (formFields.document.enabled && formFields.document.required && !newDoc.trim()) {
+    if (formFields.document && formFields.document.enabled && formFields.document.required && !newDoc.trim()) {
       setFormError(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
       return;
     }
@@ -141,13 +156,23 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       }
     }
 
+    const finalSpecialty = newSpecialty === 'Outra' && newSpecialtyOther.trim()
+      ? `Outra: ${newSpecialtyOther.trim()}`
+      : newSpecialty;
+
     const created: Participant = {
       id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       name: newName.trim() || 'Participante',
-      email: normalizedEmail || 'sem-email@sorteiolive.pt',
+      email: normalizedEmail || 'sem-email@lacer.pt',
       phone: newPhone.trim() || 'Não informado',
-      document: newDoc.trim() || 'Não informado',
+      document: newDoc.trim() || '',
+      clinic: newClinic.trim(),
       city: newCity.trim() || 'Portugal',
+      specialty: finalSpecialty,
+      specialtyOther: newSpecialtyOther.trim(),
+      wantsLacerVisit: newWantsLacerVisit,
+      marketingConsent: newMarketingConsent,
+      termsAccepted: true,
       ticketNumber: ticket,
       createdAt: new Date().toISOString(),
       status: 'active',
@@ -181,9 +206,20 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   };
 
   const handleGenerateBatch = () => {
-    const firstNames = ['Tiago', 'Inês', 'Gonçalo', 'Beatriz', 'Rodrigo', 'Carolina', 'Afonso', 'Leonor', 'Martim', 'Matilde'];
+    const firstNames = ['Dr. Tiago', 'Dra. Inês', 'Dr. Gonçalo', 'Dra. Beatriz', 'Dr. Rodrigo', 'Dra. Carolina', 'Dr. Afonso', 'Dra. Leonor', 'Dr. Martim', 'Dra. Matilde'];
     const lastNames = ['Silva', 'Santos', 'Ferreira', 'Pereira', 'Oliveira', 'Costa', 'Rodrigues', 'Martins', 'Jesus', 'Sousa'];
+    const clinics = ['Clínica Dentária São Bento', 'Instituto de Implantologia Lacer', 'Clínica Odontológica da Boavista', 'Centro Dentário do Marquês', 'Smile Clinic Lisboa'];
     const cities = ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Setúbal', 'Faro', 'Aveiro', 'Funchal'];
+    const specialties = [
+      'Cirurgia / Implantologia',
+      'Periodontologia',
+      'Ortodontia',
+      'Odontopediatria',
+      'Odontologia Geral',
+      'Endodontia',
+      'Odontologia Restauradora',
+      'Higienista Oral'
+    ];
 
     const newBatch: Participant[] = [];
     for (let i = 0; i < 5; i++) {
@@ -195,14 +231,19 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       }
       const phonePrefix = ['91', '92', '93', '96'][Math.floor(Math.random() * 4)];
       const phoneSuffix = Math.floor(1000000 + Math.random() * 8999999);
-      const nifNum = Math.floor(200000000 + Math.random() * 99999999);
+      const cleanFName = fName.replace('Dr. ', '').replace('Dra. ', '').toLowerCase();
 
       newBatch.push({
         id: `part-${Date.now()}-${i}`,
         name: `${fName} ${lName}`,
-        email: `${fName.toLowerCase()}.${lName.toLowerCase()}${Math.floor(Math.random() * 99)}@gmail.com`,
+        email: `${cleanFName}.${lName.toLowerCase()}${Math.floor(Math.random() * 99)}@clinica.pt`,
         phone: `+351 ${phonePrefix}${phoneSuffix.toString().slice(0, 3)} ${phoneSuffix.toString().slice(3)}`,
-        document: `${nifNum}`,
+        clinic: clinics[i % clinics.length],
+        specialty: specialties[i % specialties.length],
+        wantsLacerVisit: i % 2 === 0,
+        marketingConsent: true,
+        termsAccepted: true,
+        document: '',
         city: cities[Math.floor(Math.random() * cities.length)],
         ticketNumber: randomTicket,
         createdAt: new Date().toISOString(),
@@ -211,7 +252,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     }
 
     onUpdateParticipants([...newBatch, ...participants]);
-    setSaveSuccessToast('5 participantes de simulação adicionados e sincronizados com a Base de Dados!');
+    setSaveSuccessToast('5 profissionais de medicina dentária adicionados e gravados na Base de Dados!');
     setTimeout(() => setSaveSuccessToast(null), 3500);
   };
 
@@ -352,16 +393,21 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         {/* Mobile View: Clean Touch Cards */}
         <div className="md:hidden divide-y divide-slate-800/80">
           {filteredParticipants.map((p) => (
-            <div key={p.id} className="p-4 space-y-2 hover:bg-slate-800/30 transition-colors">
+            <div key={p.id} className="p-4 space-y-2.5 hover:bg-slate-800/30 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1">
                   <Ticket className="w-3.5 h-3.5 opacity-70" />
                   #{p.ticketNumber}
                 </span>
                 <div className="flex items-center gap-2">
+                  {p.wantsLacerVisit && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                      ✓ Visita Lacer
+                    </span>
+                  )}
                   {p.status === 'winner' ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
-                      🏆 Contemplado
+                      🏆 Premiado
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -380,14 +426,28 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
               <div>
                 <p className="font-bold text-white text-sm">{p.name}</p>
-                <p className="text-slate-400 text-xs">{p.email}</p>
-                <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 mt-1">
-                  <span>📱 {p.phone || 'Sem telemóvel'}</span>
-                  <span>📍 {p.city || 'Portugal'}</span>
-                  {p.document && <span>🆔 {p.document}</span>}
+                <p className="text-slate-400 text-xs">{p.email} · {p.phone}</p>
+                
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-1.5">
+                  {p.clinic && (
+                    <span className="inline-flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                      <Building2 className="w-3 h-3 text-amber-400" />
+                      {p.clinic}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    📍 {p.city || 'Portugal'}
+                  </span>
+                  {p.specialty && (
+                    <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded border border-amber-500/20">
+                      <Stethoscope className="w-3 h-3 text-amber-400" />
+                      {p.specialty}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-end pt-2.5 mt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-800/80 text-[11px] text-slate-500">
+                  <span>Inscrito em {new Date(p.createdAt).toLocaleDateString('pt-PT')} {new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
                   <button
                     onClick={() => setDeletingParticipant(p)}
                     className="p-1 rounded-lg text-slate-500 hover:text-red-400 text-xs flex items-center gap-1 cursor-pointer"
@@ -433,9 +493,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             <thead className="bg-slate-950/70 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
               <tr>
                 <th className="py-3 px-4">Bilhete</th>
-                <th className="py-3 px-4">Nome & Contato</th>
-                <th className="py-3 px-4">CPF / Documento</th>
-                <th className="py-3 px-4">Localidade</th>
+                <th className="py-3 px-4">Nome & Contacto</th>
+                <th className="py-3 px-4">Clínica / Consultório</th>
+                <th className="py-3 px-4">Cidade</th>
+                <th className="py-3 px-4">Especialidade</th>
+                <th className="py-3 px-4">Visita Lacer</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4">Data Inscrição</th>
                 <th className="py-3 px-4 text-right">Ações</th>
@@ -454,16 +516,38 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     <p className="font-bold text-white text-sm">{p.name}</p>
                     <p className="text-slate-400 text-[11px]">{p.email} · {p.phone}</p>
                   </td>
-                  <td className="py-3 px-4 font-mono text-slate-300">
-                    {p.document || 'Não informado'}
+                  <td className="py-3 px-4 text-slate-200">
+                    {p.clinic ? (
+                      <span className="font-medium">{p.clinic}</span>
+                    ) : (
+                      <span className="text-slate-500">-</span>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-slate-300">
-                    {p.city || 'Não informado'}
+                    {p.city || '-'}
+                  </td>
+                  <td className="py-3 px-4">
+                    {p.specialty ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        {p.specialty}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">-</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    {p.wantsLacerVisit ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                        ✓ Sim (Visita)
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-[11px]">Não</span>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     {p.status === 'winner' ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
-                        🏆 Contemplado
+                        🏆 Premiado
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -490,7 +574,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
               {participants.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center">
+                  <td colSpan={9} className="py-12 text-center">
                     <div className="max-w-md mx-auto space-y-3">
                       <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-amber-400">
                         <Users className="w-6 h-6" />
@@ -566,9 +650,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </label>
                 <input
                   type="text"
+                  required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder=""
+                  placeholder="Ex: Dr. João Silva"
                   autoComplete="off"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
@@ -577,26 +662,28 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    E-mail {formFields.email.required && '*'}
+                    E-mail Profissional {formFields.email.required && '*'}
                   </label>
                   <input
                     type="email"
+                    required
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder=""
+                    placeholder="joao.silva@clinica.pt"
                     autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    Telemóvel / Contacto {formFields.phone.required && '*'}
+                    Telefone / Contacto {formFields.phone.required && '*'}
                   </label>
                   <input
                     type="text"
+                    required
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder=""
+                    placeholder="912 345 678"
                     autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
@@ -606,48 +693,115 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    NIF ou Documento {formFields.document.required && '*'}
+                    Clínica / Consultório
                   </label>
                   <input
                     type="text"
-                    value={newDoc}
-                    onChange={(e) => setNewDoc(e.target.value)}
-                    placeholder=""
+                    value={newClinic}
+                    onChange={(e) => setNewClinic(e.target.value)}
+                    placeholder="Nome da Clínica"
                     autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    Localidade / Concelho {formFields.city.required && '*'}
+                    Cidade {formFields.city.required && '*'}
                   </label>
                   <input
                     type="text"
+                    required
                     value={newCity}
                     onChange={(e) => setNewCity(e.target.value)}
-                    placeholder=""
+                    placeholder="Ex: Lisboa, Porto..."
                     autoComplete="off"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
               </div>
 
+              {/* Especialidade Odontológica */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Número do Bilhete (Opcional - deixe vazio para gerar automático)
+                  Especialidade Odontológica
                 </label>
-                <input
-                  type="text"
-                  value={customTicket}
-                  onChange={(e) => setCustomTicket(e.target.value)}
-                  placeholder=""
-                  autoComplete="off"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <select
+                  value={newSpecialty}
+                  onChange={(e) => setNewSpecialty(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  {DENTAL_SPECIALTIES.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
+                  ))}
+                </select>
+
+                {newSpecialty === 'Outra' && (
+                  <input
+                    type="text"
+                    value={newSpecialtyOther}
+                    onChange={(e) => setNewSpecialtyOther(e.target.value)}
+                    placeholder="Indique a especialidade..."
+                    className="mt-2 w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                )}
+              </div>
+
+              {/* Visita Lacer e Marketing Consent */}
+              <div className="space-y-2 pt-1">
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={newWantsLacerVisit}
+                    onChange={(e) => setNewWantsLacerVisit(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Gostaria de agendar visita de representante da Lacer</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={newMarketingConsent}
+                    onChange={(e) => setNewMarketingConsent(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Autoriza contacto sobre produtos, novidades e eventos Lacer</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    NIF / Doc (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newDoc}
+                    onChange={(e) => setNewDoc(e.target.value)}
+                    placeholder="Opcional"
+                    autoComplete="off"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    N.º do Bilhete (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={customTicket}
+                    onChange={(e) => setCustomTicket(e.target.value)}
+                    placeholder="Vazio = aleatório"
+                    autoComplete="off"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
               </div>
 
               {/* Extra ticket option */}
-              <label className="flex items-center gap-2 p-3 bg-slate-950/60 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+              <label className="flex items-center gap-2 p-2.5 bg-slate-950/60 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
                 <input
                   type="checkbox"
                   checked={allowExtraTicket}
@@ -774,6 +928,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             <div className="space-y-4">
               {(Object.keys(tempFields) as Array<keyof FormFieldsConfig>).map((key) => {
                 const field = tempFields[key];
+                if (!field) return null;
                 return (
                   <div
                     key={key}

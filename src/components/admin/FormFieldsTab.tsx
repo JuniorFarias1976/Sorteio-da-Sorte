@@ -28,11 +28,14 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       setTimeout(() => setValidationWarning(null), 3500);
       return;
     }
+    const current = fields[key];
+    if (!current) return;
+
     const updated = {
       ...fields,
       [key]: {
-        ...fields[key],
-        enabled: !fields[key].enabled,
+        ...current,
+        enabled: !current.enabled,
       },
     };
     setFields(updated);
@@ -45,11 +48,14 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       setTimeout(() => setValidationWarning(null), 3500);
       return;
     }
+    const current = fields[key];
+    if (!current) return;
+
     const updated = {
       ...fields,
       [key]: {
-        ...fields[key],
-        required: !fields[key].required,
+        ...current,
+        required: !current.required,
       },
     };
     setFields(updated);
@@ -61,10 +67,13 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
     property: 'label' | 'placeholder',
     value: string
   ) => {
+    const current = fields[key];
+    if (!current) return;
+
     const updated = {
       ...fields,
       [key]: {
-        ...fields[key],
+        ...current,
         [property]: value,
       },
     };
@@ -78,8 +87,10 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       name: { ...fields.name, placeholder: '' },
       email: { ...fields.email, placeholder: '' },
       phone: { ...fields.phone, placeholder: '' },
-      document: { ...fields.document, placeholder: '' },
       city: { ...fields.city, placeholder: '' },
+      clinic: { ...fields.clinic, placeholder: '' },
+      specialty: { ...fields.specialty, placeholder: '' },
+      ...(fields.document ? { document: { ...fields.document, placeholder: '' } } : {}),
     };
     setFields(updated);
     onUpdateFormFields(updated);
@@ -162,6 +173,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {(Object.keys(fields) as Array<keyof FormFieldsConfig>).map((key) => {
           const field = fields[key];
+          if (!field) return null;
           const isEmail = key === 'email';
 
           return (

@@ -370,7 +370,19 @@ async function startServer() {
 
   // 3. Register participant with server-side email duplication check
   app.post('/api/participants', (req, res) => {
-    const { name, email, phone, document, city } = req.body;
+    const { 
+      name, 
+      email, 
+      phone, 
+      document, 
+      clinic, 
+      city, 
+      specialty, 
+      specialtyOther, 
+      wantsLacerVisit, 
+      marketingConsent, 
+      termsAccepted 
+    } = req.body;
 
     const normalizedEmail = (email || '').trim().toLowerCase();
 
@@ -383,7 +395,7 @@ async function startServer() {
       if (existing) {
         res.status(409).json({
           error: 'DUPLICATE_EMAIL',
-          message: `O e-mail "${normalizedEmail}" já está cadastrado no sistema (Bilhete #${existing.ticketNumber})! Cada participante só pode se cadastrar uma única vez.`,
+          message: `O e-mail "${normalizedEmail}" já está registado no sistema (Bilhete #${existing.ticketNumber})! Cada participante só pode se inscrever uma única vez.`,
           existingParticipant: existing,
         });
         return;
@@ -400,10 +412,16 @@ async function startServer() {
     const newParticipant = {
       id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       name: (name || '').trim() || 'Participante',
-      email: normalizedEmail || 'sem-email@sorteiolive.com',
+      email: normalizedEmail || 'sem-email@lacer.pt',
       phone: (phone || '').trim(),
       document: (document || '').trim(),
+      clinic: (clinic || '').trim(),
       city: (city || '').trim(),
+      specialty: (specialty || '').trim(),
+      specialtyOther: (specialtyOther || '').trim(),
+      wantsLacerVisit: Boolean(wantsLacerVisit),
+      marketingConsent: Boolean(marketingConsent),
+      termsAccepted: Boolean(termsAccepted),
       ticketNumber,
       createdAt: new Date().toISOString(),
       status: 'active' as const,

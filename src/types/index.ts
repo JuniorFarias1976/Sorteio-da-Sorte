@@ -3,15 +3,37 @@ export interface Participant {
   name: string;
   email: string;
   phone: string;
-  document: string; // CPF or ID
+  document?: string;
+  clinic?: string; // Clínica / Consultório
   city: string;
-  ticketNumber: string; // e.g., "74892" or "LUCK-1092"
+  specialty?: string; // Especialidade odontológica
+  specialtyOther?: string; // Outra especialidade indicada
+  wantsLacerVisit?: boolean; // Gostaria que um representante da Lacer visitasse a sua clínica
+  marketingConsent?: boolean; // Autorização para informação sobre produtos, novidades, visitas
+  termsAccepted?: boolean; // Declaração de leitura e aceitação do regulamento e privacidade
+  ticketNumber: string; // e.g., "74892"
   createdAt: string;
   status: 'active' | 'winner' | 'banned';
   banReason?: string;
   banDate?: string;
   notes?: string;
 }
+
+export const DENTAL_SPECIALTIES = [
+  'Cirurgia / Implantologia',
+  'Periodontologia',
+  'Ortodontia',
+  'Odontopediatria',
+  'Odontologia Geral',
+  'Prótese Dentária',
+  'Endodontia',
+  'Odontologia Restauradora',
+  'Higienista Oral',
+  'Assistente Dentário / Gestor de Clínica',
+  'Outra',
+] as const;
+
+export type DentalSpecialty = typeof DENTAL_SPECIALTIES[number];
 
 export interface Prize {
   id: string;
@@ -47,7 +69,9 @@ export interface DrawWinner {
   participantPhone: string;
   participantTicket: string;
   participantDocument: string;
+  participantClinic?: string;
   participantCity?: string;
+  participantSpecialty?: string;
   prizeId: string;
   prizeTitle: string;
   wonAt: string;
@@ -105,7 +129,7 @@ export interface BrandConfig {
 }
 
 export interface ParticipantFieldConfig {
-  id: 'name' | 'email' | 'phone' | 'document' | 'city';
+  id: 'name' | 'email' | 'phone' | 'document' | 'city' | 'clinic' | 'specialty';
   label: string;
   placeholder: string;
   enabled: boolean;
@@ -116,8 +140,10 @@ export interface FormFieldsConfig {
   name: ParticipantFieldConfig;
   email: ParticipantFieldConfig;
   phone: ParticipantFieldConfig;
-  document: ParticipantFieldConfig;
+  clinic: ParticipantFieldConfig;
   city: ParticipantFieldConfig;
+  specialty: ParticipantFieldConfig;
+  document?: ParticipantFieldConfig;
 }
 
 export interface QRCodePosterConfig {
@@ -147,6 +173,8 @@ export interface ReportPdfConfig {
   includePhone: boolean;
   includeDocument: boolean;
   includeEmail: boolean;
+  includeClinic?: boolean;
+  includeSpecialty?: boolean;
   includeHash: boolean;
   includeDate: boolean;
 }
