@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#FFFFFF"/>
+  <ellipse cx="32" cy="32" rx="27" ry="17" fill="#FFFFFF" stroke="#E30613" stroke-width="4.5"/>
+  <text x="32" y="37" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#E30613" letter-spacing="-0.3">lacer</text>
+</svg>

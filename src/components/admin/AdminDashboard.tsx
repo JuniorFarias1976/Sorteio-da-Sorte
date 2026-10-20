@@ -311,6 +311,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               prizes={prizes}
               onUpdateSchedules={onUpdateSchedules}
               onGoToLive={onGoToLive}
+              brand={brand}
             />
           )}
 

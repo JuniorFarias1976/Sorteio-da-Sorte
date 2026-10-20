@@ -565,13 +565,29 @@ export default function App() {
     document.documentElement.style.setProperty('--brand-primary', primary);
     document.documentElement.style.setProperty('--brand-secondary', secondary);
     document.documentElement.style.setProperty('--brand-accent', accent);
-
     if (typeof document !== 'undefined') {
       document.body.style.backgroundColor = bg;
       document.body.style.color = text;
       const isLightVal = isLightColor(bg);
       document.body.classList.toggle('light-theme', isLightVal);
       document.body.classList.toggle('dark-theme', !isLightVal);
+
+      // Dynamically update document title & browser tab favicon with company logo
+      if (brand.companyName) {
+        document.title = `${brand.companyName} - Sorteio Oficial`;
+      }
+      const faviconUrl = brand.logoUrl || '/favicon.svg';
+      const existingIcons = document.querySelectorAll("link[rel*='icon'], link[rel='apple-touch-icon']");
+      if (existingIcons.length > 0) {
+        existingIcons.forEach((el) => {
+          (el as HTMLLinkElement).href = faviconUrl;
+        });
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = faviconUrl;
+        document.head.appendChild(link);
+      }
     }
   }, [brand]);
 
