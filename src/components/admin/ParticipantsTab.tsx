@@ -420,7 +420,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-amber-400" />
+            <Users className="w-5 h-5 text-[#E30613]" />
             <span>Base de Dados de Participantes ({participants.length})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -435,7 +435,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               setTempFields({ ...formFields });
               setShowFieldsModal(true);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-semibold shadow transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-[#E30613] border border-slate-700 text-xs font-semibold shadow transition-colors cursor-pointer"
             title="Configurar campos obrigatórios, opcionais ou ocultos do cadastro"
           >
             <SlidersHorizontal className="w-4 h-4" />
@@ -476,13 +476,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
             title="Gerar 5 participantes automáticos para simulação"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-[#E30613]" />
             <span>+5 Simulação</span>
           </button>
 
           <button
             onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Novo Participante</span>
@@ -493,7 +493,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       {/* Metrics Summary Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-red-50 text-[#E30613] border border-red-200 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
           <div>
@@ -503,7 +503,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-red-50 text-[#E30613] border border-red-200 flex items-center justify-center shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           <div>

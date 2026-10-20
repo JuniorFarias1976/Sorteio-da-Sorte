@@ -153,7 +153,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-amber-400" />
+            <CalendarIcon className="w-5 h-5 text-[#E30613]" />
             <span>Calendário de Sorteios & Horários ({schedules.length})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -164,16 +164,16 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleCreate2DailyRounds}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold shadow transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-[#E30613] border border-red-200 text-xs font-bold shadow-sm transition-colors cursor-pointer"
             title="Criar rapidamente 2 sorteios (10:00 e 16:00) para uma data"
           >
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-[#E30613]" />
             <span>+ 2 Sorteios Diários (10h & 16h)</span>
           </button>
 
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Agendar Novo Horário</span>

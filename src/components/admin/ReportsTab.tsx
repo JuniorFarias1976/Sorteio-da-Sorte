@@ -74,7 +74,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <FileCheck2 className="w-5 h-5 text-amber-400" />
+            <FileCheck2 className="w-5 h-5 text-[#E30613]" />
             <span>Relatórios & Auditoria PDF ({winners.length})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -87,14 +87,14 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             onClick={() => setShowConfigModal(true)}
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
           >
-            <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+            <SlidersHorizontal className="w-4 h-4 text-[#E30613]" />
             <span>Editar Informações do PDF</span>
           </button>
 
           <button
             onClick={() => exportWinnersReportPDF(filteredWinners, brand, reportConfig)}
             disabled={winners.length === 0}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition-colors disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Baixar Relatório em PDF</span>

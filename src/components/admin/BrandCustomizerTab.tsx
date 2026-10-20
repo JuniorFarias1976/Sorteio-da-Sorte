@@ -298,7 +298,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Palette className="w-5 h-5 text-amber-400" />
+            <Palette className="w-5 h-5 text-[#E30613]" />
             <span>Personalização da Marca, Logótipo e Textos Globais</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -309,10 +309,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
         <button
           type="submit"
           disabled={isSaving || isUploadingLogo}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold shadow-lg transition-all active:scale-98 cursor-pointer"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] disabled:opacity-50 text-white text-xs font-bold shadow-lg shadow-red-600/30 transition-all active:scale-98 cursor-pointer"
         >
           {isSaving ? (
-            <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+            <RefreshCw className="w-4 h-4 animate-spin text-white" />
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
@@ -390,7 +390,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-1.5">
+                  <label className="px-3.5 py-1.5 bg-[#E30613] hover:bg-[#C80510] text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-md shadow-red-600/25 flex items-center gap-1.5">
                     {isUploadingLogo ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     ) : (

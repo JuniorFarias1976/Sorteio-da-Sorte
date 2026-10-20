@@ -34,6 +34,7 @@ import {
   Cloud,
   RefreshCw
 } from 'lucide-react';
+import { isLightColor } from '../../utils/storage';
 
 interface AdminDashboardProps {
   participants: Participant[];
@@ -67,7 +68,7 @@ export type AdminTab =
   | 'participants' 
   | 'prizes' 
   | 'calendar' 
-  | 'fields'
+  | 'fields' 
   | 'qrcode' 
   | 'reports' 
   | 'brand';
@@ -114,6 +115,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (data.reportConfig && onUpdateReportConfig) onUpdateReportConfig(data.reportConfig);
   };
 
+  const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
+  const appBg = brand.backgroundColor || (isLight ? '#FFFFFF' : '#0B0F19');
+  const appTextColor = brand.textColor || (isLight ? '#0F172A' : '#F8FAFC');
+
   const TABS = [
     { id: 'participants' as AdminTab, label: 'Participantes & Inscrições', icon: Users, badge: participants.length },
     { id: 'prizes' as AdminTab, label: 'Prémios & Quantidades', icon: Gift, badge: prizes.length },
@@ -125,18 +130,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 sm:pb-8">
+    <div 
+      className={`min-h-screen py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 sm:pb-8 transition-colors duration-200 ${
+        isLight ? 'bg-white text-slate-900' : 'bg-slate-950 text-slate-100'
+      }`}
+      style={{ backgroundColor: appBg, color: appTextColor }}
+    >
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Mobile Tab Selector (< sm) */}
-        <div className="sm:hidden bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-lg flex items-center justify-between gap-2">
-          <label className="text-xs text-amber-400 font-bold shrink-0 flex items-center gap-1.5">
+        <div className={`sm:hidden border rounded-2xl p-2.5 shadow-sm flex items-center justify-between gap-2 ${
+          isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800'
+        }`}>
+          <label className={`text-xs font-bold shrink-0 flex items-center gap-1.5 ${
+            isLight ? 'text-[#E30613]' : 'text-amber-400'
+          }`}>
             <SlidersHorizontal className="w-4 h-4" />
             <span>Módulo:</span>
           </label>
           <select
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value as AdminTab)}
-            className="flex-1 bg-slate-950 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#E30613] ${
+              isLight ? 'bg-slate-50 border border-slate-200 text-slate-900' : 'bg-slate-950 border border-slate-700 text-white'
+            }`}
           >
             {TABS.map((tab) => (
               <option key={tab.id} value={tab.id}>
@@ -147,7 +163,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Admin Navigation Hub (Tabs) */}
-        <div className="no-print bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl flex items-center justify-between gap-2 overflow-x-auto">
+        <div className={`no-print border rounded-2xl p-2 shadow-sm flex items-center justify-between gap-2 overflow-x-auto ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+        }`}>
           <div className="flex items-center gap-1 min-w-max">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -158,8 +176,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#E30613] text-white font-bold shadow-md shadow-red-500/25'
+                      : isLight 
+                        ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' 
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
@@ -167,7 +187,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {tab.badge !== undefined && (
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        isActive ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-300'
+                        isActive 
+                          ? 'bg-white text-[#E30613] font-bold' 
+                          : isLight 
+                            ? 'bg-slate-100 text-slate-700' 
+                            : 'bg-slate-800 text-slate-300'
                       }`}
                     >
                       {tab.badge}
@@ -179,31 +203,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           {/* Quick Actions (Live & Reset & DB Status) */}
-          <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-800">
+          <div className={`flex items-center gap-2 shrink-0 pl-2 border-l ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
             {onManualSync ? (
               <button
                 onClick={onManualSync}
                 disabled={isSyncing}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-500/80 text-[11px] text-emerald-300 font-mono shadow-inner cursor-pointer transition-all disabled:opacity-50"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-mono shadow-sm cursor-pointer transition-all disabled:opacity-50 ${
+                  isLight 
+                    ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800' 
+                    : 'bg-slate-950/80 hover:bg-slate-900 border-emerald-500/40 text-emerald-300'
+                }`}
                 title="Clique para sincronizar os dados em tempo real com a base de dados central (data/database.json)"
               >
-                <Database className={`w-3.5 h-3.5 text-emerald-400 shrink-0 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+                <Database className={`w-3.5 h-3.5 text-emerald-600 shrink-0 ${isSyncing ? 'animate-spin text-[#E30613]' : ''}`} />
                 <span className="hidden sm:inline">{isSyncing ? 'A sincronizar...' : 'BD Ativa (Sincronizar)'}</span>
                 <span className="sm:hidden">{isSyncing ? '...' : 'BD'}</span>
               </button>
             ) : (
               <div 
-                className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300 font-mono shadow-inner"
+                className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-mono shadow-sm ${
+                  isLight 
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                    : 'bg-slate-950/80 border-emerald-500/30 text-emerald-300'
+                }`}
                 title="Base de dados central ativa e sincronizada em data/database.json"
               >
-                <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <Database className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>BD Ativa</span>
               </div>
             )}
 
             <button
               onClick={() => setShowBackupModal(true)}
-              className="px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-amber-400 hover:text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-amber-500/30 transition-all shadow cursor-pointer active:scale-98"
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all shadow-sm cursor-pointer active:scale-98 ${
+                isLight 
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
+                  : 'bg-slate-850 hover:bg-slate-800 text-amber-400 border-amber-500/30'
+              }`}
               title="Cópia de segurança e sincronização de dados entre navegadores"
             >
               <Cloud className="w-3.5 h-3.5" />
@@ -212,7 +248,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={onGoToLive}
-              className="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
+              className="px-3.5 py-2 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 cursor-pointer"
               title="Abrir Ecrã da Transmissão em Direto"
             >
               <Tv className="w-3.5 h-3.5" />
@@ -221,7 +257,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={onResetAllData}
-              className="p-2 text-slate-500 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                isLight ? 'text-slate-400 hover:text-[#E30613] hover:bg-slate-100' : 'text-slate-500 hover:text-amber-400 hover:bg-slate-800'
+              }`}
               title="Repor dados de demonstração predefinidos"
             >
               <RotateCcw className="w-4 h-4" />

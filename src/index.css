@@ -70,3 +70,198 @@
   }
 }
 
+/* ==========================================================================
+   Comprehensive Light Theme & Lacer Corporate Colors (White & Lacer Red)
+   Eliminates all dark blue / dark slate surfaces when white theme is active
+   ========================================================================== */
+body.light-theme {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* Cards & Surface Panels */
+body.light-theme .bg-slate-900,
+body.light-theme .bg-slate-900\/95,
+body.light-theme .bg-slate-900\/90,
+body.light-theme .bg-slate-900\/80,
+body.light-theme .bg-slate-900\/70,
+body.light-theme .bg-slate-900\/60,
+body.light-theme .bg-slate-900\/50,
+body.light-theme .bg-slate-850 {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+body.light-theme .bg-slate-950,
+body.light-theme .bg-slate-950\/90,
+body.light-theme .bg-slate-950\/80,
+body.light-theme .bg-slate-950\/70,
+body.light-theme .bg-slate-950\/60 {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+/* Borders */
+body.light-theme .border-slate-900,
+body.light-theme .border-slate-800,
+body.light-theme .border-slate-800\/90,
+body.light-theme .border-slate-800\/80,
+body.light-theme .border-slate-800\/60,
+body.light-theme .border-slate-700,
+body.light-theme .border-slate-700\/80,
+body.light-theme .border-slate-700\/60 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Dividers */
+body.light-theme .divide-slate-800,
+body.light-theme .divide-slate-800\/80,
+body.light-theme .divide-slate-800\/60,
+body.light-theme .divide-slate-700 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Typography on light backgrounds */
+body.light-theme h1,
+body.light-theme h2,
+body.light-theme h3,
+body.light-theme h4,
+body.light-theme h5,
+body.light-theme h6 {
+  color: #0F172A;
+}
+
+body.light-theme .text-slate-400,
+body.light-theme .text-slate-500 {
+  color: #64748B !important;
+}
+
+body.light-theme .text-slate-300,
+body.light-theme .text-slate-200 {
+  color: #334155 !important;
+}
+
+/* Neutral text inside content areas (except explicitly white-button text) */
+body.light-theme :not(button):not(button *):not(.bg-\[\#E30613\] *):not(.bg-red-600 *):not(.bg-red-700 *):not(.bg-emerald-600 *).text-white {
+  color: #0F172A !important;
+}
+
+/* Inputs, Textareas, Selects */
+body.light-theme input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+body.light-theme textarea,
+body.light-theme select {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+body.light-theme input::placeholder,
+body.light-theme textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.light-theme input:focus,
+body.light-theme textarea:focus,
+body.light-theme select:focus {
+  border-color: #E30613 !important;
+  outline: none !important;
+}
+
+/* Primary Action Buttons & Accents -> Lacer Red (#E30613) */
+body.light-theme .bg-amber-500,
+body.light-theme .bg-amber-400 {
+  background-color: #E30613 !important;
+  color: #FFFFFF !important;
+}
+
+body.light-theme .hover\:bg-amber-400:hover,
+body.light-theme .hover\:bg-amber-500:hover {
+  background-color: #C80510 !important;
+  color: #FFFFFF !important;
+}
+
+body.light-theme .text-amber-400,
+body.light-theme .text-amber-500,
+body.light-theme .text-amber-300 {
+  color: #E30613 !important;
+}
+
+body.light-theme .bg-amber-500\/10,
+body.light-theme .bg-amber-500\/15,
+body.light-theme .bg-amber-500\/20,
+body.light-theme .bg-amber-500\/5 {
+  background-color: #FEF2F2 !important;
+  color: #E30613 !important;
+  border-color: #FECACA !important;
+}
+
+body.light-theme .border-amber-500\/30,
+body.light-theme .border-amber-500\/40,
+body.light-theme .border-amber-500\/50 {
+  border-color: #FCA5A5 !important;
+}
+
+/* Blue Accents -> Replace with Lacer Red / Clean Corporate */
+body.light-theme .text-blue-400,
+body.light-theme .text-blue-500 {
+  color: #E30613 !important;
+}
+
+body.light-theme .bg-blue-500\/10,
+body.light-theme .bg-blue-500\/20 {
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+}
+
+/* Secondary Buttons & Chips */
+body.light-theme .bg-slate-800 {
+  background-color: #F1F5F9 !important;
+  color: #1E293B !important;
+  border-color: #CBD5E1 !important;
+}
+
+body.light-theme .hover\:bg-slate-700:hover,
+body.light-theme .hover\:bg-slate-800:hover {
+  background-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+/* Tables in Admin */
+body.light-theme table {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+body.light-theme thead,
+body.light-theme th {
+  background-color: #F8FAFC !important;
+  color: #475569 !important;
+  border-color: #E2E8F0 !important;
+}
+
+body.light-theme tbody tr {
+  background-color: #FFFFFF !important;
+  border-color: #F1F5F9 !important;
+}
+
+body.light-theme tbody tr:hover {
+  background-color: #F8FAFC !important;
+}
+
+/* Ensure text on Colored Action Buttons stays WHITE */
+body.light-theme button.bg-\[\#E30613\],
+body.light-theme button.bg-\[\#E30613\] *,
+body.light-theme button.bg-red-600,
+body.light-theme button.bg-red-600 *,
+body.light-theme button.bg-red-700,
+body.light-theme button.bg-red-700 *,
+body.light-theme button.bg-emerald-600,
+body.light-theme button.bg-emerald-600 *,
+body.light-theme button.bg-emerald-700,
+body.light-theme button.bg-emerald-700 *,
+body.light-theme button.bg-amber-500,
+body.light-theme button.bg-amber-500 * {
+  color: #FFFFFF !important;
+}

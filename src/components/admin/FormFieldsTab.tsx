@@ -117,7 +117,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <SlidersHorizontal className="w-5 h-5 text-amber-400" />
+            <SlidersHorizontal className="w-5 h-5 text-[#E30613]" />
             <span>Configuração dos Campos de Inscrição</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -129,7 +129,7 @@ export const FormFieldsTab: React.FC<FormFieldsTabProps> = ({
           <button
             type="button"
             onClick={handleClearAllPlaceholders}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold border border-amber-500/30 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-[#E30613] text-xs font-semibold border border-red-200 transition-colors cursor-pointer"
             title="Deixa todos os campos do formulário totalmente limpos, sem qualquer texto de exemplo"
           >
             <span>Limpar Todos os Exemplos</span>
