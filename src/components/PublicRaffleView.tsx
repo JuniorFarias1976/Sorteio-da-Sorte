@@ -18,12 +18,10 @@ import {
   Check,
   FileText,
   ExternalLink,
-  Upload,
-  Link as LinkIcon,
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DEFAULT_FORM_FIELDS, StorageService } from '../utils/storage';
+import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO } from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
 import { exportRegulationPDF } from '../utils/export';
@@ -104,9 +102,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   // Success ticket modal
   const [newlyCreatedTicket, setNewlyCreatedTicket] = useState<Participant | null>(null);
   const [copiedTicket, setCopiedTicket] = useState(false);
-  const [showUrlLogoInput, setShowUrlLogoInput] = useState(false);
-  const [tempLogoUrl, setTempLogoUrl] = useState('');
-  const [logoSuccessToast, setLogoSuccessToast] = useState<string | null>(null);
 
   // Trigger celebration confetti when participant successfully registers
   useEffect(() => {
@@ -121,42 +116,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       } catch {}
     }
   }, [newlyCreatedTicket]);
-
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      alert('A imagem é demasiado grande (máximo 2MB). Escolha uma imagem mais leve.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      const updated = { ...brand, logoUrl: base64 };
-      onUpdateBrand?.(updated);
-      try { StorageService.saveBrand(updated); } catch {}
-      FirestoreService.saveBrand(updated).catch(() => {});
-      ApiService.saveData({ brand: updated }).catch(() => {});
-      setLogoSuccessToast('Logótipo da empresa atualizado com sucesso!');
-      setTimeout(() => setLogoSuccessToast(null), 3500);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveLogoUrl = () => {
-    if (!tempLogoUrl.trim()) return;
-    const updated = { ...brand, logoUrl: tempLogoUrl.trim() };
-    onUpdateBrand?.(updated);
-    try { StorageService.saveBrand(updated); } catch {}
-    FirestoreService.saveBrand(updated).catch(() => {});
-    ApiService.saveData({ brand: updated }).catch(() => {});
-    setShowUrlLogoInput(false);
-    setTempLogoUrl('');
-    setLogoSuccessToast('Logótipo da empresa atualizado com sucesso!');
-    setTimeout(() => setLogoSuccessToast(null), 3500);
-  };
 
   const handleCopyTicket = (ticketNum: string) => {
     if (navigator.clipboard) {
@@ -1044,75 +1003,20 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   </div>
                 </div>
 
-                {/* Seção: Abaixo deste texto ter como colocar um logo da empresa */}
-                <div className="pt-5 border-t border-slate-800/80 text-center space-y-3">
+                {/* Seção: Logótipo da Empresa (Definido pelo Administrador no Painel de Controlo) */}
+                <div className="pt-4 border-t border-slate-800/80 text-center space-y-2.5">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                     Logótipo da Empresa
                   </span>
 
                   <div className="flex flex-col items-center justify-center">
-                    {brand.logoUrl ? (
-                      <div className="p-3.5 rounded-2xl bg-white/5 border border-slate-700/80 shadow-lg inline-flex items-center justify-center max-h-24 min-h-[70px] min-w-[150px]">
-                        <img
-                          src={brand.logoUrl}
-                          alt={brand.companyName || 'Logo da Empresa'}
-                          className="max-h-16 max-w-[220px] object-contain rounded-lg"
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-4 rounded-2xl bg-slate-950 border border-dashed border-slate-700 text-xs text-slate-400 max-w-xs text-center">
-                        Nenhum logótipo configurado ainda.
-                      </div>
-                    )}
-
-                    {/* Opções para colocar ou alterar o logo da empresa */}
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                      <label className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm">
-                        <Upload className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{brand.logoUrl ? 'Alterar Logo da Empresa' : 'Colocar Logo da Empresa'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleLogoFileUpload}
-                        />
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowUrlLogoInput(!showUrlLogoInput)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs border border-slate-800 flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <LinkIcon className="w-3.5 h-3.5" />
-                        <span>Colocar por URL</span>
-                      </button>
+                    <div className="p-3.5 rounded-2xl bg-white/5 border border-slate-700/80 shadow-lg inline-flex items-center justify-center max-h-24 min-h-[70px] min-w-[150px]">
+                      <img
+                        src={brand.logoUrl || DEFAULT_BRAND_LOGO}
+                        alt={brand.companyName || 'Logo da Empresa'}
+                        className="max-h-16 max-w-[220px] object-contain rounded-lg"
+                      />
                     </div>
-
-                    {showUrlLogoInput && (
-                      <div className="mt-2.5 flex items-center gap-2 w-full max-w-md animate-in fade-in duration-200">
-                        <input
-                          type="url"
-                          value={tempLogoUrl}
-                          onChange={(e) => setTempLogoUrl(e.target.value)}
-                          placeholder="Cole o endereço (URL) da imagem do logo..."
-                          className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveLogoUrl}
-                          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-colors shadow"
-                        >
-                          Salvar
-                        </button>
-                      </div>
-                    )}
-
-                    {logoSuccessToast && (
-                      <p className="text-xs text-emerald-400 font-medium mt-2 flex items-center gap-1 animate-in fade-in">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>{logoSuccessToast}</span>
-                      </p>
-                    )}
                   </div>
                 </div>
 
