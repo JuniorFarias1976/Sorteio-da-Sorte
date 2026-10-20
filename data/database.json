@@ -1,6 +1,5 @@
 {
   "participants": [
-
     {
       "id": "part-maria-50265",
       "name": "Dra. Maria",
@@ -128,10 +127,10 @@
       "title": "Sorteio Manhã",
       "description": "Primeira ronda matutina oficial de sorteio de prémios.",
       "scheduledDate": "2026-10-22",
-      "scheduledTime": "10:00",
+      "scheduledTime": "13:00",
       "status": "scheduled",
       "roundNumber": 1,
-      "roundLabel": "1ª Ronda (Manhã) - 10:00",
+      "roundLabel": "1ª Ronda (Manhã) - 13:00",
       "prizeIds": [
         "prz-1"
       ],
@@ -142,10 +141,10 @@
       "title": "Sorteio Tarde",
       "description": "Segunda ronda oficial da tarde de sorteio de prémios.",
       "scheduledDate": "2026-10-22",
-      "scheduledTime": "16:00",
+      "scheduledTime": "19:00",
       "status": "scheduled",
       "roundNumber": 2,
-      "roundLabel": "2ª Ronda (Tarde) - 16:00",
+      "roundLabel": "2ª Ronda (Tarde) - 19:00",
       "prizeIds": [
         "prz-1"
       ],
@@ -156,10 +155,10 @@
       "title": "Sorteio 2.º Dia Manhã",
       "description": "Terceira ronda oficial - segundo dia matutino.",
       "scheduledDate": "2026-10-23",
-      "scheduledTime": "10:00",
+      "scheduledTime": "13:00",
       "status": "scheduled",
       "roundNumber": 1,
-      "roundLabel": "2º Dia (Manhã) - 10:00",
+      "roundLabel": "2º Dia (Manhã) - 13:00",
       "prizeIds": [
         "prz-1"
       ],
@@ -170,14 +169,42 @@
       "title": "Sorteio 2.º Dia Tarde",
       "description": "Quarta ronda oficial - segundo dia à tarde.",
       "scheduledDate": "2026-10-23",
-      "scheduledTime": "16:00",
+      "scheduledTime": "19:00",
       "status": "scheduled",
       "roundNumber": 2,
-      "roundLabel": "2º Dia (Tarde) - 16:00",
+      "roundLabel": "2º Dia (Tarde) - 19:00",
       "prizeIds": [
         "prz-1"
       ],
       "createdAt": "2026-10-18T10:15:00Z"
+    },
+    {
+      "id": "sched-round-5",
+      "title": "Sorteio 3.º Dia Manhã",
+      "description": "Quinta ronda oficial - terceiro dia matutino.",
+      "scheduledDate": "2026-10-24",
+      "scheduledTime": "13:00",
+      "status": "scheduled",
+      "roundNumber": 1,
+      "roundLabel": "3º Dia (Manhã) - 13:00",
+      "prizeIds": [
+        "prz-1"
+      ],
+      "createdAt": "2026-10-18T10:20:00Z"
+    },
+    {
+      "id": "sched-round-6",
+      "title": "Sorteio 3.º Dia Tarde",
+      "description": "Sexta ronda oficial - terceiro dia à tarde.",
+      "scheduledDate": "2026-10-24",
+      "scheduledTime": "19:00",
+      "status": "scheduled",
+      "roundNumber": 2,
+      "roundLabel": "3º Dia (Tarde) - 19:00",
+      "prizeIds": [
+        "prz-1"
+      ],
+      "createdAt": "2026-10-18T10:25:00Z"
     }
   ],
   "winners": [],
@@ -303,5 +330,6 @@
     "includeClinic": true,
     "includeSpecialty": true
   },
-  "version": 1792494403875
+  "version": 1792510898824,
+  "test": 123
 }

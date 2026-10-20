@@ -96,9 +96,14 @@ export default function App() {
       setPrizes(serverData.prizes);
       try { StorageService.savePrizes(serverData.prizes); } catch {}
     }
-    if (Array.isArray(serverData.schedules)) {
-      setSchedules(serverData.schedules);
-      try { StorageService.saveSchedules(serverData.schedules); } catch {}
+    if (Array.isArray(serverData.schedules) && serverData.schedules.length > 0) {
+      const sortedSchedules = [...serverData.schedules].sort((a, b) => {
+        const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
+        const dateB = `${b.scheduledDate || ''}T${b.scheduledTime || ''}`;
+        return dateA.localeCompare(dateB);
+      });
+      setSchedules(sortedSchedules);
+      try { StorageService.saveSchedules(sortedSchedules); } catch {}
     }
     if (Array.isArray(serverData.winners)) {
       setWinners(serverData.winners);
@@ -217,9 +222,16 @@ export default function App() {
         setIsSyncing(false);
       },
       onSchedulesChange: (schedList) => {
-        setSchedules(schedList);
-        try { StorageService.saveSchedules(schedList); } catch {}
-        setIsServerConnected(true);
+        if (Array.isArray(schedList) && schedList.length > 0) {
+          const sorted = [...schedList].sort((a, b) => {
+            const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
+            const dateB = `${b.scheduledDate || ''}T${b.scheduledTime || ''}`;
+            return dateA.localeCompare(dateB);
+          });
+          setSchedules(sorted);
+          try { StorageService.saveSchedules(sorted); } catch {}
+          setIsServerConnected(true);
+        }
       },
       onWinnersChange: (wList) => {
         setWinners(wList);
@@ -340,11 +352,18 @@ export default function App() {
   };
 
   const handleUpdateSchedules = (data: DrawSchedule[]) => {
-    setSchedules(data);
-    try { StorageService.saveSchedules(data); } catch {}
-    FirestoreService.saveSchedulesBatch(data).catch(() => {});
-    ApiService.saveData({ schedules: data });
-    broadcastCrossTab({ schedules: data });
+    const sorted = [...data].sort((a, b) => {
+      const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
+      const dateB = `${b.scheduledDate || ''}T${b.scheduledTime || ''}`;
+      return dateA.localeCompare(dateB);
+    });
+    setSchedules(sorted);
+    try { StorageService.saveSchedules(sorted); } catch {}
+    FirestoreService.saveSchedulesBatch(sorted).catch((err) => {
+      console.warn('Failed to sync schedules to Firestore:', err);
+    });
+    ApiService.saveData({ schedules: sorted });
+    broadcastCrossTab({ schedules: sorted });
   };
 
   const handleUpdateWinners = (data: DrawWinner[]) => {
@@ -746,6 +765,7 @@ export default function App() {
             onRegisterParticipant={handleRegisterParticipant}
             onGoToLive={() => setCurrentView('live')}
             onUpdateBrand={handleUpdateBrand}
+            onUpdateSchedules={handleUpdateSchedules}
             isAdmin={isAdminUnlocked}
             onRequestUnlockAdmin={() => {
               if (isAdminUnlocked) {

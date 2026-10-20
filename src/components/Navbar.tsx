@@ -50,6 +50,20 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  const handleParticipateClick = () => {
+    onViewChange('public');
+    setTimeout(() => {
+      const el = document.getElementById('formulario-inscricao');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const input = el.querySelector('input') as HTMLInputElement | null;
+        if (input) {
+          setTimeout(() => input.focus(), 300);
+        }
+      }
+    }, 60);
+  };
+
   const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
 
   return (
@@ -126,12 +140,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           isLight ? 'bg-slate-100/90 border-slate-200' : 'bg-slate-950/70 border-slate-800'
         }`}>
           <button
-            onClick={() => onViewChange('public')}
-            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
+            onClick={handleParticipateClick}
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer ${
               currentView === 'public'
                 ? 'bg-[#E30613] text-white font-semibold shadow-md shadow-red-500/25'
                 : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
             }`}
+            title="Ir para o formulário de participação"
           >
             <Ticket className="w-4 h-4" />
             <span>Participar</span>

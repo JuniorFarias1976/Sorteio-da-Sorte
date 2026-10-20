@@ -18,10 +18,13 @@ import {
   Check,
   FileText,
   ExternalLink,
-  X
+  X,
+  Pencil,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor } from '../utils/storage';
+import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, DEFAULT_SCHEDULES, isLightColor } from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
 import { exportRegulationPDF } from '../utils/export';
@@ -36,6 +39,7 @@ interface PublicRaffleViewProps {
   onRegisterParticipant: (participant: Participant) => void;
   onGoToLive: () => void;
   onUpdateBrand?: (brand: BrandConfig) => void;
+  onUpdateSchedules?: (schedules: DrawSchedule[]) => void;
   isAdmin?: boolean;
   onRequestUnlockAdmin?: () => void;
 }
@@ -50,11 +54,70 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   onRegisterParticipant,
   onGoToLive,
   onUpdateBrand,
+  onUpdateSchedules,
   isAdmin = false,
   onRequestUnlockAdmin,
 }) => {
   const [heroLogoClicks, setHeroLogoClicks] = useState<number>(0);
   const heroLogoTimerRef = useRef<any>(null);
+
+  // Modal para editar datas e horários dos sorteios
+  const [showScheduleEditModal, setShowScheduleEditModal] = useState<boolean>(false);
+  const [tempSchedules, setTempSchedules] = useState<DrawSchedule[]>([]);
+  const [scheduleSaveToast, setScheduleSaveToast] = useState<string | null>(null);
+
+  const handleOpenScheduleEditor = () => {
+    if (isAdmin) {
+      setTempSchedules(schedules.length > 0 ? [...schedules] : [...DEFAULT_SCHEDULES]);
+      setShowScheduleEditModal(true);
+    } else {
+      onRequestUnlockAdmin?.();
+    }
+  };
+
+  const handleSaveSchedulesEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onUpdateSchedules) {
+      // Ordenar cronologicamente
+      const sorted = [...tempSchedules].sort((a, b) => {
+        const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
+        const dateB = `${b.scheduledDate || ''}T${b.scheduledTime || ''}`;
+        return dateA.localeCompare(dateB);
+      });
+      onUpdateSchedules(sorted);
+    }
+    setShowScheduleEditModal(false);
+    setScheduleSaveToast('Datas e horários atualizados e sincronizados em todos os dispositivos!');
+    setTimeout(() => setScheduleSaveToast(null), 4000);
+  };
+
+  const handleUpdateTempScheduleItem = (index: number, updates: Partial<DrawSchedule>) => {
+    setTempSchedules((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], ...updates };
+      return copy;
+    });
+  };
+
+  const handleAddTempSchedule = () => {
+    const newSched: DrawSchedule = {
+      id: `sched-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      title: `Novo Sorteio`,
+      description: 'Sorteio oficial no stand Lacer.',
+      scheduledDate: '2026-10-24',
+      scheduledTime: '13:00',
+      status: 'scheduled',
+      roundNumber: 1,
+      roundLabel: 'Ronda Agendada',
+      prizeIds: prizes.map((p) => p.id),
+      createdAt: new Date().toISOString(),
+    };
+    setTempSchedules((prev) => [...prev, newSched]);
+  };
+
+  const handleDeleteTempSchedule = (id: string) => {
+    setTempSchedules((prev) => prev.filter((s) => s.id !== id));
+  };
 
   const handleHeroLogoClick = () => {
     const nextCount = heroLogoClicks + 1;
@@ -501,23 +564,29 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-xl border ${
-                    isLight 
-                      ? 'bg-red-50 text-[#E30613] border-red-200 font-semibold' 
-                      : 'text-red-300 bg-red-500/10 border-red-500/30'
-                  }`}>
-                    <Calendar className="w-3.5 h-3.5 text-[#E30613]" />
-                    <span>{nextSchedule ? `Próximo: ${nextSchedule.scheduledTime} (${nextSchedule.scheduledDate.slice(5)})` : '2 Sorteios / Dia'}</span>
-                  </span>
+                  {/* Botão para editar as datas e horas do sorteio */}
+                  <button
+                    type="button"
+                    onClick={handleOpenScheduleEditor}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer border ${
+                      isLight 
+                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300' 
+                        : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-700/50'
+                    }`}
+                    title="Editar as datas e horários dos sorteios oficiais Lacer"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Editar Datas & Horas</span>
+                  </button>
                 </div>
               </div>
 
               {/* Day by Day Grid with 2 Draws per day */}
               <div className="space-y-4">
-                {(scheduledDates.length > 0 ? scheduledDates : ['2026-10-22', '2026-10-23']).map((dateStr, dayIndex) => {
+                {(scheduledDates.length > 0 ? scheduledDates : ['2026-10-22', '2026-10-23', '2026-10-24']).map((dateStr, dayIndex) => {
                   const daySchedules = schedulesByDate[dateStr] || [
-                    { id: `fb-${dayIndex}-1`, title: 'Sorteio Manhã', scheduledTime: '10:00', status: 'scheduled', roundNumber: 1, scheduledDate: dateStr, description: '', prizeIds: [], createdAt: '' },
-                    { id: `fb-${dayIndex}-2`, title: 'Sorteio Tarde', scheduledTime: '16:00', status: 'scheduled', roundNumber: 2, scheduledDate: dateStr, description: '', prizeIds: [], createdAt: '' },
+                    { id: `fb-${dayIndex}-1`, title: 'Sorteio Manhã', scheduledTime: '13:00', status: 'scheduled', roundNumber: 1, scheduledDate: dateStr, description: '', prizeIds: [], createdAt: '' },
+                    { id: `fb-${dayIndex}-2`, title: 'Sorteio Tarde', scheduledTime: '19:00', status: 'scheduled', roundNumber: 2, scheduledDate: dateStr, description: '', prizeIds: [], createdAt: '' },
                   ];
 
                   return (
@@ -640,7 +709,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         {/* Left: Registration Form + Search Bilhetes (7 cols) */}
         <div className="lg:col-span-7 space-y-8">
           {/* Card: Formulário de Inscrição */}
-          <div className={`border-2 rounded-3xl p-6 sm:p-8 shadow-xl transition-colors ${
+          <div 
+            id="formulario-inscricao"
+            className={`scroll-mt-24 border-2 rounded-3xl p-6 sm:p-8 shadow-xl transition-colors ${
             isLight ? 'bg-white border-red-100/90 text-slate-900 shadow-red-950/5' : 'bg-slate-900/90 border-slate-800 text-slate-100 shadow-xl'
           }`}>
             <div className="flex items-center gap-3 mb-6">
@@ -1475,6 +1546,160 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 Fechar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Feedback for Schedule Updates */}
+      {scheduleSaveToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-semibold animate-in slide-in-from-bottom duration-300">
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <span className="flex-1">{scheduleSaveToast}</span>
+          <button onClick={() => setScheduleSaveToast(null)} className="text-white/80 hover:text-white cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Modal: Editar Datas e Horários dos Sorteios */}
+      {showScheduleEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className={`border rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl max-h-[90vh] flex flex-col ${
+            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+          }`}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-red-50 border border-red-200 text-[#E30613]">
+                  <Clock className="w-6 h-6 text-[#E30613]" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold">
+                    Editar Datas & Horários dos Sorteios
+                  </h3>
+                  <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    As alterações serão guardadas e refletidas em tempo real em todos os telemóveis e ecrãs.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScheduleEditModal(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body - Scrollable list of schedules */}
+            <form onSubmit={handleSaveSchedulesEdit} className="flex flex-col flex-1 overflow-hidden mt-4">
+              <div className="overflow-y-auto space-y-3.5 pr-1 flex-1">
+                {tempSchedules.map((sch, idx) => (
+                  <div
+                    key={sch.id}
+                    className={`p-4 rounded-2xl border transition-colors ${
+                      isLight ? 'bg-slate-50/80 border-slate-200' : 'bg-slate-950/70 border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-red-50 text-[#E30613] border border-red-200">
+                        Ronda #{idx + 1}
+                      </span>
+                      {tempSchedules.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTempSchedule(sch.id)}
+                          className="text-red-500 hover:text-red-700 p-1 cursor-pointer transition-colors"
+                          title="Remover esta ronda"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                          Título do Sorteio
+                        </label>
+                        <input
+                          type="text"
+                          value={sch.title}
+                          onChange={(e) => handleUpdateTempScheduleItem(idx, { title: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-xl text-xs font-medium border outline-none focus:ring-2 focus:ring-[#E30613] ${
+                            isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-900 border-slate-700 text-white'
+                          }`}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                          Data (AAAA-MM-DD)
+                        </label>
+                        <input
+                          type="date"
+                          value={sch.scheduledDate}
+                          onChange={(e) => handleUpdateTempScheduleItem(idx, { scheduledDate: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-xl text-xs font-mono font-medium border outline-none focus:ring-2 focus:ring-[#E30613] ${
+                            isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-900 border-slate-700 text-white'
+                          }`}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                          Horário (HH:MM)
+                        </label>
+                        <input
+                          type="time"
+                          value={sch.scheduledTime}
+                          onChange={(e) => handleUpdateTempScheduleItem(idx, { scheduledTime: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-xl text-xs font-mono font-bold text-[#E30613] border outline-none focus:ring-2 focus:ring-[#E30613] ${
+                            isLight ? 'bg-white border-slate-300' : 'bg-slate-900 border-slate-700'
+                          }`}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={handleAddTempSchedule}
+                  className={`w-full py-2.5 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 text-xs font-bold transition-colors cursor-pointer ${
+                    isLight 
+                      ? 'border-slate-300 hover:border-[#E30613] text-slate-600 hover:text-[#E30613]' 
+                      : 'border-slate-700 hover:border-red-500 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Adicionar Outra Ronda de Sorteio</span>
+                </button>
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 mt-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleEditModal(false)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer border ${
+                    isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'text-slate-400 hover:text-white border-slate-700'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-lg shadow-red-500/25 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Guardar e Sincronizar</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

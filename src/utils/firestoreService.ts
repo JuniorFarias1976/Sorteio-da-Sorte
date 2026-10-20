@@ -159,11 +159,13 @@ export const FirestoreService = {
         onSnapshot(
           collection(db, 'schedules'),
           (snap) => {
-            if (handlers.onSchedulesChange) {
               const items = snap.docs.map((d) => d.data() as DrawSchedule);
-              items.sort((a, b) => (a.roundNumber || 0) - (b.roundNumber || 0));
-              handlers.onSchedulesChange(items);
-            }
+              items.sort((a, b) => {
+                const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
+                const dateB = `${b.scheduledDate || ''}T${b.scheduledTime || ''}`;
+                return dateA.localeCompare(dateB);
+              });
+              handlers.onSchedulesChange?.(items);
           },
           (err) => handlers.onError?.(err)
         )
