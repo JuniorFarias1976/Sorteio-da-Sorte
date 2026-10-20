@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, Tv, ShieldCheck, Lock, Smartphone, Share2, Check } from 'lucide-react';
 import { BrandConfig, DrawSchedule } from '../types';
+import { isLightColor } from '../utils/storage';
 
 interface MobileBottomNavProps {
   currentView: 'public' | 'live' | 'admin';
@@ -63,19 +64,25 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     }
   };
 
+  const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
+
   return (
     <>
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 flex items-center justify-around shadow-2xl safe-area-pb">
+      <nav className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl border-t px-2 py-2 flex items-center justify-around shadow-2xl safe-area-pb transition-colors duration-200 ${
+        isLight 
+          ? 'bg-white/95 border-slate-200 text-slate-600'
+          : 'bg-slate-900/95 border-slate-800/80 text-slate-400'
+      }`}>
         {/* 1. Participar */}
         <button
           onClick={() => onViewChange('public')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
             currentView === 'public'
-              ? 'text-red-400 font-bold'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-[#E30613] font-bold'
+              : isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <div className={`p-1 rounded-lg ${currentView === 'public' ? 'bg-red-500/20 ring-1 ring-red-500/30' : ''}`}>
+          <div className={`p-1 rounded-lg ${currentView === 'public' ? (isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30') : ''}`}>
             <Ticket className="w-5 h-5" />
           </div>
           <span className="text-[10px] mt-0.5 tracking-tight">Participar</span>
@@ -86,13 +93,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           onClick={() => onViewChange('live')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
             currentView === 'live'
-              ? 'text-red-400 font-bold'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-[#E30613] font-bold'
+              : isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <div className={`p-1 rounded-lg relative ${currentView === 'live' ? 'bg-red-500/20 ring-1 ring-red-500/30' : ''}`}>
+          <div className={`p-1 rounded-lg relative ${currentView === 'live' ? (isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 ring-1 ring-red-500/30') : ''}`}>
             <Tv className="w-5 h-5" />
-            <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#E30613] animate-pulse"></span>
           </div>
           <span className="text-[10px] mt-0.5 tracking-tight">Em Direto</span>
         </button>
@@ -100,17 +107,19 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         {/* 3. Instalar no Telemóvel / Partilhar */}
         <button
           onClick={handleInstallClick}
-          className="flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
+          className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
+            isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
+          }`}
           title="Instalar no telemóvel ou partilhar"
         >
-          <div className="p-1 rounded-lg hover:bg-slate-800">
+          <div className={`p-1 rounded-lg ${isLight ? 'hover:bg-slate-100' : 'hover:bg-slate-800'}`}>
             {deferredPrompt && !isInstalled ? (
               <div className="relative">
-                <Smartphone className="w-5 h-5 text-emerald-400" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
+                <Smartphone className="w-5 h-5 text-emerald-500" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
               </div>
             ) : (
-              <Share2 className="w-5 h-5 text-slate-300" />
+              <Share2 className="w-5 h-5" />
             )}
           </div>
           <span className="text-[10px] mt-0.5 tracking-tight">
@@ -124,11 +133,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             onClick={() => onViewChange('admin')}
             className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
               currentView === 'admin'
-                ? 'text-amber-400 font-bold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'text-[#E30613] font-bold'
+                : isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <div className={`p-1 rounded-lg ${currentView === 'admin' ? 'bg-amber-500/20 ring-1 ring-amber-500/30' : ''}`}>
+            <div className={`p-1 rounded-lg ${currentView === 'admin' ? (isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 ring-1 ring-red-500/30') : ''}`}>
               <ShieldCheck className="w-5 h-5" />
             </div>
             <span className="text-[10px] mt-0.5 tracking-tight">Admin</span>

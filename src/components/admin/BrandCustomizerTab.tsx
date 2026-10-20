@@ -14,7 +14,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
-import { DEFAULT_BRAND_LOGO } from '../../utils/storage';
+import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
 import { compressImageFile } from '../../utils/imageCompressor';
 
@@ -33,6 +33,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [primaryColor, setPrimaryColor] = useState(brand.primaryColor);
   const [secondaryColor, setSecondaryColor] = useState(brand.secondaryColor);
   const [accentColor, setAccentColor] = useState(brand.accentColor);
+  const [backgroundColor, setBackgroundColor] = useState(brand.backgroundColor || '#FFFFFF');
+  const [textColor, setTextColor] = useState(brand.textColor || '#0F172A');
   const [terms, setTerms] = useState(brand.termsAndConditions);
 
   // App-wide customizable texts
@@ -70,6 +72,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setPrimaryColor(brand.primaryColor);
     setSecondaryColor(brand.secondaryColor);
     setAccentColor(brand.accentColor);
+    setBackgroundColor(brand.backgroundColor || '#FFFFFF');
+    setTextColor(brand.textColor || '#0F172A');
     setTerms(brand.termsAndConditions);
     setHeroBadgeText(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
     setRoundsBannerTitle(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
@@ -170,6 +174,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   };
 
   const syncAndSave = (overrides: Partial<BrandConfig> = {}, showToast = false) => {
+    const finalBg = overrides.backgroundColor !== undefined ? overrides.backgroundColor : backgroundColor;
+    const finalTextColor = overrides.textColor !== undefined ? overrides.textColor : textColor;
+    const computedTheme = overrides.backgroundTheme ?? (isLightColor(finalBg) ? 'white' : 'dark');
+
     const updated: BrandConfig = {
       ...brand,
       companyName: (overrides.companyName !== undefined ? overrides.companyName : companyName).trim() || 'Sorteio Lacer OMD 2026',
@@ -178,6 +186,9 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       primaryColor: overrides.primaryColor ?? primaryColor,
       secondaryColor: overrides.secondaryColor ?? secondaryColor,
       accentColor: overrides.accentColor ?? accentColor,
+      backgroundColor: finalBg,
+      textColor: finalTextColor,
+      backgroundTheme: computedTheme,
       termsAndConditions: (overrides.termsAndConditions !== undefined ? overrides.termsAndConditions : terms).trim(),
       roundsBannerTitle: (overrides.roundsBannerTitle !== undefined ? overrides.roundsBannerTitle : roundsBannerTitle).trim(),
       roundsBannerSubtitle: (overrides.roundsBannerSubtitle !== undefined ? overrides.roundsBannerSubtitle : roundsBannerSubtitle).trim(),
@@ -201,18 +212,36 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       setSavedSuccessMessage(null);
       setTimeout(() => {
         setIsSaving(false);
-        setSavedSuccessMessage('Todas as alterações foram guardadas com sucesso na Base de Dados e já estão visíveis para todos os participantes!');
+        setSavedSuccessMessage('Todas as alterações de cores, fundo e textos foram guardadas na Base de Dados e já estão ativas!');
         checkDatabaseLiveStatus();
         setTimeout(() => setSavedSuccessMessage(null), 4000);
       }, 350);
     }
   };
 
-  const handleApplyPreset = (theme: { name: string; primary: string; secondary: string; accent: string }) => {
+  const handleApplyPreset = (theme: { 
+    name: string; 
+    primary: string; 
+    secondary: string; 
+    accent: string; 
+    backgroundColor?: string; 
+    textColor?: string; 
+  }) => {
+    const newBg = theme.backgroundColor || '#FFFFFF';
+    const newText = theme.textColor || '#0F172A';
     setPrimaryColor(theme.primary);
     setSecondaryColor(theme.secondary);
     setAccentColor(theme.accent);
-    syncAndSave({ primaryColor: theme.primary, secondaryColor: theme.secondary, accentColor: theme.accent }, true);
+    setBackgroundColor(newBg);
+    setTextColor(newText);
+    syncAndSave({ 
+      primaryColor: theme.primary, 
+      secondaryColor: theme.secondary, 
+      accentColor: theme.accent,
+      backgroundColor: newBg,
+      textColor: newText,
+      backgroundTheme: isLightColor(newBg) ? 'white' : 'dark',
+    }, true);
   };
 
   const handleSaveAll = async (e: React.FormEvent) => {
@@ -221,11 +250,46 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   };
 
   const PRESET_THEMES = [
-    { name: 'Lacer Oficial (Vermelho & Branco)', primary: '#E30613', secondary: '#991B1B', accent: '#FFFFFF' },
-    { name: 'Ouro Real Premium', primary: '#f59e0b', secondary: '#d97706', accent: '#10b981' },
-    { name: 'Azul Corporativo Tech', primary: '#2563eb', secondary: '#1d4ed8', accent: '#06b6d4' },
-    { name: 'Esmeralda da Sorte', primary: '#10b981', secondary: '#059669', accent: '#f59e0b' },
-    { name: 'Roxo Cyber / Neon', primary: '#8b5cf6', secondary: '#7c3aed', accent: '#ec4899' },
+    { 
+      name: '⭐ Lacer Oficial (Fundo Branco & Vermelho)', 
+      primary: '#E30613', 
+      secondary: '#B91C1C', 
+      accent: '#E30613', 
+      backgroundColor: '#FFFFFF', 
+      textColor: '#0F172A' 
+    },
+    { 
+      name: '⚪ Lacer Minimalista (Branco Gelo)', 
+      primary: '#E30613', 
+      secondary: '#991B1B', 
+      accent: '#B91C1C', 
+      backgroundColor: '#F8FAFC', 
+      textColor: '#1E293B' 
+    },
+    { 
+      name: '🌙 Lacer Dark Mode (Fundo Escuro Noturno)', 
+      primary: '#E30613', 
+      secondary: '#DC2626', 
+      accent: '#FFFFFF', 
+      backgroundColor: '#0B0F19', 
+      textColor: '#F8FAFC' 
+    },
+    { 
+      name: '🏆 Ouro & Branco (Fundo Claro)', 
+      primary: '#D97706', 
+      secondary: '#B45309', 
+      accent: '#059669', 
+      backgroundColor: '#FFFDF7', 
+      textColor: '#1E293B' 
+    },
+    { 
+      name: '🏥 Clínico Odonto (Branco & Azul)', 
+      primary: '#0284C7', 
+      secondary: '#0369A1', 
+      accent: '#E30613', 
+      backgroundColor: '#FFFFFF', 
+      textColor: '#0F172A' 
+    },
   ];
 
   return (
@@ -664,49 +728,182 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
           </div>
         </div>
 
-        {/* Right: Color Palette and Presets (6 cols) */}
+        {/* Right: Color Palette, Background & Text Colors, and Presets (6 cols) */}
         <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-lg">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Palette className="w-4 h-4 text-amber-400" />
-            <span>Paleta de Cores da Marca</span>
-          </h3>
+          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Palette className="w-4 h-4 text-amber-400" />
+              <span>Cores de Fundo, Texto e Identidade da Marca</span>
+            </h3>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              isLightColor(backgroundColor)
+                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
+            }`}>
+              {isLightColor(backgroundColor) ? '⚪ Fundo Claro (Lacer)' : '🌙 Fundo Escuro (Dark)'}
+            </span>
+          </div>
 
-          {/* Color Presets */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
-              Temas e Paletas Prontas
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {PRESET_THEMES.map((theme) => (
-                <button
-                  key={theme.name}
-                  type="button"
-                  onClick={() => handleApplyPreset(theme)}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-left transition-colors cursor-pointer"
-                >
-                  <span className="text-xs font-medium text-slate-200">{theme.name}</span>
-                  <div className="flex items-center gap-1">
-                    <span className="w-4 h-4 rounded-full border border-black/40" style={{ backgroundColor: theme.primary }}></span>
-                    <span className="w-4 h-4 rounded-full border border-black/40" style={{ backgroundColor: theme.accent }}></span>
-                  </div>
-                </button>
-              ))}
+          {/* 1. SEÇÃO PRINCIPAL: Cores de Fundo e Texto da Aplicação */}
+          <div className="p-4 rounded-2xl bg-slate-950 border-2 border-red-500/30 space-y-4 shadow-md">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  Cor de Fundo & Cor do Texto da App
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Define a cor geral da página (fundo branco recomendado) e a cor de leitura dos textos.
+                </p>
+              </div>
+            </div>
+
+            {/* Fundo da Aplicação */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+                <div>
+                  <p className="text-xs font-bold text-white">Cor de Fundo da Aplicação (Background)</p>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">Hex: {backgroundColor}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBackgroundColor(val);
+                      syncAndSave({ backgroundColor: val });
+                    }}
+                    className="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-red-500"
+                    placeholder="#FFFFFF"
+                  />
+                  <input
+                    type="color"
+                    value={backgroundColor.startsWith('#') && backgroundColor.length === 7 ? backgroundColor : '#FFFFFF'}
+                    onChange={(e) => {
+                      setBackgroundColor(e.target.value);
+                      syncAndSave({ backgroundColor: e.target.value });
+                    }}
+                    className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
+                    title="Selecione a cor de fundo no seletor"
+                  />
+                </div>
+              </div>
+
+              {/* Botões rápidos de fundo */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase mr-1">Atalhos de Fundo:</span>
+                {[
+                  { label: '⚪ Branco Puro (Lacer)', val: '#FFFFFF' },
+                  { label: '❄️ Branco Gelo', val: '#F8FAFC' },
+                  { label: '📄 Cinza Claro', val: '#F1F5F9' },
+                  { label: '🌑 Escuro Noturno', val: '#0B0F19' },
+                  { label: '🌌 Azul Profundo', val: '#0F172A' },
+                ].map((chip) => (
+                  <button
+                    key={chip.val}
+                    type="button"
+                    onClick={() => {
+                      setBackgroundColor(chip.val);
+                      syncAndSave({ backgroundColor: chip.val });
+                    }}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      backgroundColor.toUpperCase() === chip.val.toUpperCase()
+                        ? 'bg-red-500/20 text-red-300 border-red-500 font-bold'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full border border-black/30" style={{ backgroundColor: chip.val }}></span>
+                    <span>{chip.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cor do Texto Principal */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+                <div>
+                  <p className="text-xs font-bold text-white">Cor do Texto Principal (Text Color)</p>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">Hex: {textColor}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={textColor}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTextColor(val);
+                      syncAndSave({ textColor: val });
+                    }}
+                    className="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-red-500"
+                    placeholder="#0F172A"
+                  />
+                  <input
+                    type="color"
+                    value={textColor.startsWith('#') && textColor.length === 7 ? textColor : '#0F172A'}
+                    onChange={(e) => {
+                      setTextColor(e.target.value);
+                      syncAndSave({ textColor: e.target.value });
+                    }}
+                    className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
+                    title="Selecione a cor do texto no seletor"
+                  />
+                </div>
+              </div>
+
+              {/* Botões rápidos de texto */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase mr-1">Atalhos de Texto:</span>
+                {[
+                  { label: '⚫ Preto Corporativo', val: '#0F172A' },
+                  { label: '🔘 Grafite Escuro', val: '#334155' },
+                  { label: '🔴 Vermelho Lacer', val: '#E30613' },
+                  { label: '⚪ Branco Puro', val: '#FFFFFF' },
+                ].map((chip) => (
+                  <button
+                    key={chip.val}
+                    type="button"
+                    onClick={() => {
+                      setTextColor(chip.val);
+                      syncAndSave({ textColor: chip.val });
+                    }}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      textColor.toUpperCase() === chip.val.toUpperCase()
+                        ? 'bg-red-500/20 text-red-300 border-red-500 font-bold'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full border border-black/30" style={{ backgroundColor: chip.val }}></span>
+                    <span>{chip.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Custom Color Pickers */}
-          <div className="space-y-3 pt-2">
-            <label className="block text-xs font-semibold text-slate-300 uppercase">
-              Ajuste Personalizado de Cores Hexadecimais
-            </label>
+          {/* 2. Cores de Identidade da Marca (Primária, Secundária, Acento) */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span>Cores da Marca (Identidade Lacer)</span>
+            </h4>
 
             {/* Primary Color */}
             <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
               <div>
-                <p className="text-xs font-bold text-white">Cor Primária (Destaques & Botões)</p>
+                <p className="text-xs font-bold text-white">Cor Primária (Vermelho Lacer • Botões & Destaques)</p>
                 <p className="text-[11px] text-slate-400 font-mono">{primaryColor}</p>
               </div>
               <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => {
+                    setPrimaryColor(e.target.value);
+                    syncAndSave({ primaryColor: e.target.value });
+                  }}
+                  className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-red-500"
+                />
                 <input
                   type="color"
                   value={primaryColor}
@@ -722,10 +919,19 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             {/* Secondary Color */}
             <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
               <div>
-                <p className="text-xs font-bold text-white">Cor Secundária (Bordas & Tons)</p>
+                <p className="text-xs font-bold text-white">Cor Secundária (Bordas, Faixas & Tons)</p>
                 <p className="text-[11px] text-slate-400 font-mono">{secondaryColor}</p>
               </div>
               <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={secondaryColor}
+                  onChange={(e) => {
+                    setSecondaryColor(e.target.value);
+                    syncAndSave({ secondaryColor: e.target.value });
+                  }}
+                  className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-red-500"
+                />
                 <input
                   type="color"
                   value={secondaryColor}
@@ -741,10 +947,19 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             {/* Accent Color */}
             <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
               <div>
-                <p className="text-xs font-bold text-white">Cor de Acento (Sucesso & Valores)</p>
+                <p className="text-xs font-bold text-white">Cor de Acento (Selos & Indicadores)</p>
                 <p className="text-[11px] text-slate-400 font-mono">{accentColor}</p>
               </div>
               <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={accentColor}
+                  onChange={(e) => {
+                    setAccentColor(e.target.value);
+                    syncAndSave({ accentColor: e.target.value });
+                  }}
+                  className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-red-500"
+                />
                 <input
                   type="color"
                   value={accentColor}
@@ -758,25 +973,106 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             </div>
           </div>
 
-          {/* Live Preview Sample */}
+          {/* 3. Color Presets */}
+          <div className="pt-2">
+            <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
+              Paletas e Temas Prontos (1-Clique)
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {PRESET_THEMES.map((theme) => (
+                <button
+                  key={theme.name}
+                  type="button"
+                  onClick={() => handleApplyPreset(theme)}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-red-500/50 text-left transition-colors cursor-pointer group"
+                >
+                  <span className="text-xs font-medium text-slate-200 group-hover:text-white truncate pr-2">
+                    {theme.name}
+                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span 
+                      className="w-4 h-4 rounded-full border border-black/40 shadow-sm" 
+                      style={{ backgroundColor: theme.backgroundColor || '#FFFFFF' }}
+                      title={`Fundo: ${theme.backgroundColor}`}
+                    ></span>
+                    <span 
+                      className="w-4 h-4 rounded-full border border-black/40 shadow-sm" 
+                      style={{ backgroundColor: theme.primary }}
+                      title={`Primária: ${theme.primary}`}
+                    ></span>
+                    <span 
+                      className="w-4 h-4 rounded-full border border-black/40 shadow-sm" 
+                      style={{ backgroundColor: theme.textColor || '#0F172A' }}
+                      title={`Texto: ${theme.textColor}`}
+                    ></span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. Live Preview Simulation */}
           <div className="pt-3 border-t border-slate-800">
             <span className="text-xs text-slate-400 block mb-2 font-medium">
-              Amostra em Tempo Real com as cores selecionadas:
+              Amostra em Tempo Real (Como os Utilizadores Verão a Aplicação):
             </span>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                style={{ backgroundColor: primaryColor }}
-                className="px-4 py-2 rounded-xl text-slate-950 font-bold text-xs shadow"
-              >
-                Botão Principal
-              </button>
-              <span
-                style={{ color: accentColor }}
-                className="text-xs font-mono font-bold"
-              >
-                € 10.000,00 Contemplado
-              </span>
+            <div 
+              style={{ 
+                backgroundColor: backgroundColor, 
+                color: textColor,
+                borderColor: secondaryColor 
+              }}
+              className="p-5 rounded-2xl border-2 shadow-2xl transition-all space-y-3.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded-lg p-0.5 bg-white/80 border border-slate-200 shadow-sm" />
+                  ) : (
+                    <div style={{ backgroundColor: primaryColor }} className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                      L
+                    </div>
+                  )}
+                  <div>
+                    <h5 className="text-xs font-extrabold truncate" style={{ color: textColor }}>
+                      {companyName || 'Lacer'}
+                    </h5>
+                    <p className="text-[10px] opacity-75 truncate" style={{ color: textColor }}>
+                      {companySlogan || 'Saúde e Higiene Oral'}
+                    </p>
+                  </div>
+                </div>
+
+                <span 
+                  style={{ 
+                    backgroundColor: `${primaryColor}15`, 
+                    color: primaryColor,
+                    borderColor: `${primaryColor}40` 
+                  }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase"
+                >
+                  Sorteio Ativo
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-current/15 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold leading-tight" style={{ color: textColor }}>
+                    {formTitle || 'Garanta o seu Bilhete'}
+                  </p>
+                  <p className="text-[10px] opacity-70 truncate" style={{ color: textColor }}>
+                    Fundo selecionado: <span className="font-mono font-bold">{backgroundColor}</span> • Texto: <span className="font-mono font-bold">{textColor}</span>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  style={{ backgroundColor: primaryColor }}
+                  className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md shrink-0 cursor-pointer hover:opacity-90 active:scale-95 transition-all"
+                >
+                  {formButtonText || 'Participar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

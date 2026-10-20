@@ -16,7 +16,7 @@ import {
   QRCodePosterConfig,
   ReportPdfConfig
 } from './types';
-import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS } from './utils/storage';
+import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, isLightColor } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
 import { FirestoreService } from './utils/firestoreService';
 import { Navbar } from './components/Navbar';
@@ -553,21 +553,38 @@ export default function App() {
     }
   };
 
-  // Inject primary and accent brand colors into document root styles
+  // Inject primary, secondary, accent, background and text colors into document root styles
   useEffect(() => {
-    if (brand.primaryColor) {
-      document.documentElement.style.setProperty('--brand-primary', brand.primaryColor);
-    }
-    if (brand.secondaryColor) {
-      document.documentElement.style.setProperty('--brand-secondary', brand.secondaryColor);
-    }
-    if (brand.accentColor) {
-      document.documentElement.style.setProperty('--brand-accent', brand.accentColor);
+    const bg = brand.backgroundColor || '#FFFFFF';
+    const text = brand.textColor || '#0F172A';
+    const primary = brand.primaryColor || '#E30613';
+    const secondary = brand.secondaryColor || '#B91C1C';
+    const accent = brand.accentColor || '#FFFFFF';
+
+    document.documentElement.style.setProperty('--app-bg', bg);
+    document.documentElement.style.setProperty('--app-text', text);
+    document.documentElement.style.setProperty('--brand-primary', primary);
+    document.documentElement.style.setProperty('--brand-secondary', secondary);
+    document.documentElement.style.setProperty('--brand-accent', accent);
+
+    if (typeof document !== 'undefined') {
+      document.body.style.backgroundColor = bg;
+      document.body.style.color = text;
     }
   }, [brand]);
 
+  const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div 
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+        isLight ? 'bg-white text-slate-900' : 'bg-slate-950 text-slate-100'
+      }`}
+      style={{
+        backgroundColor: brand.backgroundColor || (isLight ? '#FFFFFF' : '#0B0F19'),
+        color: brand.textColor || (isLight ? '#0F172A' : '#F8FAFC'),
+      }}
+    >
       {/* Top Main Navigation */}
       <Navbar
         currentView={currentView}
@@ -733,33 +750,39 @@ export default function App() {
       </main>
 
       {/* Footer (Hidden on print, extra bottom space on mobile for navigation bar) */}
-      <footer className="no-print bg-slate-950 border-t border-slate-900 py-6 pb-24 sm:pb-6 text-center text-xs text-slate-500">
+      <footer className={`no-print py-6 pb-24 sm:pb-6 text-center text-xs transition-colors duration-200 ${
+        isLight 
+          ? 'bg-white border-t border-slate-200 text-slate-500' 
+          : 'bg-slate-950 border-t border-slate-900 text-slate-500'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-400">{brand.companyName || 'SorteioLive Pro'}</span>
-            <span>· 2 Sorteios Diários Oficiais Auditados</span>
+            <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-400'}`}>
+              {brand.companyName || 'Lacer - Sorteio OMD 2026'}
+            </span>
+            <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>· 2 Sorteios Diários Oficiais Auditados</span>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-400">
+          <div className={`flex items-center gap-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
             <button 
               onClick={() => setCurrentView('public')} 
-              className="hover:text-white transition-colors cursor-pointer"
+              className={`transition-colors cursor-pointer ${isLight ? 'hover:text-[#E30613]' : 'hover:text-white'}`}
             >
               Inscrição & Bilhetes
             </button>
             <button 
               onClick={() => setCurrentView('live')} 
-              className="hover:text-white transition-colors cursor-pointer"
+              className={`transition-colors cursor-pointer ${isLight ? 'hover:text-[#E30613]' : 'hover:text-white'}`}
             >
               Telão Ao Vivo
             </button>
             {isAdminUnlocked && (
               <button
                 onClick={handleManualSync}
-                className="hover:text-emerald-400 flex items-center gap-1 transition-colors cursor-pointer"
+                className="hover:text-emerald-500 flex items-center gap-1 transition-colors cursor-pointer"
                 title="Sincronizar dados com o banco de dados central"
               >
-                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-[#E30613]' : ''}`} />
                 <span>Sincronizar</span>
               </button>
             )}
@@ -768,7 +791,7 @@ export default function App() {
             {isAdminUnlocked && (
               <button
                 onClick={() => setCurrentView('admin')}
-                className="text-amber-400 hover:text-amber-300 text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-[#E30613] hover:text-[#B91C1C] font-semibold text-xs flex items-center gap-1 transition-colors cursor-pointer"
                 title="Aceder ao Painel de Administrador"
               >
                 <Lock className="w-3 h-3" />

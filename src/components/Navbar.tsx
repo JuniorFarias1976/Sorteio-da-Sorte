@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandConfig, DrawSchedule } from '../types';
+import { isLightColor } from '../utils/storage';
 import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw } from 'lucide-react';
 
 interface NavbarProps {
@@ -70,8 +71,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => clearInterval(interval);
   }, [nextSchedule]);
 
+  const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
+
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white shadow-xl no-print safe-area-pt">
+    <header className={`sticky top-0 z-40 backdrop-blur-md transition-colors duration-200 no-print safe-area-pt ${
+      isLight 
+        ? 'bg-white/95 border-b border-slate-200 text-slate-900 shadow-sm'
+        : 'bg-slate-900/90 border-b border-slate-800 text-white shadow-xl'
+    }`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
         {/* Brand / Logo (Triple-click/tap discreetly unlocks Admin) */}
         <div 
@@ -83,26 +90,32 @@ export const Navbar: React.FC<NavbarProps> = ({
             <img
               src={brand.logoUrl}
               alt={brand.companyName}
-              className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl object-contain bg-slate-800 p-1 border border-slate-700/60 shadow-md group-hover:scale-105 transition-transform shrink-0"
+              className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl object-contain p-1 border shadow-md group-hover:scale-105 transition-transform shrink-0 ${
+                isLight ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700/60'
+              }`}
             />
           ) : (
             <div 
               style={{ backgroundColor: brand.primaryColor }}
-              className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-bold text-slate-950 text-lg sm:text-xl shadow-lg shrink-0"
+              className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-bold text-white text-lg sm:text-xl shadow-lg shrink-0"
             >
               ★
             </div>
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-bold text-base sm:text-lg tracking-tight text-white group-hover:text-red-400 transition-colors truncate">
+              <span className={`font-bold text-base sm:text-lg tracking-tight transition-colors truncate ${
+                isLight ? 'text-slate-900 group-hover:text-[#E30613]' : 'text-white group-hover:text-red-400'
+              }`}>
                 {brand.companyName || 'Lacer - Sorteio OMD 2026'}
               </span>
-              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/30 rounded shrink-0">
+              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[#E30613] bg-red-50 border border-red-200 rounded shrink-0">
                 Oficial
               </span>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block truncate max-w-[280px]">
+            <p className={`text-[11px] sm:text-xs hidden sm:block truncate max-w-[280px] ${
+              isLight ? 'text-slate-500' : 'text-slate-400'
+            }`}>
               {brand.companySlogan || 'Higiene e Saúde Oral • Stand Lacer'}
             </p>
           </div>
@@ -114,10 +127,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onManualSync}
               disabled={isSyncing}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
+              className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] transition-all cursor-pointer shadow-sm disabled:opacity-50 ${
+                isLight 
+                  ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                  : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-300 hover:text-white'
+              }`}
               title="Clique para sincronizar os dados em tempo real com a base de dados central"
             >
-              <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncing ? 'animate-spin text-red-400' : ''}`} />
+              <RefreshCw className={`w-3 h-3 text-emerald-500 ${isSyncing ? 'animate-spin text-[#E30613]' : ''}`} />
               <span className="hidden lg:inline">{isSyncing ? 'A sincronizar...' : 'Base Sincronizada'}</span>
               <span className="lg:hidden">{isSyncing ? 'Sync...' : 'BD'}</span>
             </button>
@@ -127,16 +144,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           {nextSchedule && timeLeft && (
             <div 
               onClick={() => onViewChange('live')}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg cursor-pointer transition-colors"
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-lg cursor-pointer transition-colors border ${
+                isLight 
+                  ? 'bg-red-50/80 hover:bg-red-100 border-red-200 text-slate-800'
+                  : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60'
+              }`}
               title="Clique para aceder à Sala de Transmissão em Direto"
             >
               <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E30613] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E30613]"></span>
               </div>
               <div className="text-[11px] sm:text-xs">
-                <span className="text-slate-400 mr-1 font-medium hidden xs:inline">Próximo:</span>
-                <span className="font-mono font-bold text-red-400">
+                <span className={`mr-1 font-medium hidden xs:inline ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Próximo:</span>
+                <span className="font-mono font-bold text-[#E30613]">
                   {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
                   {String(timeLeft.hours).padStart(2, '0')}:
                   {String(timeLeft.minutes).padStart(2, '0')}:
@@ -148,13 +169,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Navigation Switcher Tabs (Desktop) */}
-        <nav className="hidden sm:flex items-center bg-slate-950/70 p-1.5 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
+        <nav className={`hidden sm:flex items-center p-1.5 rounded-xl border text-xs sm:text-sm font-medium ${
+          isLight ? 'bg-slate-100/90 border-slate-200' : 'bg-slate-950/70 border-slate-800'
+        }`}>
           <button
             onClick={() => onViewChange('public')}
             className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
               currentView === 'public'
                 ? 'bg-[#E30613] text-white font-semibold shadow-md shadow-red-500/25'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <Ticket className="w-4 h-4" />
@@ -166,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
               currentView === 'live'
                 ? 'bg-[#E30613] text-white font-semibold shadow-lg shadow-red-500/30 ring-1 ring-white/20'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <Tv className="w-4 h-4" />
@@ -178,24 +201,26 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Admin Tab: Rendered when unlocked */}
           {isAdminUnlocked ? (
-            <div className="flex items-center gap-1 pl-1 ml-1 border-l border-slate-800">
+            <div className={`flex items-center gap-1 pl-1 ml-1 border-l ${isLight ? 'border-slate-300' : 'border-slate-800'}`}>
               <button
                 onClick={() => onViewChange('admin')}
                 className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
                   currentView === 'admin'
-                    ? 'bg-slate-800 text-red-400 font-semibold border border-red-500/40 shadow-md ring-1 ring-red-500/30'
-                    : 'text-red-400 hover:text-red-300 hover:bg-slate-800/50'
+                    ? 'bg-[#E30613] text-white font-semibold shadow-md'
+                    : isLight ? 'text-[#E30613] hover:bg-red-50' : 'text-red-400 hover:text-red-300 hover:bg-slate-800/50'
                 }`}
                 title="Painel de Administração"
               >
-                <ShieldCheck className="w-4 h-4 text-red-400" />
+                <ShieldCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin [Alt+C]</span>
                 <span className="sm:hidden">Admin</span>
               </button>
 
               <button
                 onClick={onToggleAdminLock}
-                className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors"
+                className={`p-1.5 rounded-lg transition-colors ${
+                  isLight ? 'text-slate-400 hover:text-red-600 hover:bg-slate-200' : 'text-slate-500 hover:text-red-400 hover:bg-slate-800'
+                }`}
                 title="Ocultar e Bloquear Painel de Administrador"
               >
                 ✕

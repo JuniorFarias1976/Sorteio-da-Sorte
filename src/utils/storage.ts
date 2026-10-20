@@ -27,6 +27,21 @@ const STORAGE_KEYS = {
 // Official Lacer Corporate Logo SVG (distinctive Lacer shield and clean bold typography)
 export const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none"><path d="M42 10 C76 11, 80 42, 69 66 C52 76, 24 74, 14 52 C4 28, 16 10, 42 10 Z" stroke="%23E30613" stroke-width="4.5" fill="%23E30613" fill-opacity="0.15"/><text x="42" y="49" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="19" fill="%23E30613" letter-spacing="0.5">Lacer</text><text x="82" y="51" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="28" fill="%23FFFFFF" letter-spacing="1.2">LACER</text></svg>`;
 
+export function isLightColor(hex?: string): boolean {
+  if (!hex) return true;
+  let clean = hex.replace('#', '').trim();
+  if (clean.length === 3) {
+    clean = clean.split('').map(c => c + c).join('');
+  }
+  if (clean.length !== 6) return true;
+  const r = parseInt(clean.substring(0, 2), 16) || 0;
+  const g = parseInt(clean.substring(2, 4), 16) || 0;
+  const b = parseInt(clean.substring(4, 6), 16) || 0;
+  // Standard perceived luminance
+  const luminance = (r * 299 + g * 587 + b * 114) / 1000;
+  return luminance > 150;
+}
+
 export const DEFAULT_BRAND: BrandConfig = {
   companyName: 'Lacer - Sorteio OMD 2026',
   companySlogan: 'Higiene e Saúde Oral • Stand Lacer',
@@ -34,7 +49,10 @@ export const DEFAULT_BRAND: BrandConfig = {
   primaryColor: '#E30613', // Lacer Red
   secondaryColor: '#B91C1C', // Dark Lacer Red
   accentColor: '#FFFFFF', // Clean White
-  backgroundTheme: 'dark',
+  backgroundColor: '#FFFFFF', // Corporate White Background
+  textColor: '#0F172A', // Corporate Slate Text
+  cardBackgroundColor: '#FFFFFF',
+  backgroundTheme: 'white',
   raffleUrl: typeof window !== 'undefined' ? window.location.origin : 'https://sorteiolive.app',
   contactEmail: 'contacto@lacer.pt',
   termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.',

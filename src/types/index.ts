@@ -104,10 +104,13 @@ export interface BrandConfig {
   companyName: string;
   companySlogan: string;
   logoUrl: string;
-  primaryColor: string; // e.g. '#f59e0b'
-  secondaryColor: string; // e.g. '#d97706'
-  accentColor: string; // e.g. '#10b981'
-  backgroundTheme: 'dark' | 'midnight' | 'slate';
+  primaryColor: string; // e.g. '#E30613' (Lacer Red)
+  secondaryColor: string; // e.g. '#B91C1C'
+  accentColor: string; // e.g. '#FFFFFF'
+  backgroundColor?: string; // e.g. '#FFFFFF' (White background)
+  textColor?: string; // e.g. '#0F172A' (Text color)
+  cardBackgroundColor?: string; // Optional card bg override
+  backgroundTheme: 'white' | 'light' | 'dark' | 'midnight' | 'slate';
   raffleUrl: string;
   contactEmail: string;
   termsAndConditions: string;
