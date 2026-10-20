@@ -30,7 +30,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   isSyncing = false,
   onManualSync,
 }) => {
-  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
   const [logoTapCount, setLogoTapCount] = useState<number>(0);
 
   const handleLogoClick = () => {
@@ -43,33 +42,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
     setTimeout(() => setLogoTapCount(0), 1200);
   };
-
-  useEffect(() => {
-    if (!nextSchedule) {
-      setTimeLeft(null);
-      return;
-    }
-
-    const calculateTime = () => {
-      const target = new Date(`${nextSchedule.scheduledDate}T${nextSchedule.scheduledTime}:00`);
-      const now = new Date();
-      const diff = target.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      } else {
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-        setTimeLeft({ days, hours, minutes, seconds });
-      }
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [nextSchedule]);
 
   const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
 
@@ -140,32 +112,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Live Countdown Badge */}
-          {nextSchedule && timeLeft && (
-            <div 
-              onClick={() => onViewChange('live')}
-              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-lg cursor-pointer transition-colors border ${
-                isLight 
-                  ? 'bg-red-50/80 hover:bg-red-100 border-red-200 text-slate-800'
-                  : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60'
-              }`}
-              title="Clique para aceder à Sala de Transmissão em Direto"
-            >
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E30613] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E30613]"></span>
-              </div>
-              <div className="text-[11px] sm:text-xs">
-                <span className={`mr-1 font-medium hidden xs:inline ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Próximo:</span>
-                <span className="font-mono font-bold text-[#E30613]">
-                  {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
-                  {String(timeLeft.hours).padStart(2, '0')}:
-                  {String(timeLeft.minutes).padStart(2, '0')}:
-                  {String(timeLeft.seconds).padStart(2, '0')}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Navigation Switcher Tabs (Desktop) */}
@@ -182,21 +128,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Ticket className="w-4 h-4" />
             <span>Participar</span>
-          </button>
-
-          <button
-            onClick={() => onViewChange('live')}
-            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
-              currentView === 'live'
-                ? 'bg-[#E30613] text-white font-semibold shadow-lg shadow-red-500/30 ring-1 ring-white/20'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <Tv className="w-4 h-4" />
-            <span className="flex items-center gap-1.5">
-              <span>Ecrã em Direto</span>
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            </span>
           </button>
 
           {/* Admin Tab: Rendered when unlocked */}

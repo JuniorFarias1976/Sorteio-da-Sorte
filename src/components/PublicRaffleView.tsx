@@ -408,17 +408,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         ></div>
 
         <div className="relative z-10 max-w-4xl mx-auto">
-          {/* Hero Badge */}
-          {brand.heroBadgeText && (
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-6 shadow-sm border ${
-              isLight 
-                ? 'bg-red-50 text-[#E30613] border-red-200' 
-                : 'bg-red-500/10 border-red-500/30 text-red-300'
-            }`}>
-              <Sparkles className="w-3.5 h-3.5 text-[#E30613]" />
-              <span>{brand.heroBadgeText}</span>
-            </div>
-          )}
 
           {/* Logo */}
           <div className="flex justify-center mb-6">

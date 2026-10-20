@@ -165,7 +165,7 @@ const INITIAL_DATABASE = {
     searchSectionTitle: 'Já se inscreveu? Consulte os seus Bilhetes',
     searchSectionSubtitle: 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados',
     ticketNotice: 'Validação única: limite de 1 inscrição por e-mail',
-    heroBadgeText: 'Sorteio Oficial Lacer OMD 2026 • Auditoria em Tempo Real',
+    heroBadgeText: '',
     ticketModalTitle: 'PARTICIPAÇÃO REGISTADA COM SUCESSO!',
     ticketModalSubtitle: 'O Seu Bilhete Oficial Lacer',
   },
