@@ -111,10 +111,11 @@ export interface BrandConfig {
   textColor?: string; // e.g. '#0F172A' (Text color)
   cardBackgroundColor?: string; // Optional card bg override
   backgroundTheme: 'white' | 'light' | 'dark' | 'midnight' | 'slate';
-  raffleUrl: string;
   contactEmail: string;
   termsAndConditions: string;
   forceResetLogo?: boolean;
+  adminPassword?: string;
+  raffleUrl?: string;
 
   // Total application texts control
   heroBadgeText?: string;

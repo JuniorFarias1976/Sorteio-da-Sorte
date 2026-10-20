@@ -55,6 +55,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   backgroundTheme: 'white',
   raffleUrl: typeof window !== 'undefined' ? window.location.origin : 'https://sorteiolive.app',
   contactEmail: 'contacto@lacer.pt',
+  adminPassword: 'admin',
   termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.',
   roundsBannerTitle: '2 Sorteios Oficiais por Dia',
   roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!',

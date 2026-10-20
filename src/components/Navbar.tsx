@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrandConfig, DrawSchedule } from '../types';
 import { isLightColor } from '../utils/storage';
-import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw } from 'lucide-react';
+import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw, Lock } from 'lucide-react';
 
 interface NavbarProps {
   currentView: 'public' | 'live' | 'admin';
@@ -132,7 +132,43 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="lg:hidden">{isSyncing ? 'Sync...' : 'BD'}</span>
             </button>
           )}
+        </div>
 
+        {/* Mobile Actions (sm:hidden) */}
+        <div className="flex sm:hidden items-center gap-1.5">
+          {isAdminUnlocked ? (
+            <div className="flex items-center gap-1 bg-red-50 dark:bg-slate-800 p-1 rounded-xl border border-red-200 dark:border-slate-700">
+              <button
+                onClick={() => onViewChange('admin')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  currentView === 'admin'
+                    ? 'bg-[#E30613] text-white shadow-sm'
+                    : 'text-[#E30613] dark:text-red-400'
+                }`}
+              >
+                Admin
+              </button>
+              <button
+                onClick={onToggleAdminLock}
+                className="p-1 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
+                title="Bloquear Acesso Administrador"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onRequestUnlockAdmin}
+              className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors ${
+                isLight
+                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700'
+              }`}
+              title="Entrar com Palavra-passe de Administrador"
+            >
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Switcher Tabs (Desktop) */}
@@ -179,7 +215,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ✕
               </button>
             </div>
-          ) : null}
+          ) : (
+            <button
+              onClick={onRequestUnlockAdmin}
+              className={`p-2 rounded-lg transition-colors text-slate-400 hover:text-[#E30613] ${
+                isLight ? 'hover:bg-white' : 'hover:bg-slate-800/50'
+              }`}
+              title="Aceder como Administrador (Palavra-passe)"
+            >
+              <Lock className="w-4 h-4" />
+            </button>
+          )}
         </nav>
       </div>
     </header>

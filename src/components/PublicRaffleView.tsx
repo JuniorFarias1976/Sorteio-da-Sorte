@@ -612,14 +612,17 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               <div className={`mt-4 pt-3 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
                 isLight ? 'border-slate-100 text-slate-500' : 'border-slate-800/80 text-slate-400'
               }`}>
-                <span className="text-[11px]">{brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!'}</span>
-                <button
-                  onClick={onGoToLive}
-                  className="text-[#E30613] hover:underline font-bold flex items-center gap-1.5 text-xs cursor-pointer group transition-colors"
-                >
-                  <span>Aceder à Transmissão em Direto</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                <span className="text-[11px] font-medium">{brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!'}</span>
+                {isAdmin && (
+                  <button
+                    onClick={onGoToLive}
+                    className="text-[#E30613] hover:underline font-bold flex items-center gap-1.5 text-xs cursor-pointer group transition-colors ml-auto"
+                    title="Acesso de Administrador à Mesa de Sorteio"
+                  >
+                    <span>Mesa de Sorteio (Admin)</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                )}
               </div>
             </div>
           )}

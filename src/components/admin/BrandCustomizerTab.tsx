@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Server,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Lock,
+  Key
 } from 'lucide-react';
 import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
@@ -36,6 +38,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [backgroundColor, setBackgroundColor] = useState(brand.backgroundColor || '#FFFFFF');
   const [textColor, setTextColor] = useState(brand.textColor || '#0F172A');
   const [terms, setTerms] = useState(brand.termsAndConditions);
+  const [adminPassword, setAdminPassword] = useState(brand.adminPassword || 'admin');
 
   // App-wide customizable texts
   const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
@@ -88,6 +91,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setTicketNotice(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
     setTicketModalTitle(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
     setTicketModalSubtitle(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
+    setAdminPassword(brand.adminPassword || 'admin');
   }, [brand]);
 
   // Initial check of server database status

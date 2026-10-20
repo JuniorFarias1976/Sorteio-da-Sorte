@@ -246,7 +246,8 @@
     "heroBadgeText": "",
     "ticketModalTitle": "INSCRIÇÃO CONFIRMADA COM SUCESSO!",
     "ticketModalSubtitle": "O Seu Bilhete Oficial",
-    "forceResetLogo": true
+    "forceResetLogo": true,
+    "adminPassword": "admin"
   },
   "formFields": {
     "name": {

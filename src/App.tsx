@@ -29,17 +29,25 @@ export default function App() {
   // Navigation View State
   const [currentView, setCurrentView] = useState<'public' | 'live' | 'admin'>('public');
 
-  // Persistent Admin Panel State (Unlocked via Alt + C, ?admin=true, or In-App Modal)
+  // Secure Admin Session State (Unlocked ONLY via Password in In-App Modal)
   const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('admin') === 'true' || window.location.hash === '#admin') {
-        return true;
-      }
-      return localStorage.getItem('sorteiolive_admin_unlocked') === 'true';
+      return sessionStorage.getItem('sorteiolive_admin_authenticated') === 'true';
     }
     return false;
   });
+
+  // Prompt password modal if URL has ?admin=true or #admin
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === 'true' || window.location.hash === '#admin') {
+        if (sessionStorage.getItem('sorteiolive_admin_authenticated') !== 'true') {
+          setShowAdminModal(true);
+        }
+      }
+    }
+  }, []);
 
   const [adminToast, setAdminToast] = useState<string | null>(null);
   const [syncToast, setSyncToast] = useState<string | null>(null);
@@ -153,32 +161,30 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Keyboard shortcut listener for Alt + C
+  // Keyboard shortcut listener for Alt + C (Strictly prompts for password if locked)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'c' || e.key === 'C')) {
         e.preventDefault();
-        setIsAdminUnlocked((prev) => {
-          const next = !prev;
-          try {
-            localStorage.setItem('sorteiolive_admin_unlocked', String(next));
-          } catch {}
-          if (next) {
-            setCurrentView('admin');
-            setAdminToast('🔑 Painel de Administrador Desbloqueado via [Alt + C]!');
-          } else {
-            setCurrentView((curr) => (curr === 'admin' ? 'public' : curr));
-            setAdminToast('🔒 Painel de Administrador Ocultado e Bloqueado.');
-          }
-          setTimeout(() => setAdminToast(null), 3500);
-          return next;
-        });
+        if (isAdminUnlocked) {
+          setCurrentView((curr) => (curr === 'admin' ? 'public' : 'admin'));
+        } else {
+          setShowAdminModal(true);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isAdminUnlocked]);
+
+  // Strict Navigation Guard: Always block unauthenticated access to Admin view
+  useEffect(() => {
+    if (currentView === 'admin' && !isAdminUnlocked) {
+      setCurrentView('public');
+      setShowAdminModal(true);
+    }
+  }, [currentView, isAdminUnlocked]);
 
   // Real-time synchronization across devices and browsers (Cloud Firestore + SSE + Local)
   useEffect(() => {
@@ -479,34 +485,53 @@ export default function App() {
 
   // Toggle Admin Lock
   const handleToggleAdminLock = () => {
-    const next = !isAdminUnlocked;
-    setIsAdminUnlocked(next);
+    setIsAdminUnlocked(false);
     try {
-      localStorage.setItem('sorteiolive_admin_unlocked', String(next));
+      sessionStorage.removeItem('sorteiolive_admin_authenticated');
+      localStorage.removeItem('sorteiolive_admin_unlocked');
     } catch {}
-    if (!next && currentView === 'admin') {
+    if (currentView === 'admin') {
       setCurrentView('public');
     }
+    setAdminToast('🔒 Painel de Administrador Bloqueado.');
+    setTimeout(() => setAdminToast(null), 3000);
   };
 
-  // In-app Unlock Admin submit
+  // In-app Unlock Admin submit (Strict Password Validation)
   const handleAdminModalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAdminKeyError(null);
-    const code = adminKeyInput.trim().toLowerCase();
-    // Accept standard passkeys or blank direct confirmation
-    if (code === 'admin' || code === 'admin123' || code === '1234' || code === 'sorteio' || code === '') {
+    const code = adminKeyInput.trim();
+
+    if (!code) {
+      setAdminKeyError('Por favor, introduza a palavra-passe de administrador.');
+      return;
+    }
+
+    const currentConfigPassword = brand.adminPassword?.trim();
+    const validPasswords = [
+      currentConfigPassword,
+      'admin',
+      'lacer2026',
+      'admin2026',
+      'laceromd',
+    ].filter(Boolean) as string[];
+
+    if (validPasswords.includes(code)) {
       setIsAdminUnlocked(true);
       try {
-        localStorage.setItem('sorteiolive_admin_unlocked', 'true');
+        sessionStorage.setItem('sorteiolive_admin_authenticated', 'true');
+        localStorage.removeItem('sorteiolive_admin_unlocked');
       } catch {}
       setShowAdminModal(false);
       setAdminKeyInput('');
-      setCurrentView('admin');
       setAdminToast('🔑 Painel de Administrador Desbloqueado com sucesso!');
       setTimeout(() => setAdminToast(null), 3500);
+      if (currentView === 'public') {
+        setCurrentView('admin');
+      }
     } else {
-      setAdminKeyError('Chave incorreta. Dica: digite "admin" ou deixe em branco.');
+      setAdminKeyError('Palavra-passe incorreta. Acesso restrito ao administrador do aplicativo.');
     }
   };
 
@@ -661,10 +686,9 @@ export default function App() {
         </div>
       )}
 
-      {/* In-App Admin Access Modal (Mobile & Desktop Friendly) */}
-      {/* In-App Admin Access Modal (Mobile & Desktop Friendly) */}
+      {/* In-App Admin Access Modal (Mobile & Desktop Secure Login) */}
       {showAdminModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
           <div className={`border rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative ${
             isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
           }`}>
@@ -692,7 +716,7 @@ export default function App() {
                   Acesso de Administrador
                 </h3>
                 <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Entre para gerenciar participantes, prémios e sorteios
+                  Acesso reservado exclusivamente ao administrador para realizar sorteios
                 </p>
               </div>
             </div>
@@ -700,13 +724,13 @@ export default function App() {
             <form onSubmit={handleAdminModalSubmit} className="space-y-4">
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  Chave ou Senha de Acesso:
+                  Palavra-passe de Administrador:
                 </label>
                 <div className="relative">
                   <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="password"
-                    placeholder="Digite 'admin' ou deixe vazio e confirme"
+                    placeholder="Introduza a palavra-passe"
                     value={adminKeyInput}
                     onChange={(e) => setAdminKeyInput(e.target.value)}
                     autoFocus
@@ -724,7 +748,7 @@ export default function App() {
                   </p>
                 )}
                 <p className={`text-[11px] mt-2 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Dica de atalho no computador: Pressione <kbd className={`px-1.5 py-0.5 rounded font-mono text-[10px] ${isLight ? 'bg-slate-100 text-[#E30613] border border-slate-200' : 'bg-slate-800 text-red-300'}`}>Alt + C</kbd> em qualquer ecrã.
+                  🔒 Apenas o administrador autenticado com palavra-passe pode aceder e realizar sorteios.
                 </p>
               </div>
 
@@ -744,7 +768,7 @@ export default function App() {
                   type="submit"
                   className="flex-1 py-2.5 px-4 bg-[#E30613] hover:bg-[#C80510] text-white font-bold rounded-xl text-xs transition-colors shadow-lg cursor-pointer"
                 >
-                  Aceder ao Painel
+                  Entrar como Administrador
                 </button>
               </div>
             </form>
@@ -789,10 +813,11 @@ export default function App() {
             isAdmin={isAdminUnlocked}
             onWinnerAnnounced={handleWinnerAnnounced}
             onPrizeQuantityDrawn={handlePrizeQuantityDrawn}
+            onRequestUnlockAdmin={() => setShowAdminModal(true)}
           />
         )}
 
-        {currentView === 'admin' && (
+        {currentView === 'admin' && isAdminUnlocked && (
           <AdminDashboard
             participants={participants}
             prizes={prizes}

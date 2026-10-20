@@ -55,8 +55,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   const handleCopyLink = () => {
-    const url = typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl;
-    if (navigator.clipboard) {
+    const url = (typeof window !== 'undefined' ? window.location.origin : brand.raffleUrl) || '';
+    if (navigator.clipboard && url) {
       navigator.clipboard.writeText(url).then(() => {
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 2500);
@@ -127,8 +127,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </span>
         </button>
 
-        {/* 4. Painel Admin (visível apenas para o administrador após autenticação) */}
-        {isAdminUnlocked && (
+        {/* 4. Painel Admin (visível com cadeado, exige palavra-passe se bloqueado) */}
+        {isAdminUnlocked ? (
           <button
             onClick={() => onViewChange('admin')}
             className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
@@ -138,7 +138,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}
           >
             <div className={`p-1 rounded-lg ${currentView === 'admin' ? (isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 ring-1 ring-red-500/30') : ''}`}>
-              <ShieldCheck className="w-5 h-5" />
+              <ShieldCheck className="w-5 h-5 text-[#E30613]" />
+            </div>
+            <span className="text-[10px] mt-0.5 tracking-tight font-bold">Admin</span>
+          </button>
+        ) : (
+          <button
+            onClick={onRequestUnlockAdmin}
+            className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              isLight ? 'text-slate-400 hover:text-slate-700' : 'text-slate-500 hover:text-slate-300'
+            }`}
+            title="Acesso de Administrador (requer palavra-passe)"
+          >
+            <div className={`p-1 rounded-lg ${isLight ? 'hover:bg-slate-100' : 'hover:bg-slate-800'}`}>
+              <Lock className="w-5 h-5 text-slate-400" />
             </div>
             <span className="text-[10px] mt-0.5 tracking-tight">Admin</span>
           </button>

@@ -21,7 +21,8 @@ import {
   ArrowRight,
   AlertCircle,
   Calendar,
-  Clock
+  Clock,
+  Lock
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
 
@@ -34,6 +35,7 @@ interface LiveDrawRoomProps {
   isAdmin: boolean;
   onWinnerAnnounced: (winner: DrawWinner) => void;
   onPrizeQuantityDrawn: (prizeId: string) => void;
+  onRequestUnlockAdmin?: () => void;
 }
 
 export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
@@ -45,6 +47,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   isAdmin,
   onWinnerAnnounced,
   onPrizeQuantityDrawn,
+  onRequestUnlockAdmin,
 }) => {
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>(prizes[0]?.id || '');
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -273,7 +276,8 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
   const startDrawRoutine = async () => {
     if (!isAdmin) {
-      setDrawErrorNotice('Acesso Restrito: Somente o administrador pode realizar o sorteio!');
+      setDrawErrorNotice('Acesso Restrito: Somente o administrador do aplicativo pode realizar o sorteio!');
+      onRequestUnlockAdmin?.();
       setTimeout(() => setDrawErrorNotice(null), 4000);
       return;
     }
@@ -486,16 +490,31 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           </div>
         </div>
 
-        {/* Controls: Audio & Fullscreen */}
+        {/* Controls: Audio & Fullscreen & Admin Status */}
         <div className="flex items-center gap-2">
-          {isAdmin && (
+          {isAdmin ? (
+            <>
+              <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold">
+                <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                <span>Admin Ativo</span>
+              </span>
+              <button
+                onClick={handleResetScreen}
+                className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 hover:text-white hover:bg-slate-700 transition-all text-xs flex items-center gap-1.5"
+                title="Limpar telão e preparar próximo giro"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Limpar Telão</span>
+              </button>
+            </>
+          ) : (
             <button
-              onClick={handleResetScreen}
-              className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 hover:text-white hover:bg-slate-700 transition-all text-xs flex items-center gap-1.5"
-              title="Limpar telão e preparar próximo giro"
+              onClick={onRequestUnlockAdmin}
+              className="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Aceder com palavra-passe para desbloquear controlo de sorteio"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span className="hidden sm:inline">Limpar Telão</span>
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>Modo Espetador</span>
             </button>
           )}
 
@@ -724,21 +743,35 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="py-4 px-6 rounded-2xl bg-slate-900/90 border border-slate-800/80 max-w-md mx-auto text-center shadow-xl">
-                    <div className="flex items-center justify-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wider mb-1.5">
+                  <div className="py-5 px-6 rounded-3xl bg-slate-900/95 border border-slate-800 max-w-lg mx-auto text-center shadow-2xl backdrop-blur-md">
+                    <div className="flex items-center justify-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wider mb-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#E30613] animate-ping"></span>
-                      <span>Transmissão Oficial ao Vivo</span>
+                      <span>Transmissão Oficial ao Vivo • Modo Espetador</span>
                     </div>
-                    <p className="text-xs text-slate-300">
+                    <p className="text-sm text-slate-200 font-medium mb-3">
                       {isDrawing
                         ? '🎡 O administrador acionou o sorteio! Acompanhe a roleta desacelerando ao vivo...'
                         : latestWinner
                         ? '🏆 Rodada concluída pelo administrador! Confira acima o bilhete contemplado.'
-                        : 'Aguardando o administrador realizar o sorteio nesta rodada. Mantenha seu bilhete em mãos!'}
+                        : 'Aguardando o administrador realizar o sorteio nesta sessão. Mantenha o seu bilhete em mãos!'}
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-2">
-                      🔒 O disparo do sorteio é restrito ao administrador oficial do evento para auditoria pública.
-                    </p>
+                    <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-left">
+                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Somente o administrador pode realizar o sorteio.</span>
+                      </div>
+                      {onRequestUnlockAdmin && (
+                        <button
+                          type="button"
+                          onClick={onRequestUnlockAdmin}
+                          className="shrink-0 px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-white font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                          title="Apenas o administrador autenticado com palavra-passe pode realizar o sorteio"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Entrar com Palavra-passe</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
