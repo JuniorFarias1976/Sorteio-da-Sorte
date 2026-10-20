@@ -6,7 +6,8 @@ export interface Participant {
   document?: string;
   clinic?: string; // Clínica / Consultório
   city: string;
-  specialty?: string; // Especialidade odontológica
+  specialty?: string; // Especialidade odontológica (ou múltiplas separadas por vírgula)
+  specialties?: string[]; // Lista de especialidades selecionadas
   specialtyOther?: string; // Outra especialidade indicada
   wantsLacerVisit?: boolean; // Gostaria que um representante da Lacer visitasse a sua clínica
   marketingConsent?: boolean; // Autorização para informação sobre produtos, novidades, visitas

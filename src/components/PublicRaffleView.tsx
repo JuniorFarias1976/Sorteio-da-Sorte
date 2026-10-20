@@ -15,10 +15,13 @@ import {
   Trophy,
   ArrowRight,
   AlertTriangle,
-  Check
+  Check,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import { DEFAULT_FORM_FIELDS } from '../utils/storage';
 import { ApiService } from '../utils/api';
+import { exportRegulationPDF } from '../utils/export';
 
 interface PublicRaffleViewProps {
   brand: BrandConfig;
@@ -74,7 +77,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [phone, setPhone] = useState('');
   const [clinic, setClinic] = useState('');
   const [city, setCity] = useState('');
-  const [specialty, setSpecialty] = useState('');
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [specialtyOther, setSpecialtyOther] = useState('');
   const [wantsLacerVisit, setWantsLacerVisit] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
@@ -82,6 +85,16 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
+
+  const handleToggleSpecialty = (spec: string) => {
+    setSelectedSpecialties((prev) => {
+      if (prev.includes(spec)) {
+        return prev.filter((s) => s !== spec);
+      } else {
+        return [...prev, spec];
+      }
+    });
+  };
 
   // Success ticket modal
   const [newlyCreatedTicket, setNewlyCreatedTicket] = useState<Participant | null>(null);
@@ -145,12 +158,12 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
       return;
     }
-    // Especialidade is always required for dental professionals
-    if (!specialty) {
-      setValidationWarning('Por favor, selecione a sua Especialidade Odontológica.');
+    // Especialidade is always required for dental professionals (at least 1 option)
+    if (selectedSpecialties.length === 0) {
+      setValidationWarning('Por favor, selecione pelo menos uma Especialidade Odontológica.');
       return;
     }
-    if (specialty === 'Outra' && !specialtyOther.trim()) {
+    if (selectedSpecialties.includes('Outra') && !specialtyOther.trim()) {
       setValidationWarning('Por favor, indique a sua especialidade no campo "Outra".');
       return;
     }
@@ -178,9 +191,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
     setIsSubmitting(true);
 
-    const finalSpecialty = specialty === 'Outra' && specialtyOther.trim()
-      ? `Outra: ${specialtyOther.trim()}`
-      : specialty || 'Não especificada';
+    const processedSpecialties = selectedSpecialties.map((s) =>
+      s === 'Outra' && specialtyOther.trim() ? `Outra: ${specialtyOther.trim()}` : s
+    );
+    const finalSpecialty = processedSpecialties.join(', ');
 
     try {
       // 2. Server-side registration & authoritative duplication check
@@ -192,6 +206,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         clinic: clinic.trim(),
         city: city.trim(),
         specialty: finalSpecialty,
+        specialties: processedSpecialties,
         specialtyOther: specialtyOther.trim(),
         wantsLacerVisit,
         marketingConsent,
@@ -248,7 +263,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         setPhone('');
         setClinic('');
         setCity('');
-        setSpecialty('');
+        setSelectedSpecialties([]);
         setSpecialtyOther('');
         setWantsLacerVisit(false);
         setMarketingConsent(false);
@@ -282,7 +297,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setPhone('');
       setClinic('');
       setCity('');
-      setSpecialty('');
+      setSelectedSpecialties([]);
       setSpecialtyOther('');
       setWantsLacerVisit(false);
       setMarketingConsent(false);
@@ -304,6 +319,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         clinic: clinic.trim(),
         city: city.trim() || 'Portugal',
         specialty: finalSpecialty,
+        specialties: processedSpecialties,
         specialtyOther: specialtyOther.trim(),
         wantsLacerVisit,
         marketingConsent,
@@ -323,7 +339,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setPhone('');
       setClinic('');
       setCity('');
-      setSpecialty('');
+      setSelectedSpecialties([]);
       setSpecialtyOther('');
       setWantsLacerVisit(false);
       setMarketingConsent(false);
@@ -733,45 +749,47 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 )}
               </div>
 
-              {/* SEÇÃO 2: Especialidade */}
+              {/* SEÇÃO 2: Especialidade (Multi-seleção) */}
               <div className="space-y-3 pt-4 border-t border-slate-800">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
                     <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-mono">2</span>
-                    <span>Especialidade</span>
+                    <span>Especialidade(s)</span>
                     <span className="text-amber-400">*</span>
                   </h4>
-                  <span className="text-[11px] text-slate-400">Selecione uma opção</span>
+                  <span className="text-[11px] text-amber-300/80 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    Pode selecionar mais de uma opção ({selectedSpecialties.length} selecionada{selectedSpecialties.length === 1 ? '' : 's'})
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {DENTAL_SPECIALTIES.map((spec) => {
-                    const isSelected = specialty === spec;
+                    const isSelected = selectedSpecialties.includes(spec);
                     return (
                       <label
                         key={spec}
                         className={`flex items-center gap-3 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-amber-500/15 border-amber-500 text-white font-semibold ring-1 ring-amber-500/30'
+                            ? 'bg-amber-500/15 border-amber-500 text-white font-semibold ring-1 ring-amber-500/30 shadow-sm'
                             : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
                         }`}
                       >
                         <input
-                          type="radio"
-                          name="specialty"
+                          type="checkbox"
                           value={spec}
                           checked={isSelected}
-                          onChange={() => setSpecialty(spec)}
-                          className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-amber-500"
+                          onChange={() => handleToggleSpecialty(spec)}
+                          className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-amber-500 cursor-pointer"
                         />
                         <span className="flex-1">{spec}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                       </label>
                     );
                   })}
                 </div>
 
                 {/* Se 'Outra' for selecionada, campo de texto específico */}
-                {specialty === 'Outra' && (
+                {selectedSpecialties.includes('Outra') && (
                   <div className="mt-2.5 animate-in fade-in duration-200">
                     <label className="block text-[11px] font-semibold text-amber-400 uppercase tracking-wider mb-1">
                       Outra Especialidade:
@@ -820,19 +838,29 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       Declaro que li e aceito o regulamento do sorteio e a política de privacidade da Lacer, e autorizo o tratamento dos meus dados pessoais para a gestão da minha participação no sorteio, nos termos da legislação aplicável de proteção de dados. <span className="text-amber-400 font-bold">*</span>
                     </span>
                   </label>
-                  <div className="pl-7">
-                    <button
-                      type="button"
+                  <div className="pl-7 pt-1">
+                    <a
+                      href="/regulamento.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowTermsModal(true);
+                        // Trigger immediate official PDF generation / download as well
+                        try {
+                          exportRegulationPDF(brand);
+                        } catch (err) {
+                          console.error('Error generating PDF:', err);
+                        }
                       }}
-                      className="text-amber-400 hover:text-amber-300 text-xs font-medium underline inline-flex items-center gap-1 cursor-pointer"
+                      className="text-amber-400 hover:text-amber-300 text-xs font-semibold underline decoration-amber-400/80 hover:decoration-amber-300 inline-flex items-center gap-1.5 cursor-pointer group transition-all"
+                      title="Abrir e descarregar documento oficial em formato PDF"
                     >
+                      <FileText className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
                       <span>Consulte o regulamento completo do sorteio e a política de privacidade</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
+                      <span className="inline-flex items-center text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded no-underline">
+                        PDF
+                      </span>
+                      <ExternalLink className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                    </a>
                   </div>
                 </div>
 
@@ -1112,13 +1140,22 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500">Auditoria criptográfica ativa · 100% em direto</span>
+              <button
+                type="button"
+                onClick={() => exportRegulationPDF(brand)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="Descarregar documento oficial em formato PDF"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                <span>Descarregar PDF Oficial</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowTermsModal(false)}
                 className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-lg"
               >
-                Compreendi e Aceito
+                Fechar
               </button>
             </div>
           </div>

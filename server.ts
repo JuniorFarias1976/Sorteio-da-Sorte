@@ -409,6 +409,10 @@ async function startServer() {
       ticketNumber = Math.floor(10000 + Math.random() * 90000).toString();
     } while (existingTickets.has(ticketNumber));
 
+    const specialtiesArray = Array.isArray(req.body.specialties)
+      ? req.body.specialties
+      : (specialty || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+
     const newParticipant = {
       id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       name: (name || '').trim() || 'Participante',
@@ -418,6 +422,7 @@ async function startServer() {
       clinic: (clinic || '').trim(),
       city: (city || '').trim(),
       specialty: (specialty || '').trim(),
+      specialties: specialtiesArray,
       specialtyOther: (specialtyOther || '').trim(),
       wantsLacerVisit: Boolean(wantsLacerVisit),
       marketingConsent: Boolean(marketingConsent),
@@ -434,6 +439,20 @@ async function startServer() {
     broadcastSSE('DATA_UPDATED', db);
     res.status(201).json({ success: true, participant: newParticipant });
   });
+
+  // Regulation & Privacy Policy PDF endpoint
+  const serveRegulationPDF = (_req: Request, res: Response) => {
+    const pdfPath = path.join(__dirname, 'public', 'regulamento.pdf');
+    if (fs.existsSync(pdfPath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="Regulamento_Oficial_Sorteio_Lacer_OMD_2026.pdf"');
+      return res.sendFile(pdfPath);
+    }
+    res.status(404).send('Documento do Regulamento em PDF não encontrado.');
+  };
+
+  app.get('/regulamento.pdf', serveRegulationPDF);
+  app.get('/api/regulamento.pdf', serveRegulationPDF);
 
   // 4. Network Info Endpoint to help mobile devices connect cleanly
   app.get('/api/network-info', (req, res) => {

@@ -61,12 +61,18 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [newDoc, setNewDoc] = useState('');
   const [newClinic, setNewClinic] = useState('');
   const [newCity, setNewCity] = useState('');
-  const [newSpecialty, setNewSpecialty] = useState<string>(DENTAL_SPECIALTIES[0]);
+  const [newSelectedSpecialties, setNewSelectedSpecialties] = useState<string[]>([DENTAL_SPECIALTIES[0]]);
   const [newSpecialtyOther, setNewSpecialtyOther] = useState('');
   const [newWantsLacerVisit, setNewWantsLacerVisit] = useState(false);
   const [newMarketingConsent, setNewMarketingConsent] = useState(true);
   const [customTicket, setCustomTicket] = useState('');
   const [allowExtraTicket, setAllowExtraTicket] = useState(false);
+
+  const handleToggleNewSpecialty = (spec: string) => {
+    setNewSelectedSpecialties((prev) =>
+      prev.includes(spec) ? prev.filter((s) => s !== spec) : [...prev, spec]
+    );
+  };
 
   // Modal: View full participant details
   const [viewingParticipant, setViewingParticipant] = useState<Participant | null>(null);
@@ -78,13 +84,19 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [editPhone, setEditPhone] = useState('');
   const [editClinic, setEditClinic] = useState('');
   const [editCity, setEditCity] = useState('');
-  const [editSpecialty, setEditSpecialty] = useState<string>(DENTAL_SPECIALTIES[0]);
+  const [editSelectedSpecialties, setEditSelectedSpecialties] = useState<string[]>([]);
   const [editSpecialtyOther, setEditSpecialtyOther] = useState('');
   const [editWantsLacerVisit, setEditWantsLacerVisit] = useState(false);
   const [editMarketingConsent, setEditMarketingConsent] = useState(true);
   const [editTermsAccepted, setEditTermsAccepted] = useState(true);
   const [editTicketNumber, setEditTicketNumber] = useState('');
   const [editStatus, setEditStatus] = useState<'active' | 'winner' | 'banned'>('active');
+
+  const handleToggleEditSpecialty = (spec: string) => {
+    setEditSelectedSpecialties((prev) =>
+      prev.includes(spec) ? prev.filter((s) => s !== spec) : [...prev, spec]
+    );
+  };
 
   // Modal: Confirm deletion
   const [deletingParticipant, setDeletingParticipant] = useState<Participant | null>(null);
@@ -133,17 +145,43 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     setEditPhone(p.phone || '');
     setEditClinic(p.clinic || '');
     setEditCity(p.city || '');
-    const isStandardSpec = DENTAL_SPECIALTIES.includes(p.specialty as any);
-    if (isStandardSpec) {
-      setEditSpecialty(p.specialty || DENTAL_SPECIALTIES[0]);
-      setEditSpecialtyOther('');
-    } else if (p.specialty?.startsWith('Outra: ')) {
-      setEditSpecialty('Outra');
-      setEditSpecialtyOther(p.specialty.replace('Outra: ', ''));
-    } else {
-      setEditSpecialty(p.specialty ? 'Outra' : DENTAL_SPECIALTIES[0]);
-      setEditSpecialtyOther(p.specialty || '');
+
+    // Parse multi-specialty
+    let initialSpecs: string[] = [];
+    let otherText = '';
+
+    if (p.specialties && Array.isArray(p.specialties) && p.specialties.length > 0) {
+      p.specialties.forEach((s) => {
+        if (s.startsWith('Outra: ')) {
+          initialSpecs.push('Outra');
+          otherText = s.replace('Outra: ', '');
+        } else {
+          initialSpecs.push(s);
+        }
+      });
+    } else if (p.specialty) {
+      const parts = p.specialty.split(',').map((s) => s.trim());
+      parts.forEach((s) => {
+        if (s.startsWith('Outra: ')) {
+          initialSpecs.push('Outra');
+          otherText = s.replace('Outra: ', '');
+        } else if (DENTAL_SPECIALTIES.includes(s as any)) {
+          initialSpecs.push(s);
+        } else if (s === 'Outra') {
+          initialSpecs.push('Outra');
+        } else {
+          initialSpecs.push('Outra');
+          otherText = s;
+        }
+      });
     }
+
+    if (initialSpecs.length === 0) {
+      initialSpecs = [DENTAL_SPECIALTIES[0]];
+    }
+
+    setEditSelectedSpecialties(initialSpecs);
+    setEditSpecialtyOther(p.specialtyOther || otherText);
     setEditWantsLacerVisit(!!p.wantsLacerVisit);
     setEditMarketingConsent(p.marketingConsent !== false);
     setEditTermsAccepted(p.termsAccepted !== false);
@@ -155,9 +193,15 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     e.preventDefault();
     if (!editingParticipant) return;
 
-    const finalSpecialty = editSpecialty === 'Outra' && editSpecialtyOther.trim()
-      ? `Outra: ${editSpecialtyOther.trim()}`
-      : editSpecialty;
+    if (editSelectedSpecialties.length === 0) {
+      alert('Por favor, selecione pelo menos uma especialidade.');
+      return;
+    }
+
+    const processedSpecs = editSelectedSpecialties.map((s) =>
+      s === 'Outra' && editSpecialtyOther.trim() ? `Outra: ${editSpecialtyOther.trim()}` : s
+    );
+    const finalSpecialty = processedSpecs.join(', ');
 
     const updatedParticipant: Participant = {
       ...editingParticipant,
@@ -167,6 +211,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       clinic: editClinic.trim(),
       city: editCity.trim(),
       specialty: finalSpecialty,
+      specialties: processedSpecs,
       specialtyOther: editSpecialtyOther.trim(),
       wantsLacerVisit: editWantsLacerVisit,
       marketingConsent: editMarketingConsent,
@@ -190,7 +235,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     setNewDoc('');
     setNewClinic('');
     setNewCity('');
-    setNewSpecialty(DENTAL_SPECIALTIES[0]);
+    setNewSelectedSpecialties([DENTAL_SPECIALTIES[0]]);
     setNewSpecialtyOther('');
     setNewWantsLacerVisit(false);
     setNewMarketingConsent(true);
@@ -225,6 +270,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       return;
     }
 
+    if (newSelectedSpecialties.length === 0) {
+      setFormError('Por favor, selecione pelo menos uma especialidade odontológica.');
+      return;
+    }
+
     const normalizedEmail = newEmail.trim().toLowerCase();
     if (normalizedEmail && !allowExtraTicket) {
       const existing = participants.find((p) => p.email && p.email.toLowerCase().trim() === normalizedEmail);
@@ -249,9 +299,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       }
     }
 
-    const finalSpecialty = newSpecialty === 'Outra' && newSpecialtyOther.trim()
-      ? `Outra: ${newSpecialtyOther.trim()}`
-      : newSpecialty;
+    const processedSpecs = newSelectedSpecialties.map((s) =>
+      s === 'Outra' && newSpecialtyOther.trim() ? `Outra: ${newSpecialtyOther.trim()}` : s
+    );
+    const finalSpecialty = processedSpecs.join(', ');
 
     const created: Participant = {
       id: `part-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -262,6 +313,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       clinic: newClinic.trim(),
       city: newCity.trim() || 'Portugal',
       specialty: finalSpecialty,
+      specialties: processedSpecs,
       specialtyOther: newSpecialtyOther.trim(),
       wantsLacerVisit: newWantsLacerVisit,
       marketingConsent: newMarketingConsent,
@@ -589,10 +641,20 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     📍 {p.city || 'Portugal'}
                   </span>
                   {p.specialty && (
-                    <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded border border-amber-500/20">
-                      <Stethoscope className="w-3 h-3 text-amber-400" />
-                      {p.specialty}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {(p.specialties && p.specialties.length > 0
+                        ? p.specialties
+                        : p.specialty.split(',').map((s) => s.trim())
+                      ).map((spec, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded border border-amber-500/20 text-[10px]"
+                        >
+                          <Stethoscope className="w-2.5 h-2.5 text-amber-400" />
+                          {spec}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
 
@@ -696,9 +758,19 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   </td>
                   <td className="py-3 px-3">
                     {p.specialty ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                        {p.specialty}
-                      </span>
+                      <div className="flex flex-wrap gap-1 max-w-[220px]">
+                        {(p.specialties && p.specialties.length > 0
+                          ? p.specialties
+                          : p.specialty.split(',').map((s) => s.trim())
+                        ).map((spec, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center text-[10px] font-semibold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20"
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
                     ) : (
                       <span className="text-slate-500">-</span>
                     )}
@@ -920,30 +992,47 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </div>
               </div>
 
-              {/* Especialidade Odontológica */}
+              {/* Especialidade Odontológica (Multi-seleção) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Especialidade Odontológica
-                </label>
-                <select
-                  value={newSpecialty}
-                  onChange={(e) => setNewSpecialty(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                >
-                  {DENTAL_SPECIALTIES.map((spec) => (
-                    <option key={spec} value={spec}>
-                      {spec}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-300 uppercase">
+                    Especialidade(s) Odontológica(s) *
+                  </label>
+                  <span className="text-[11px] text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    Pode selecionar mais de uma ({newSelectedSpecialties.length} selecionada{newSelectedSpecialties.length === 1 ? '' : 's'})
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-2 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  {DENTAL_SPECIALTIES.map((spec) => {
+                    const isSelected = newSelectedSpecialties.includes(spec);
+                    return (
+                      <label
+                        key={spec}
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-500 text-white font-medium'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleNewSpecialty(spec)}
+                          className="w-3.5 h-3.5 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-amber-500 cursor-pointer"
+                        />
+                        <span className="flex-1 truncate">{spec}</span>
+                      </label>
+                    );
+                  })}
+                </div>
 
-                {newSpecialty === 'Outra' && (
+                {newSelectedSpecialties.includes('Outra') && (
                   <input
                     type="text"
                     value={newSpecialtyOther}
                     onChange={(e) => setNewSpecialtyOther(e.target.value)}
-                    placeholder="Indique a especialidade..."
-                    className="mt-2 w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder="Indique a outra especialidade..."
+                    className="mt-2 w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 )}
               </div>
@@ -1186,15 +1275,35 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </div>
               </div>
 
-              {/* Especialidade Odontológica */}
+              {/* Especialidade(s) Odontológica(s) */}
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 mb-2">
-                  <Stethoscope className="w-4 h-4" />
-                  <span>Especialidade</span>
-                </h4>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 font-semibold text-xs">
-                  <Stethoscope className="w-4 h-4 text-amber-400" />
-                  <span>{viewingParticipant.specialty || 'Não especificada'}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <Stethoscope className="w-4 h-4" />
+                    <span>Especialidade(s) Odontológica(s)</span>
+                  </h4>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {(viewingParticipant.specialties && viewingParticipant.specialties.length > 0
+                      ? viewingParticipant.specialties.length
+                      : (viewingParticipant.specialty ? viewingParticipant.specialty.split(',').length : 1)
+                    )} selecionada(s)
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(viewingParticipant.specialties && viewingParticipant.specialties.length > 0
+                    ? viewingParticipant.specialties
+                    : viewingParticipant.specialty
+                    ? viewingParticipant.specialty.split(',').map((s) => s.trim())
+                    : ['Não especificada']
+                  ).map((spec, idx) => (
+                    <div
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 font-semibold text-xs"
+                    >
+                      <Stethoscope className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>{spec}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -1394,30 +1503,47 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </div>
               </div>
 
-              {/* Especialidade Odontológica */}
+              {/* Especialidade(s) Odontológica(s) (Multi-seleção) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Especialidade
-                </label>
-                <select
-                  value={editSpecialty}
-                  onChange={(e) => setEditSpecialty(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                >
-                  {DENTAL_SPECIALTIES.map((spec) => (
-                    <option key={spec} value={spec}>
-                      {spec}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-300 uppercase">
+                    Especialidade(s) Odontológica(s) *
+                  </label>
+                  <span className="text-[11px] text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    Pode selecionar mais de uma ({editSelectedSpecialties.length} selecionada{editSelectedSpecialties.length === 1 ? '' : 's'})
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-2 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  {DENTAL_SPECIALTIES.map((spec) => {
+                    const isSelected = editSelectedSpecialties.includes(spec);
+                    return (
+                      <label
+                        key={spec}
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-500 text-white font-medium'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleEditSpecialty(spec)}
+                          className="w-3.5 h-3.5 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-amber-500 cursor-pointer"
+                        />
+                        <span className="flex-1 truncate">{spec}</span>
+                      </label>
+                    );
+                  })}
+                </div>
 
-                {editSpecialty === 'Outra' && (
+                {editSelectedSpecialties.includes('Outra') && (
                   <input
                     type="text"
                     value={editSpecialtyOther}
                     onChange={(e) => setEditSpecialtyOther(e.target.value)}
-                    placeholder="Indique a especialidade..."
-                    className="mt-2 w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder="Indique a outra especialidade..."
+                    className="mt-2 w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 )}
               </div>

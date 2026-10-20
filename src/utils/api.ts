@@ -129,6 +129,7 @@ export const ApiService = {
     clinic?: string;
     city?: string;
     specialty?: string;
+    specialties?: string[];
     specialtyOther?: string;
     wantsLacerVisit?: boolean;
     marketingConsent?: boolean;
