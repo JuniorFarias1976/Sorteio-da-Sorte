@@ -17,12 +17,16 @@ export const hexToRgb = (hex?: string): [number, number, number] => {
   return [r, g, b];
 };
 
-// Convert SVG / Image URL to raster PNG data URL for jsPDF embedding
-export const getLogoImageForPdf = async (logoUrl?: string): Promise<string | null> => {
+export interface LogoImageResult {
+  dataUrl: string;
+  width: number;
+  height: number;
+  ratio: number;
+}
+
+// Convert SVG / Image URL to raster PNG data URL with real dimensions for jsPDF embedding
+export const getLogoImageForPdf = async (logoUrl?: string): Promise<LogoImageResult | null> => {
   if (!logoUrl) return null;
-  if (logoUrl.startsWith('data:image/png;base64,') || logoUrl.startsWith('data:image/jpeg;base64,') || logoUrl.startsWith('data:image/jpg;base64,')) {
-    return logoUrl;
-  }
 
   return new Promise((resolve) => {
     try {
@@ -30,16 +34,24 @@ export const getLogoImageForPdf = async (logoUrl?: string): Promise<string | nul
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
+          const natW = img.naturalWidth || 160;
+          const natH = img.naturalHeight || 80;
+          const ratio = (natW > 0 && natH > 0) ? natW / natH : 1.35;
           const canvas = document.createElement('canvas');
           const scale = 2;
-          canvas.width = (img.naturalWidth || 160) * scale;
-          canvas.height = (img.naturalHeight || 80) * scale;
+          canvas.width = natW * scale;
+          canvas.height = natH * scale;
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/png'));
+            resolve({
+              dataUrl: canvas.toDataURL('image/png'),
+              width: canvas.width,
+              height: canvas.height,
+              ratio
+            });
             return;
           }
         } catch {
@@ -70,56 +82,83 @@ export const drawFallbackLogo = (
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(x, y, boxW, boxH, 2.5, 2.5, 'F');
 
-  // 2. Proportional Lacer Shield (fixed aspect ratio ~ 1.32 : 1, never horizontally stretched)
+  // 2. Proportional Lacer Emblem (strict fixed aspect ratio of 1.35 : 1, never horizontally stretched)
+  const pad = 2;
+  const availW = Math.max(boxW - pad * 2, 4);
+  const availH = Math.max(boxH - pad * 2, 4);
+
+  let targetW = availW;
+  let targetH = targetW / 1.35;
+  if (targetH > availH) {
+    targetH = availH;
+    targetW = targetH * 1.35;
+  }
+
   const cx = x + boxW / 2;
   const cy = y + boxH / 2;
-
-  // Calculate proportional radius ensuring comfortable inner padding
-  const maxAvailableH = (boxH - 3.5) / 2;
-  const maxAvailableW = (boxW - 4) / 2 / 1.32;
-  const ry = Math.max(Math.min(maxAvailableH, maxAvailableW), 4);
-  const rx = ry * 1.32; // Fixed harmonious ratio matching official Lacer brand oval/shield
+  const rx = targetW / 2;
+  const ry = targetH / 2;
 
   // Lacer Red Outline
   doc.setDrawColor(primary[0], primary[1], primary[2]);
-  doc.setLineWidth(0.7);
+  doc.setLineWidth(0.65);
   doc.ellipse(cx, cy, rx, ry, 'S');
 
   // Lacer Red Typography centered inside shield
   doc.setTextColor(primary[0], primary[1], primary[2]);
   doc.setFont('helvetica', 'bold');
-  const fontSize = Math.max(ry * 1.55, 8);
+  const fontSize = Math.max(Math.min(ry * 1.45, 9), 6.5);
   doc.setFontSize(fontSize);
-  doc.text('lacer', cx, cy + (ry * 0.3), { align: 'center' });
+  doc.text('lacer', cx, cy + (ry * 0.32), { align: 'center' });
 };
 
-// Render Logo in PDF (Raster PNG image or vector badge, always preserving aspect ratio)
+// Render Logo in PDF (Raster PNG image or vector badge, ALWAYS preserving exact aspect ratio with contain logic)
 export const renderLogoInDoc = (
   doc: jsPDF,
   brand: BrandConfig,
-  logoImgData: string | null,
+  logoInfo: LogoImageResult | string | null,
   x: number,
   y: number,
   boxW: number,
   boxH: number
 ) => {
-  if (logoImgData) {
+  const dataUrl = typeof logoInfo === 'string' ? logoInfo : logoInfo?.dataUrl;
+  const ratio = (typeof logoInfo === 'object' && logoInfo?.ratio) ? logoInfo.ratio : 1.35;
+
+  if (dataUrl) {
     try {
       doc.setFillColor(255, 255, 255);
       doc.roundedRect(x, y, boxW, boxH, 2.5, 2.5, 'F');
 
-      // Keep generous padding so image doesn't touch the border or get distorted
+      // Keep generous inner padding so image doesn't touch the border
       const pad = 2;
-      const targetW = boxW - pad * 2;
-      const targetH = boxH - pad * 2;
+      const availW = Math.max(boxW - pad * 2, 2);
+      const availH = Math.max(boxH - pad * 2, 2);
+
+      let drawW = availW;
+      let drawH = availH;
+
+      if (ratio > availW / availH) {
+        // Image is wider than available container
+        drawW = availW;
+        drawH = availW / ratio;
+      } else {
+        // Image is taller or square
+        drawH = availH;
+        drawW = availH * ratio;
+      }
+
+      // Center perfectly inside white container without any distortion
+      const drawX = x + (boxW - drawW) / 2;
+      const drawY = y + (boxH - drawH) / 2;
 
       doc.addImage(
-        logoImgData,
+        dataUrl,
         'PNG',
-        x + pad,
-        y + pad,
-        targetW,
-        targetH,
+        drawX,
+        drawY,
+        drawW,
+        drawH,
         undefined,
         'FAST'
       );
@@ -592,7 +631,7 @@ export const exportCertificatePDF = async (winner: DrawWinner, brand: BrandConfi
 };
 
 // Generate Official Raffle Regulation & Privacy Policy (RGPD) jsPDF document
-export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: string | null): jsPDF => {
+export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: LogoImageResult | string | null): jsPDF => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const company = brand.companyName || 'Sorteio Lacer OMD 2026';
   const primary = hexToRgb(brand.primaryColor || '#E30613');
