@@ -1,5 +1,40 @@
 {
   "participants": [
+
+    {
+      "id": "part-maria-50265",
+      "name": "Dra. Maria",
+      "email": "maria@maria.pt",
+      "phone": "999999999",
+      "document": "OMD-85124",
+      "clinic": "Clínica Médica Dentária Maria",
+      "city": "Lisboa",
+      "specialty": "Odontologia Geral",
+      "specialtyOther": "",
+      "wantsLacerVisit": true,
+      "marketingConsent": true,
+      "termsAccepted": true,
+      "ticketNumber": "50265",
+      "createdAt": "2026-10-20T11:55:00.000Z",
+      "status": "active"
+    },
+    {
+      "id": "part-teste-74415",
+      "name": "Dr. Teste Lacer",
+      "email": "juniorfarias@gmail.com",
+      "phone": "937129276",
+      "document": "OMD-77142",
+      "clinic": "Consultório Dentário Lacer Lisboa",
+      "city": "Lisboa",
+      "specialty": "Cirurgia / Implantologia",
+      "specialtyOther": "",
+      "wantsLacerVisit": true,
+      "marketingConsent": true,
+      "termsAccepted": true,
+      "ticketNumber": "74415",
+      "createdAt": "2026-10-20T11:28:00.000Z",
+      "status": "active"
+    },
     {
       "id": "part-1792423039717-773",
       "name": "Dr. Jose Junior",
@@ -15,6 +50,23 @@
       "termsAccepted": true,
       "ticketNumber": "38572",
       "createdAt": "2026-10-19T15:17:19.717Z",
+      "status": "active"
+    },
+    {
+      "id": "part-jose-77516",
+      "name": "Dr. Jose Junior",
+      "email": "juniorfarias@agimus.pt",
+      "phone": "937129276",
+      "document": "OMD-63201",
+      "clinic": "Agimus Clínica Dentária",
+      "city": "Lisboa",
+      "specialty": "Periodontologia",
+      "specialtyOther": "",
+      "wantsLacerVisit": true,
+      "marketingConsent": true,
+      "termsAccepted": true,
+      "ticketNumber": "77516",
+      "createdAt": "2026-10-19T14:51:00.000Z",
       "status": "active"
     }
   ],
@@ -135,6 +187,7 @@
     "autoNotify1h": false,
     "autoNotify15m": false,
     "autoNotifyStart": false,
+    "whatsappEnabled": true,
     "emailEnabled": false,
     "smsEnabled": false,
     "messageTemplate": ""
@@ -187,11 +240,11 @@
       "enabled": true,
       "required": true
     },
-    "clinic": {
-      "id": "clinic",
-      "label": "Clínica / Consultório",
-      "placeholder": "Nome da Clínica ou Consultório",
-      "enabled": true,
+    "document": {
+      "id": "document",
+      "label": "NIF ou Cédula Profissional",
+      "placeholder": "",
+      "enabled": false,
       "required": false
     },
     "city": {
@@ -201,19 +254,19 @@
       "enabled": true,
       "required": true
     },
+    "clinic": {
+      "id": "clinic",
+      "label": "Clínica / Consultório",
+      "placeholder": "Nome da Clínica ou Consultório",
+      "enabled": true,
+      "required": false
+    },
     "specialty": {
       "id": "specialty",
       "label": "Especialidade",
       "placeholder": "",
       "enabled": true,
       "required": true
-    },
-    "document": {
-      "id": "document",
-      "label": "NIF ou Cédula Profissional",
-      "placeholder": "",
-      "enabled": false,
-      "required": false
     }
   },
   "posterConfig": {
@@ -240,12 +293,12 @@
     "includeWinnerName": true,
     "includePrize": true,
     "includePhone": true,
-    "includeClinic": true,
-    "includeSpecialty": true,
     "includeDocument": false,
     "includeEmail": true,
     "includeHash": true,
-    "includeDate": true
+    "includeDate": true,
+    "includeClinic": true,
+    "includeSpecialty": true
   },
-  "version": 1792423049784
+  "version": 1792494403875
 }

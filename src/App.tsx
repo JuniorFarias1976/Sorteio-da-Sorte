@@ -16,7 +16,7 @@ import {
   QRCodePosterConfig,
   ReportPdfConfig
 } from './types';
-import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG } from './utils/storage';
+import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
 import { FirestoreService } from './utils/firestoreService';
 import { Navbar } from './components/Navbar';
@@ -75,8 +75,23 @@ export default function App() {
     if (!serverData) return;
 
     if (Array.isArray(serverData.participants)) {
-      setParticipants(serverData.participants);
-      try { StorageService.saveParticipants(serverData.participants); } catch {}
+      setParticipants((current) => {
+        const merged = serverData.participants!.map((serverP) => {
+          const local = current.find((c) => c.id === serverP.id || c.ticketNumber === serverP.ticketNumber);
+          return {
+            ...local,
+            ...serverP,
+            clinic: serverP.clinic?.trim() ? serverP.clinic : (local?.clinic || ''),
+            specialty: (serverP.specialty?.trim() && serverP.specialty !== 'Não especificada') ? serverP.specialty : (local?.specialty || ''),
+            wantsLacerVisit: serverP.wantsLacerVisit !== undefined ? serverP.wantsLacerVisit : local?.wantsLacerVisit,
+            marketingConsent: serverP.marketingConsent !== undefined ? serverP.marketingConsent : local?.marketingConsent,
+            termsAccepted: serverP.termsAccepted !== undefined ? serverP.termsAccepted : local?.termsAccepted,
+          };
+        });
+        try { StorageService.saveParticipants(merged); } catch {}
+        FirestoreService.saveParticipantsBatch(merged).catch(() => {});
+        return merged;
+      });
     }
     if (Array.isArray(serverData.prizes)) {
       setPrizes(serverData.prizes);
@@ -106,8 +121,9 @@ export default function App() {
       }
     }
     if (serverData.formFields) {
-      setFormFields(serverData.formFields);
-      try { StorageService.saveFormFields(serverData.formFields); } catch {}
+      const mergedFields = { ...DEFAULT_FORM_FIELDS, ...serverData.formFields };
+      setFormFields(mergedFields);
+      try { StorageService.saveFormFields(mergedFields); } catch {}
     }
     if (serverData.posterConfig) {
       setPosterConfig(serverData.posterConfig);
@@ -176,8 +192,22 @@ export default function App() {
         setIsSyncing(false);
       },
       onParticipantsChange: (pList) => {
-        setParticipants(pList);
-        try { StorageService.saveParticipants(pList); } catch {}
+        setParticipants((current) => {
+          const merged = pList.map((remote) => {
+            const local = current.find((c) => c.id === remote.id || c.ticketNumber === remote.ticketNumber);
+            if (!local) return remote;
+            return {
+              ...remote,
+              clinic: remote.clinic?.trim() ? remote.clinic : (local.clinic || ''),
+              specialty: (remote.specialty?.trim() && remote.specialty !== 'Não especificada') ? remote.specialty : (local.specialty || ''),
+              wantsLacerVisit: remote.wantsLacerVisit !== undefined ? remote.wantsLacerVisit : local.wantsLacerVisit,
+              marketingConsent: remote.marketingConsent !== undefined ? remote.marketingConsent : local.marketingConsent,
+              termsAccepted: remote.termsAccepted !== undefined ? remote.termsAccepted : local.termsAccepted,
+            };
+          });
+          try { StorageService.saveParticipants(merged); } catch {}
+          return merged;
+        });
         setIsServerConnected(true);
         setIsSyncing(false);
       },
@@ -202,8 +232,9 @@ export default function App() {
         try { StorageService.saveSettings(s); } catch {}
       },
       onFormFieldsChange: (f) => {
-        setFormFields(f);
-        try { StorageService.saveFormFields(f); } catch {}
+        const merged = { ...DEFAULT_FORM_FIELDS, ...f };
+        setFormFields(merged);
+        try { StorageService.saveFormFields(merged); } catch {}
       },
       onPosterConfigChange: (pc) => {
         setPosterConfig(pc);
@@ -399,10 +430,8 @@ export default function App() {
   // Participant Registration handler (from Public page)
   const handleRegisterParticipant = (participant: Participant) => {
     setParticipants((prev) => {
-      if (prev.some((p) => p.id === participant.id || p.ticketNumber === participant.ticketNumber)) {
-        return prev;
-      }
-      const updated = [participant, ...prev];
+      const filtered = prev.filter((p) => p.id !== participant.id && p.ticketNumber !== participant.ticketNumber);
+      const updated = [participant, ...filtered];
       try { StorageService.saveParticipants(updated); } catch {}
       FirestoreService.saveParticipant(participant).catch(() => {});
       ApiService.saveData({ participants: updated });

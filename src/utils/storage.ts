@@ -256,7 +256,10 @@ export const StorageService = {
   getBrand: () => loadFromStorage<BrandConfig>(STORAGE_KEYS.BRAND, DEFAULT_BRAND),
   saveBrand: (data: BrandConfig) => saveToStorage(STORAGE_KEYS.BRAND, data),
 
-  getFormFields: () => loadFromStorage<FormFieldsConfig>(STORAGE_KEYS.FORM_FIELDS, DEFAULT_FORM_FIELDS),
+  getFormFields: () => {
+    const loaded = loadFromStorage<FormFieldsConfig>(STORAGE_KEYS.FORM_FIELDS, DEFAULT_FORM_FIELDS);
+    return { ...DEFAULT_FORM_FIELDS, ...loaded };
+  },
   saveFormFields: (data: FormFieldsConfig) => saveToStorage(STORAGE_KEYS.FORM_FIELDS, data),
 
   getPosterConfig: () => loadFromStorage<QRCodePosterConfig>(STORAGE_KEYS.POSTER, DEFAULT_POSTER_CONFIG),

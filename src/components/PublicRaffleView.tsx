@@ -137,23 +137,22 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.phone.label}`);
       return;
     }
-    if (formFields.clinic && formFields.clinic.enabled && formFields.clinic.required && !clinic.trim()) {
+    if (formFields.clinic?.enabled && formFields.clinic?.required && !clinic.trim()) {
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.clinic.label}`);
       return;
     }
-    if (formFields.city.enabled && formFields.city.required && !city.trim()) {
+    if (formFields.city?.enabled && formFields.city?.required && !city.trim()) {
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.city.label}`);
       return;
     }
-    if (formFields.specialty && formFields.specialty.enabled && formFields.specialty.required) {
-      if (!specialty) {
-        setValidationWarning('Por favor, selecione a sua Especialidade.');
-        return;
-      }
-      if (specialty === 'Outra' && !specialtyOther.trim()) {
-        setValidationWarning('Por favor, indique a sua especialidade no campo "Outra".');
-        return;
-      }
+    // Especialidade is always required for dental professionals
+    if (!specialty) {
+      setValidationWarning('Por favor, selecione a sua Especialidade Odontológica.');
+      return;
+    }
+    if (specialty === 'Outra' && !specialtyOther.trim()) {
+      setValidationWarning('Por favor, indique a sua especialidade no campo "Outra".');
+      return;
     }
     if (formFields.document && formFields.document.enabled && formFields.document.required && !document.trim()) {
       setValidationWarning(`Por favor, preencha o campo obrigatório: ${formFields.document.label}`);
@@ -258,7 +257,20 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         return;
       }
 
-      const participant = result.participant!;
+      const baseParticipant = result.participant!;
+      const participant: Participant = {
+        ...baseParticipant,
+        clinic: (baseParticipant.clinic && baseParticipant.clinic.trim()) || clinic.trim() || '',
+        city: (baseParticipant.city && baseParticipant.city.trim()) || city.trim() || 'Portugal',
+        specialty: (baseParticipant.specialty && baseParticipant.specialty.trim() && baseParticipant.specialty !== 'Não especificada')
+          ? baseParticipant.specialty
+          : finalSpecialty,
+        specialtyOther: baseParticipant.specialtyOther || specialtyOther.trim(),
+        wantsLacerVisit: baseParticipant.wantsLacerVisit !== undefined ? Boolean(baseParticipant.wantsLacerVisit) : Boolean(wantsLacerVisit),
+        marketingConsent: baseParticipant.marketingConsent !== undefined ? Boolean(baseParticipant.marketingConsent) : Boolean(marketingConsent),
+        termsAccepted: baseParticipant.termsAccepted !== undefined ? Boolean(baseParticipant.termsAccepted) : Boolean(acceptedTerms),
+      };
+
       onRegisterParticipant(participant);
       setNewlyCreatedTicket(participant);
       setDuplicateEmailError(null);
