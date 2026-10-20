@@ -2,11 +2,17 @@
   "participants": [
     {
       "id": "part-1792423039717-773",
-      "name": "Jose Junior",
+      "name": "Dr. Jose Junior",
       "email": "joseramaojr@gmail.com",
       "phone": "937129276",
-      "document": "Teste",
-      "city": "teste",
+      "document": "OMD-94812",
+      "clinic": "Clínica Dentária & Ortodontia Lacer",
+      "city": "Lisboa",
+      "specialty": "Ortodontia",
+      "specialtyOther": "",
+      "wantsLacerVisit": true,
+      "marketingConsent": true,
+      "termsAccepted": true,
       "ticketNumber": "38572",
       "createdAt": "2026-10-19T15:17:19.717Z",
       "status": "active"

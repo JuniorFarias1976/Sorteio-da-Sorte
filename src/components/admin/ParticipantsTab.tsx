@@ -17,7 +17,15 @@ import {
   Ticket,
   Building2,
   Stethoscope,
-  Briefcase
+  Briefcase,
+  Eye,
+  Edit2,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  ShieldCheck,
+  CheckCircle2
 } from 'lucide-react';
 
 interface ParticipantsTabProps {
@@ -38,7 +46,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   onClearAllParticipants,
 }) => {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner' | 'wants_visit' | 'marketing_yes'>('all');
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   
   // Feedback banners
@@ -59,6 +67,24 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [newMarketingConsent, setNewMarketingConsent] = useState(true);
   const [customTicket, setCustomTicket] = useState('');
   const [allowExtraTicket, setAllowExtraTicket] = useState(false);
+
+  // Modal: View full participant details
+  const [viewingParticipant, setViewingParticipant] = useState<Participant | null>(null);
+
+  // Modal: Edit participant
+  const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editClinic, setEditClinic] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editSpecialty, setEditSpecialty] = useState<string>(DENTAL_SPECIALTIES[0]);
+  const [editSpecialtyOther, setEditSpecialtyOther] = useState('');
+  const [editWantsLacerVisit, setEditWantsLacerVisit] = useState(false);
+  const [editMarketingConsent, setEditMarketingConsent] = useState(true);
+  const [editTermsAccepted, setEditTermsAccepted] = useState(true);
+  const [editTicketNumber, setEditTicketNumber] = useState('');
+  const [editStatus, setEditStatus] = useState<'active' | 'winner' | 'banned'>('active');
 
   // Modal: Confirm deletion
   const [deletingParticipant, setDeletingParticipant] = useState<Participant | null>(null);
@@ -85,9 +111,76 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       (p.ticketNumber || '').toLowerCase().includes(query) ||
       (p.city || '').toLowerCase().includes(query);
 
-    const matchStatus = statusFilter === 'all' ? true : p.status === statusFilter;
+    const matchStatus =
+      statusFilter === 'all'
+        ? true
+        : statusFilter === 'active'
+        ? p.status === 'active'
+        : statusFilter === 'winner'
+        ? p.status === 'winner'
+        : statusFilter === 'wants_visit'
+        ? !!p.wantsLacerVisit
+        : statusFilter === 'marketing_yes'
+        ? p.marketingConsent !== false
+        : true;
     return matchQuery && matchStatus;
   });
+
+  const handleStartEdit = (p: Participant) => {
+    setEditingParticipant(p);
+    setEditName(p.name || '');
+    setEditEmail(p.email || '');
+    setEditPhone(p.phone || '');
+    setEditClinic(p.clinic || '');
+    setEditCity(p.city || '');
+    const isStandardSpec = DENTAL_SPECIALTIES.includes(p.specialty as any);
+    if (isStandardSpec) {
+      setEditSpecialty(p.specialty || DENTAL_SPECIALTIES[0]);
+      setEditSpecialtyOther('');
+    } else if (p.specialty?.startsWith('Outra: ')) {
+      setEditSpecialty('Outra');
+      setEditSpecialtyOther(p.specialty.replace('Outra: ', ''));
+    } else {
+      setEditSpecialty(p.specialty ? 'Outra' : DENTAL_SPECIALTIES[0]);
+      setEditSpecialtyOther(p.specialty || '');
+    }
+    setEditWantsLacerVisit(!!p.wantsLacerVisit);
+    setEditMarketingConsent(p.marketingConsent !== false);
+    setEditTermsAccepted(p.termsAccepted !== false);
+    setEditTicketNumber(p.ticketNumber || '');
+    setEditStatus(p.status || 'active');
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingParticipant) return;
+
+    const finalSpecialty = editSpecialty === 'Outra' && editSpecialtyOther.trim()
+      ? `Outra: ${editSpecialtyOther.trim()}`
+      : editSpecialty;
+
+    const updatedParticipant: Participant = {
+      ...editingParticipant,
+      name: editName.trim() || 'Participante',
+      email: editEmail.trim().toLowerCase(),
+      phone: editPhone.trim(),
+      clinic: editClinic.trim(),
+      city: editCity.trim(),
+      specialty: finalSpecialty,
+      specialtyOther: editSpecialtyOther.trim(),
+      wantsLacerVisit: editWantsLacerVisit,
+      marketingConsent: editMarketingConsent,
+      termsAccepted: editTermsAccepted,
+      ticketNumber: editTicketNumber.trim() || editingParticipant.ticketNumber,
+      status: editStatus,
+    };
+
+    const updatedList = participants.map((p) => p.id === editingParticipant.id ? updatedParticipant : p);
+    onUpdateParticipants(updatedList);
+    setEditingParticipant(null);
+    setSaveSuccessToast(`Participante "${updatedParticipant.name}" (#${updatedParticipant.ticketNumber}) atualizado com sucesso na Base de Dados!`);
+    setTimeout(() => setSaveSuccessToast(null), 3500);
+  };
 
   const handleOpenAddModal = () => {
     setFormError(null);
@@ -345,21 +438,64 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         </div>
       </div>
 
+      {/* Metrics Summary Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Inscritos</span>
+            <span className="text-lg font-bold text-white font-mono">{participants.length}</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Clínicas / Consultórios</span>
+            <span className="text-lg font-bold text-white font-mono">{participants.filter((p) => p.clinic && p.clinic.trim()).length}</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+            <Briefcase className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Visitas Lacer Solicitadas</span>
+            <span className="text-lg font-bold text-emerald-400 font-mono">{participants.filter((p) => p.wantsLacerVisit).length}</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
+          <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Comercial Autorizado</span>
+            <span className="text-lg font-bold text-purple-300 font-mono">{participants.filter((p) => p.marketingConsent !== false).length}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col lg:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome, bilhete, e-mail, telefone, CPF ou cidade..."
+            placeholder="Buscar por nome, bilhete, e-mail, telefone, clínica, especialidade ou cidade..."
             className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
 
         {/* Filter buttons */}
-        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
           <button
             onClick={() => setStatusFilter('all')}
             className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
@@ -375,6 +511,22 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             }`}
           >
             Ativos ({participants.filter((p) => p.status === 'active').length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('wants_visit')}
+            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
+              statusFilter === 'wants_visit' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-emerald-400'
+            }`}
+          >
+            Visita Lacer ({participants.filter((p) => p.wantsLacerVisit).length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('marketing_yes')}
+            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
+              statusFilter === 'marketing_yes' ? 'bg-purple-500 text-white font-bold' : 'text-slate-400 hover:text-purple-300'
+            }`}
+          >
+            Comercial ({participants.filter((p) => p.marketingConsent !== false).length})
           </button>
           <button
             onClick={() => setStatusFilter('winner')}
@@ -399,10 +551,15 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   <Ticket className="w-3.5 h-3.5 opacity-70" />
                   #{p.ticketNumber}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {p.wantsLacerVisit && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
-                      ✓ Visita Lacer
+                      ✓ Visita
+                    </span>
+                  )}
+                  {p.marketingConsent && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
+                      ✓ Comercial
                     </span>
                   )}
                   {p.status === 'winner' ? (
@@ -414,13 +571,6 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       Ativo
                     </span>
                   )}
-                  <button
-                    onClick={() => setDeletingParticipant(p)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                    title="Eliminar Participante"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                  </button>
                 </div>
               </div>
 
@@ -447,15 +597,31 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-800/80 text-[11px] text-slate-500">
-                  <span>Inscrito em {new Date(p.createdAt).toLocaleDateString('pt-PT')} {new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
-                  <button
-                    onClick={() => setDeletingParticipant(p)}
-                    className="p-1 rounded-lg text-slate-500 hover:text-red-400 text-xs flex items-center gap-1 cursor-pointer"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Eliminar</span>
-                  </button>
+                  <span>{new Date(p.createdAt).toLocaleDateString('pt-PT')} {new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
+                  
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setViewingParticipant(p)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                      title="Ver Ficha Completa"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleStartEdit(p)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                      title="Editar Informações"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeletingParticipant(p)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -492,41 +658,43 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/70 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Bilhete</th>
-                <th className="py-3 px-4">Nome & Contacto</th>
-                <th className="py-3 px-4">Clínica / Consultório</th>
-                <th className="py-3 px-4">Cidade</th>
-                <th className="py-3 px-4">Especialidade</th>
-                <th className="py-3 px-4">Visita Lacer</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Data Inscrição</th>
-                <th className="py-3 px-4 text-right">Ações</th>
+                <th className="py-3 px-3">Bilhete</th>
+                <th className="py-3 px-3">Nome & Contacto</th>
+                <th className="py-3 px-3">Clínica / Consultório</th>
+                <th className="py-3 px-3">Cidade</th>
+                <th className="py-3 px-3">Especialidade</th>
+                <th className="py-3 px-3">Visita Lacer</th>
+                <th className="py-3 px-3">Comercial / Novidades</th>
+                <th className="py-3 px-3">Regulamento & RGPD</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-3">Data Inscrição</th>
+                <th className="py-3 px-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {filteredParticipants.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-3">
                     <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1">
                       <Ticket className="w-3.5 h-3.5 opacity-70" />
                       #{p.ticketNumber}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-3">
                     <p className="font-bold text-white text-sm">{p.name}</p>
                     <p className="text-slate-400 text-[11px]">{p.email} · {p.phone}</p>
                   </td>
-                  <td className="py-3 px-4 text-slate-200">
+                  <td className="py-3 px-3 text-slate-200">
                     {p.clinic ? (
                       <span className="font-medium">{p.clinic}</span>
                     ) : (
                       <span className="text-slate-500">-</span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-slate-300">
+                  <td className="py-3 px-3 text-slate-300">
                     {p.city || '-'}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-3">
                     {p.specialty ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                         {p.specialty}
@@ -535,7 +703,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       <span className="text-slate-500">-</span>
                     )}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-3">
                     {p.wantsLacerVisit ? (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
                         ✓ Sim (Visita)
@@ -544,7 +712,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       <span className="text-slate-500 text-[11px]">Não</span>
                     )}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-3">
+                    {p.marketingConsent ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
+                        ✓ Autorizado
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-[11px]">Não</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-3">
+                    {p.termsAccepted !== false ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        ✓ Aceite
+                      </span>
+                    ) : (
+                      <span className="text-amber-400 text-[10px]">Pendente</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-3">
                     {p.status === 'winner' ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
                         🏆 Premiado
@@ -555,11 +741,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-slate-400 text-[11px]">
+                  <td className="py-3 px-3 text-slate-400 text-[11px]">
                     {new Date(p.createdAt).toLocaleDateString('pt-PT')} {new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end">
+                  <td className="py-3 px-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setViewingParticipant(p)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                        title="Ver Ficha Completa"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleStartEdit(p)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                        title="Editar Dados do Participante"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => setDeletingParticipant(p)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
@@ -574,7 +774,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
 
               {participants.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center">
+                  <td colSpan={11} className="py-12 text-center">
                     <div className="max-w-md mx-auto space-y-3">
                       <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-amber-400">
                         <Users className="w-6 h-6" />
@@ -604,7 +804,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </tr>
               ) : filteredParticipants.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
+                  <td colSpan={11} className="py-8 text-center text-slate-500">
                     Nenhum participante encontrado com os critérios de pesquisa selecionados.
                   </td>
                 </tr>
@@ -898,6 +1098,409 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 <span>Sim, Limpar Tudo</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Ver Ficha Completa do Participante */}
+      {viewingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/25 inline-flex items-center gap-1.5">
+                    <Ticket className="w-4 h-4" />
+                    Bilhete #{viewingParticipant.ticketNumber}
+                  </span>
+                  {viewingParticipant.status === 'winner' ? (
+                    <span className="text-[11px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                      🏆 Vencedor Homologado
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      Ativo no Sorteio
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xl font-bold text-white">{viewingParticipant.name}</h3>
+                <p className="text-xs text-slate-400">Ficha oficial completa registada na base de dados</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setViewingParticipant(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Informações de Contacto & Clínica */}
+            <div className="space-y-4">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-3">
+                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  <span>Dados de Contacto & Clínica</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">Nome Completo</span>
+                    <span className="text-white font-medium">{viewingParticipant.name}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">E-mail Profissional</span>
+                    <a href={`mailto:${viewingParticipant.email}`} className="text-blue-400 hover:underline font-mono">
+                      {viewingParticipant.email}
+                    </a>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">Telefone</span>
+                    <a href={`tel:${viewingParticipant.phone}`} className="text-slate-200 font-mono">
+                      {viewingParticipant.phone || 'Não informado'}
+                    </a>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">Cidade</span>
+                    <span className="text-slate-200">{viewingParticipant.city || 'Portugal'}</span>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">Clínica / Consultório</span>
+                    <span className="text-white font-semibold">
+                      {viewingParticipant.clinic || 'Não indicada'}
+                    </span>
+                  </div>
+
+                  {viewingParticipant.document && (
+                    <div className="sm:col-span-2">
+                      <span className="text-slate-500 block text-[10px] uppercase font-semibold">NIF / Cédula Profissional</span>
+                      <span className="text-slate-300 font-mono">{viewingParticipant.document}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Especialidade Odontológica */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
+                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+                  <Stethoscope className="w-4 h-4" />
+                  <span>Especialidade</span>
+                </h4>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 font-semibold text-xs">
+                  <Stethoscope className="w-4 h-4 text-amber-400" />
+                  <span>{viewingParticipant.specialty || 'Não especificada'}</span>
+                </div>
+              </div>
+
+              {/* Visita Lacer & Consentimentos */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-3">
+                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Visita Lacer & Consentimentos</span>
+                </h4>
+
+                <div className="space-y-2.5 text-xs">
+                  {/* Visita Comercial */}
+                  <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+                    viewingParticipant.wantsLacerVisit 
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' 
+                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${viewingParticipant.wantsLacerVisit ? 'text-emerald-400' : 'text-slate-600'}`} />
+                    <div>
+                      <p className="font-semibold text-white">Visita de Representante Lacer à Clínica</p>
+                      <p className="text-[11px] mt-0.5">
+                        {viewingParticipant.wantsLacerVisit
+                          ? '✓ Sim, solicitou agendamento de visita de representante da Lacer.'
+                          : 'Não solicitou visita de representante.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Regulamento & RGPD */}
+                  <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+                    viewingParticipant.termsAccepted !== false
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                      : 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                  }`}>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-white">Regulamento & Proteção de Dados (RGPD)</p>
+                      <p className="text-[11px] mt-0.5 text-slate-300">
+                        {viewingParticipant.termsAccepted !== false
+                          ? '✓ Leu e aceitou o regulamento do sorteio e a política de privacidade da Lacer.'
+                          : 'Pendente de validação de termos.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Comercial e Marketing */}
+                  <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+                    viewingParticipant.marketingConsent !== false
+                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-200'
+                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${viewingParticipant.marketingConsent !== false ? 'text-purple-400' : 'text-slate-600'}`} />
+                    <div>
+                      <p className="font-semibold text-white">Autorização Comercial & Novidades</p>
+                      <p className="text-[11px] mt-0.5">
+                        {viewingParticipant.marketingConsent !== false
+                          ? '✓ Autorizou a Lacer a contactar para novidades, produtos, eventos e visitas comerciais.'
+                          : 'Não autorizou contactos comerciais adicionais.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metadados */}
+              <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                <span>Inscrição: {new Date(viewingParticipant.createdAt).toLocaleDateString('pt-PT')} às {new Date(viewingParticipant.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="font-mono text-[10px]">ID: {viewingParticipant.id}</span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-5 mt-5 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletingParticipant(viewingParticipant);
+                  setViewingParticipant(null);
+                }}
+                className="px-3.5 py-2 rounded-xl text-red-400 hover:bg-red-500/10 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Eliminar</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleStartEdit(viewingParticipant);
+                    setViewingParticipant(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-slate-700"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Editar Dados</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewingParticipant(null)}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar Participante */}
+      {editingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-blue-400" />
+                <span>Editar Dados do Participante</span>
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setEditingParticipant(null)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Atualize as informações recolhidas deste participante na base de dados.
+            </p>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4" autoComplete="off">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    E-mail Profissional *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    Telefone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    Clínica / Consultório
+                  </label>
+                  <input
+                    type="text"
+                    value={editClinic}
+                    onChange={(e) => setEditClinic(e.target.value)}
+                    placeholder="Nome da Clínica"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    Cidade
+                  </label>
+                  <input
+                    type="text"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    placeholder="Cidade"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Especialidade Odontológica */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Especialidade
+                </label>
+                <select
+                  value={editSpecialty}
+                  onChange={(e) => setEditSpecialty(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  {DENTAL_SPECIALTIES.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
+                  ))}
+                </select>
+
+                {editSpecialty === 'Outra' && (
+                  <input
+                    type="text"
+                    value={editSpecialtyOther}
+                    onChange={(e) => setEditSpecialtyOther(e.target.value)}
+                    placeholder="Indique a especialidade..."
+                    className="mt-2 w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                )}
+              </div>
+
+              {/* Visita Lacer e Marketing Consent */}
+              <div className="space-y-2 pt-1">
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={editWantsLacerVisit}
+                    onChange={(e) => setEditWantsLacerVisit(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Gostaria que um representante da Lacer visitasse a sua clínica</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={editMarketingConsent}
+                    onChange={(e) => setEditMarketingConsent(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Autoriza a Lacer a contactar para informação sobre produtos, novidades e eventos</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={editTermsAccepted}
+                    onChange={(e) => setEditTermsAccepted(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Declara que leu e aceita o regulamento e política de privacidade Lacer (RGPD)</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    N.º do Bilhete
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editTicketNumber}
+                    onChange={(e) => setEditTicketNumber(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="active">Ativo no Sorteio</option>
+                    <option value="winner">Premiado</option>
+                    <option value="banned">Banido / Cancelado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingParticipant(null)}
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Guardar Alterações</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

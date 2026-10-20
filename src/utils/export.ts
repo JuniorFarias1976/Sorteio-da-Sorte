@@ -87,6 +87,7 @@ export const exportParticipantsToPDF = (participants: Participant[], brand: Bran
     p.specialty || '-',
     p.wantsLacerVisit ? 'Sim' : 'Não',
     p.marketingConsent ? 'Sim' : 'Não',
+    p.termsAccepted !== false ? 'Aceite' : 'Pendente',
   ]);
 
   autoTable(doc, {
@@ -102,6 +103,7 @@ export const exportParticipantsToPDF = (participants: Participant[], brand: Bran
       'Especialidade',
       'Visita Lacer',
       'Comercial',
+      'RGPD / Termos',
     ]],
     body: tableData,
     theme: 'striped',
@@ -122,17 +124,18 @@ export const exportParticipantsToPDF = (participants: Participant[], brand: Bran
     },
     columnStyles: {
       0: { cellWidth: 8 },
-      1: { cellWidth: 20, fontStyle: 'bold', textColor: [16, 185, 129] },
-      2: { cellWidth: 42, fontStyle: 'bold' },
-      3: { cellWidth: 46 },
-      4: { cellWidth: 26 },
-      5: { cellWidth: 38 },
-      6: { cellWidth: 24 },
-      7: { cellWidth: 38 },
+      1: { cellWidth: 18, fontStyle: 'bold', textColor: [16, 185, 129] },
+      2: { cellWidth: 38, fontStyle: 'bold' },
+      3: { cellWidth: 42 },
+      4: { cellWidth: 24 },
+      5: { cellWidth: 34 },
+      6: { cellWidth: 22 },
+      7: { cellWidth: 34 },
       8: { cellWidth: 16, halign: 'center' },
       9: { cellWidth: 16, halign: 'center' },
+      10: { cellWidth: 18, halign: 'center' },
     },
-    margin: { left: 12, right: 12 },
+    margin: { left: 10, right: 10 },
   });
 
   doc.save(`participantes_lacer_${now.toISOString().slice(0, 10)}.pdf`);
