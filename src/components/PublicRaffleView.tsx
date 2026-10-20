@@ -17,9 +17,14 @@ import {
   AlertTriangle,
   Check,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Upload,
+  Link as LinkIcon,
+  X
 } from 'lucide-react';
-import { DEFAULT_FORM_FIELDS } from '../utils/storage';
+import confetti from 'canvas-confetti';
+import { DEFAULT_FORM_FIELDS, StorageService } from '../utils/storage';
+import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
 import { exportRegulationPDF } from '../utils/export';
 
@@ -99,6 +104,59 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   // Success ticket modal
   const [newlyCreatedTicket, setNewlyCreatedTicket] = useState<Participant | null>(null);
   const [copiedTicket, setCopiedTicket] = useState(false);
+  const [showUrlLogoInput, setShowUrlLogoInput] = useState(false);
+  const [tempLogoUrl, setTempLogoUrl] = useState('');
+  const [logoSuccessToast, setLogoSuccessToast] = useState<string | null>(null);
+
+  // Trigger celebration confetti when participant successfully registers
+  useEffect(() => {
+    if (newlyCreatedTicket) {
+      try {
+        confetti({
+          particleCount: 90,
+          spread: 80,
+          origin: { y: 0.5 },
+          colors: ['#2563eb', '#10b981', '#f59e0b', '#ffffff'],
+        });
+      } catch {}
+    }
+  }, [newlyCreatedTicket]);
+
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A imagem é demasiado grande (máximo 2MB). Escolha uma imagem mais leve.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const updated = { ...brand, logoUrl: base64 };
+      onUpdateBrand?.(updated);
+      try { StorageService.saveBrand(updated); } catch {}
+      FirestoreService.saveBrand(updated).catch(() => {});
+      ApiService.saveData({ brand: updated }).catch(() => {});
+      setLogoSuccessToast('Logótipo da empresa atualizado com sucesso!');
+      setTimeout(() => setLogoSuccessToast(null), 3500);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveLogoUrl = () => {
+    if (!tempLogoUrl.trim()) return;
+    const updated = { ...brand, logoUrl: tempLogoUrl.trim() };
+    onUpdateBrand?.(updated);
+    try { StorageService.saveBrand(updated); } catch {}
+    FirestoreService.saveBrand(updated).catch(() => {});
+    ApiService.saveData({ brand: updated }).catch(() => {});
+    setShowUrlLogoInput(false);
+    setTempLogoUrl('');
+    setLogoSuccessToast('Logótipo da empresa atualizado com sucesso!');
+    setTimeout(() => setLogoSuccessToast(null), 3500);
+  };
 
   const handleCopyTicket = (ticketNum: string) => {
     if (navigator.clipboard) {
@@ -887,70 +945,186 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 <Sparkles className="w-5 h-5 fill-current" />
                 <span>
                   {isSubmitting 
-                    ? 'A REGISTAR INSCRIÇÃO...' 
-                    : (brand.formButtonText ? brand.formButtonText.toUpperCase() : 'REGISTAR INSCRIÇÃO E OBTER BILHETE')}
+                    ? 'A REGISTAR PARTICIPAÇÃO...' 
+                    : 'Participar do sorteio'}
                 </span>
               </button>
             </form>
           </div>
 
-          {/* Ticket Success Confirmation Modal */}
+          {/* Nova Tela de Sucesso: Apresentada ao clicar em 'Participar do sorteio' */}
           {newlyCreatedTicket && (
-            <div className="bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-500 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-amber-500/30 pb-4 mb-4">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>{brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!'}</span>
-                </div>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+              <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-10 max-w-2xl w-full shadow-2xl relative my-auto animate-in zoom-in-95 duration-200">
+                {/* Botão Fechar no canto superior */}
                 <button
+                  type="button"
                   onClick={() => setNewlyCreatedTicket(null)}
-                  className="text-slate-400 hover:text-white text-xs underline cursor-pointer"
+                  className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Fechar e voltar"
                 >
-                  Fechar
+                  <X className="w-5 h-5" />
                 </button>
-              </div>
 
-              {/* Golden Ticket Layout */}
-              <div className="bg-slate-950 border border-amber-500/50 rounded-2xl p-6 text-center shadow-inner relative">
-                <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">
-                  {brand.ticketModalSubtitle || 'O Seu Bilhete Oficial'}
-                </p>
-                <div className="text-5xl sm:text-6xl font-black font-mono text-amber-400 tracking-wider my-2">
-                  #{newlyCreatedTicket.ticketNumber}
+                {/* Ícone de Sucesso */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto text-emerald-400 mb-5 shadow-xl shadow-emerald-500/20 animate-bounce">
+                  <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
                 </div>
-                <p className="text-lg font-bold text-white">
-                  {newlyCreatedTicket.name}
-                </p>
-                {newlyCreatedTicket.clinic && (
-                  <p className="text-xs text-amber-300 font-medium mt-0.5">
-                    🏥 {newlyCreatedTicket.clinic}
+
+                {/* Bloco de Mensagens Obrigatórias */}
+                <div className="text-center space-y-3 mb-6">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                    Participação registada com sucesso!
+                  </h2>
+
+                  <p className="text-base sm:text-lg font-bold text-emerald-400">
+                    Obrigado por participar no sorteio de um Irrigador Oral Lacer.
                   </p>
-                )}
-                <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400 mt-1">
-                  {newlyCreatedTicket.specialty && (
-                    <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
-                      🩺 {newlyCreatedTicket.specialty}
-                    </span>
-                  )}
-                  <span>📍 {newlyCreatedTicket.city}</span>
-                  <span>📱 {newlyCreatedTicket.phone}</span>
+
+                  <p className="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider py-1">
+                    Boa sorte!
+                  </p>
+
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+                    O vencedor será contactado através dos dados fornecidos no formulário.
+                  </p>
+
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/90 border border-slate-800 text-center max-w-lg mx-auto shadow-inner">
+                    <p className="text-xs sm:text-sm text-amber-200 font-semibold flex items-center justify-center gap-2">
+                      <span className="text-amber-400">📍</span>
+                      <span>Visite a nossa equipa no stand e descubra as novidades Lacer.</span>
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-center gap-3">
-                  <button
-                    onClick={() => handleCopyTicket(newlyCreatedTicket.ticketNumber)}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl text-xs font-bold flex items-center gap-2 shadow cursor-pointer transition-colors border border-amber-500/30"
-                  >
-                    {copiedTicket ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedTicket ? 'Número Copiado!' : 'Copiar Número do Bilhete'}</span>
-                  </button>
+                {/* Golden Ticket Layout */}
+                <div className="bg-slate-950 border border-amber-500/50 rounded-2xl p-5 text-center shadow-inner relative mb-6">
+                  <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">
+                    O Seu Número da Sorte Oficial
+                  </p>
+                  <div className="text-4xl sm:text-5xl font-black font-mono text-amber-400 tracking-wider my-2">
+                    #{newlyCreatedTicket.ticketNumber}
+                  </div>
+                  <p className="text-base sm:text-lg font-bold text-white">
+                    {newlyCreatedTicket.name}
+                  </p>
+                  {newlyCreatedTicket.clinic && (
+                    <p className="text-xs text-amber-300 font-medium mt-0.5">
+                      🏥 {newlyCreatedTicket.clinic}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400 mt-2">
+                    {newlyCreatedTicket.specialty && (
+                      <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
+                        🩺 {newlyCreatedTicket.specialty}
+                      </span>
+                    )}
+                    <span>📍 {newlyCreatedTicket.city}</span>
+                    <span>📱 {newlyCreatedTicket.phone}</span>
+                  </div>
 
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyTicket(newlyCreatedTicket.ticketNumber)}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-colors border border-amber-500/30"
+                    >
+                      {copiedTicket ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedTicket ? 'Número Copiado!' : 'Copiar Número do Bilhete'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Ticket className="w-4 h-4" />
+                      <span>Imprimir Comprovativo</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Seção: Abaixo deste texto ter como colocar um logo da empresa */}
+                <div className="pt-5 border-t border-slate-800/80 text-center space-y-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Logótipo da Empresa
+                  </span>
+
+                  <div className="flex flex-col items-center justify-center">
+                    {brand.logoUrl ? (
+                      <div className="p-3.5 rounded-2xl bg-white/5 border border-slate-700/80 shadow-lg inline-flex items-center justify-center max-h-24 min-h-[70px] min-w-[150px]">
+                        <img
+                          src={brand.logoUrl}
+                          alt={brand.companyName || 'Logo da Empresa'}
+                          className="max-h-16 max-w-[220px] object-contain rounded-lg"
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-2xl bg-slate-950 border border-dashed border-slate-700 text-xs text-slate-400 max-w-xs text-center">
+                        Nenhum logótipo configurado ainda.
+                      </div>
+                    )}
+
+                    {/* Opções para colocar ou alterar o logo da empresa */}
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                      <label className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm">
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{brand.logoUrl ? 'Alterar Logo da Empresa' : 'Colocar Logo da Empresa'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoFileUpload}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowUrlLogoInput(!showUrlLogoInput)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs border border-slate-800 flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <LinkIcon className="w-3.5 h-3.5" />
+                        <span>Colocar por URL</span>
+                      </button>
+                    </div>
+
+                    {showUrlLogoInput && (
+                      <div className="mt-2.5 flex items-center gap-2 w-full max-w-md animate-in fade-in duration-200">
+                        <input
+                          type="url"
+                          value={tempLogoUrl}
+                          onChange={(e) => setTempLogoUrl(e.target.value)}
+                          placeholder="Cole o endereço (URL) da imagem do logo..."
+                          className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveLogoUrl}
+                          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-colors shadow"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    )}
+
+                    {logoSuccessToast && (
+                      <p className="text-xs text-emerald-400 font-medium mt-2 flex items-center gap-1 animate-in fade-in">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{logoSuccessToast}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Ação de Fecho / Conclusão */}
+                <div className="mt-6 pt-5 border-t border-slate-800 flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => window.print()}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer"
+                    type="button"
+                    onClick={() => setNewlyCreatedTicket(null)}
+                    className="flex-1 py-3 px-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
                   >
-                    <Ticket className="w-4 h-4" />
-                    <span>Imprimir Comprovativo</span>
+                    <Check className="w-4 h-4" />
+                    <span>Concluir e Voltar ao Início</span>
                   </button>
                 </div>
               </div>

@@ -43,7 +43,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   showRoundsBanner: true,
   formTitle: 'Garanta o seu Bilhete da Sorte',
   formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
-  formButtonText: 'Registar Inscrição e Obter Bilhete',
+  formButtonText: 'Participar do sorteio',
   prizesSectionTitle: 'Prémios Desta Edição',
   searchSectionTitle: 'Já se inscreveu? Consulte os seus Bilhetes',
   searchSectionSubtitle: 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados',
