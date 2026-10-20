@@ -71,11 +71,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           onClick={() => onViewChange('public')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer ${
             currentView === 'public'
-              ? 'text-amber-400 font-bold'
+              ? 'text-red-400 font-bold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <div className={`p-1 rounded-lg ${currentView === 'public' ? 'bg-amber-500/20 ring-1 ring-amber-500/30' : ''}`}>
+          <div className={`p-1 rounded-lg ${currentView === 'public' ? 'bg-red-500/20 ring-1 ring-red-500/30' : ''}`}>
             <Ticket className="w-5 h-5" />
           </div>
           <span className="text-[10px] mt-0.5 tracking-tight">Participar</span>

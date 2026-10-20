@@ -221,11 +221,11 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   };
 
   const PRESET_THEMES = [
+    { name: 'Lacer Oficial (Vermelho & Branco)', primary: '#E30613', secondary: '#991B1B', accent: '#FFFFFF' },
     { name: 'Ouro Real Premium', primary: '#f59e0b', secondary: '#d97706', accent: '#10b981' },
     { name: 'Azul Corporativo Tech', primary: '#2563eb', secondary: '#1d4ed8', accent: '#06b6d4' },
     { name: 'Esmeralda da Sorte', primary: '#10b981', secondary: '#059669', accent: '#f59e0b' },
     { name: 'Roxo Cyber / Neon', primary: '#8b5cf6', secondary: '#7c3aed', accent: '#ec4899' },
-    { name: 'Vermelho Energia & Fogo', primary: '#ef4444', secondary: '#dc2626', accent: '#f59e0b' },
   ];
 
   return (

@@ -24,19 +24,19 @@ const STORAGE_KEYS = {
   REPORT: 'sorteiolive_report_v1',
 };
 
-// Default high-quality SVG Logo (Golden Trophy with Star & Ribbon)
-export const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48" fill="%230f172a" stroke="%23f59e0b" stroke-width="4"/><path d="M32 30h36v18c0 10-8 18-18 18s-18-8-18-18V30z" fill="%23f59e0b"/><path d="M26 34c-4 0-8 4-8 9s4 9 8 9h6v-6h-6c-1 0-2-1-2-3s1-3 2-3h6v-6h-6zm48 0h-6v6h6c1 0 2 1 2 3s-1 3-2 3h-6v6h6c4 0 8-4 8-9s-4-9-8-9z" fill="%23fbbf24"/><path d="M46 66h8v12h-8z" fill="%23d97706"/><path d="M36 78h28v6H36z" fill="%23f59e0b"/><polygon points="50,37 52.5,43 59,43.5 54,48 55.5,54.5 50,51 44.5,54.5 46,48 41,43.5 47.5,43" fill="%23ffffff"/></svg>`;
+// Official Lacer Corporate Logo SVG (distinctive Lacer shield and clean bold typography)
+export const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none"><path d="M42 10 C76 11, 80 42, 69 66 C52 76, 24 74, 14 52 C4 28, 16 10, 42 10 Z" stroke="%23E30613" stroke-width="4.5" fill="%23E30613" fill-opacity="0.15"/><text x="42" y="49" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="19" fill="%23E30613" letter-spacing="0.5">Lacer</text><text x="82" y="51" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="28" fill="%23FFFFFF" letter-spacing="1.2">LACER</text></svg>`;
 
 export const DEFAULT_BRAND: BrandConfig = {
-  companyName: 'Sorteio Lacer OMD 2026',
-  companySlogan: 'Sorteios 100% Auditados',
+  companyName: 'Lacer - Sorteio OMD 2026',
+  companySlogan: 'Higiene e Saúde Oral • Stand Lacer',
   logoUrl: DEFAULT_BRAND_LOGO,
-  primaryColor: '#2563eb', // Blue
-  secondaryColor: '#d97706',
-  accentColor: '#10b981',
+  primaryColor: '#E30613', // Lacer Red
+  secondaryColor: '#B91C1C', // Dark Lacer Red
+  accentColor: '#FFFFFF', // Clean White
   backgroundTheme: 'dark',
   raffleUrl: typeof window !== 'undefined' ? window.location.origin : 'https://sorteiolive.app',
-  contactEmail: 'contacto@sorteiolive.pt',
+  contactEmail: 'contacto@lacer.pt',
   termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial de identificação com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.',
   roundsBannerTitle: '2 Sorteios Oficiais por Dia',
   roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!',

@@ -397,8 +397,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         <div className="relative z-10 max-w-4xl mx-auto">
           {/* Hero Badge */}
           {brand.heroBadgeText && (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs sm:text-sm font-semibold mb-6 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-300 text-xs sm:text-sm font-semibold mb-6 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-red-400" />
               <span>{brand.heroBadgeText}</span>
             </div>
           )}
@@ -414,7 +414,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             ) : (
               <div 
                 style={{ backgroundColor: brand.primaryColor }}
-                className="w-20 h-20 rounded-3xl flex items-center justify-center text-slate-950 font-black text-3xl shadow-2xl"
+                className="w-20 h-20 rounded-3xl flex items-center justify-center text-white font-black text-3xl shadow-2xl"
               >
                 ★
               </div>
@@ -423,7 +423,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
           <div className="flex items-center justify-center gap-3 mb-3">
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white">
-              {brand.companyName || 'Sorteio Lacer OMD 2026'}
+              {brand.companyName || 'Lacer - Sorteio OMD 2026'}
             </h1>
           </div>
 
@@ -437,10 +437,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
           {/* Official 2 Draws Per Day Schedule Banner */}
           {brand.showRoundsBanner !== false && (
-            <div className="mt-8 max-w-4xl mx-auto bg-slate-900/95 border-2 border-amber-500/30 p-5 sm:p-6 rounded-3xl shadow-2xl backdrop-blur-md text-left">
+            <div className="mt-8 max-w-4xl mx-auto bg-slate-900/95 border-2 border-red-600/30 p-5 sm:p-6 rounded-3xl shadow-2xl backdrop-blur-md text-left">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3.5 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                  <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
@@ -448,14 +448,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       {brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia'}
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Datas e horários oficiais das rondas de prémios
+                      Datas e horários oficiais das rondas de prémios no stand Lacer
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/25">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="inline-flex items-center gap-1.5 text-xs text-red-300 font-mono bg-red-500/10 px-3 py-1 rounded-xl border border-red-500/30">
+                    <Calendar className="w-3.5 h-3.5 text-red-400" />
                     <span>{nextSchedule ? `Próximo: ${nextSchedule.scheduledTime} (${nextSchedule.scheduledDate.slice(5)})` : '2 Sorteios / Dia'}</span>
                   </span>
                 </div>
@@ -474,7 +474,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       {/* Day Header */}
                       <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/60">
                         <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs uppercase font-mono">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 font-bold text-xs uppercase font-mono">
                             {dayIndex + 1}º Dia
                           </span>
                           <span className="text-xs sm:text-sm font-bold text-white capitalize">
@@ -504,27 +504,27 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                                   ? 'bg-red-500/20 border-red-500 ring-2 ring-red-500/30'
                                   : isCompleted
                                   ? 'bg-slate-900/60 border-slate-800/80 opacity-60'
-                                  : 'bg-slate-900/90 border-slate-800 hover:border-amber-500/50 hover:bg-slate-850'
+                                  : 'bg-slate-900/90 border-slate-800 hover:border-red-500/50 hover:bg-slate-850'
                               }`}
                             >
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors truncate">
+                                  <span className="text-xs font-bold text-white group-hover:text-red-400 transition-colors truncate">
                                     {sch.title}
                                   </span>
                                   <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${
                                     isLive 
-                                      ? 'bg-red-500 text-white animate-pulse'
+                                      ? 'bg-[#E30613] text-white animate-pulse'
                                       : isCompleted
                                       ? 'bg-emerald-500/20 text-emerald-400'
-                                      : 'bg-slate-800 text-amber-400/90 border border-slate-700'
+                                      : 'bg-slate-800 text-red-300 border border-slate-700'
                                   }`}>
                                     {isLive ? 'Ao Vivo' : isCompleted ? 'Realizado' : 'Agendado'}
                                   </span>
                                 </div>
                                 {assignedPrize && (
                                   <p className="text-[11px] text-slate-400 truncate flex items-center gap-1">
-                                    <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+                                    <Trophy className="w-3 h-3 text-red-400 shrink-0" />
                                     <span className="truncate">{assignedPrize.title}</span>
                                   </p>
                                 )}
@@ -534,7 +534,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                                 <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
                                   Horário
                                 </span>
-                                <span className="text-xl sm:text-2xl font-mono font-black text-amber-400 group-hover:text-amber-300">
+                                <span className="text-xl sm:text-2xl font-mono font-black text-red-400 group-hover:text-white transition-colors">
                                   {sch.scheduledTime}
                                 </span>
                               </div>
@@ -551,7 +551,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 <span className="text-[11px]">{brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!'}</span>
                 <button
                   onClick={onGoToLive}
-                  className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1.5 text-xs cursor-pointer group"
+                  className="text-red-400 hover:text-white font-bold flex items-center gap-1.5 text-xs cursor-pointer group transition-colors"
                 >
                   <span>Aceder à Transmissão em Direto</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -588,10 +588,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             <form onSubmit={handleRegister} className="space-y-4" autoComplete="off">
               {/* Duplicate Email Warning Banner */}
               {duplicateEmailError && (
-                <div className="p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/50 text-amber-200 space-y-2.5">
+                <div className="p-4 rounded-2xl bg-red-950/40 border-2 border-red-500/50 text-red-200 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-sm text-amber-400">
-                      <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div className="flex items-center gap-2 font-bold text-sm text-red-400">
+                      <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
                       <span>ATENÇÃO: E-MAIL JÁ REGISTADO NO SISTEMA!</span>
                     </div>
                     <button
@@ -605,12 +605,12 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <p className="text-xs text-slate-300">
                     O e-mail <strong className="text-white">{duplicateEmailError.email}</strong> já possui inscrição confirmada neste sorteio. Cada participante só pode se cadastrar <strong>uma única vez</strong>.
                   </p>
-                  <div className="p-3 bg-slate-950 rounded-xl border border-amber-500/30 flex items-center justify-between">
+                  <div className="p-3 bg-slate-950 rounded-xl border border-red-500/30 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] uppercase text-slate-400 block font-semibold">
                         Seu Bilhete Cadastrado:
                       </span>
-                      <span className="text-xl font-black font-mono text-amber-400">
+                      <span className="text-xl font-black font-mono text-red-400">
                         #{duplicateEmailError.ticketNumber}
                       </span>
                     </div>
@@ -626,7 +626,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         setNewlyCreatedTicket(duplicateEmailError);
                         setDuplicateEmailError(null);
                       }}
-                      className="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-lg text-xs font-bold hover:bg-amber-400 transition-colors"
+                      className="px-3 py-1.5 bg-[#E30613] text-white rounded-lg text-xs font-bold hover:bg-[#C80510] transition-colors"
                     >
                       Visualizar Meu Bilhete
                     </button>
@@ -648,8 +648,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               {/* SEÇÃO 1: Dados de contacto */}
               <div className="space-y-4">
                 <div className="border-b border-slate-800 pb-2">
-                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-mono">1</span>
+                  <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-[10px] font-mono">1</span>
                     <span>Dados de contacto</span>
                   </h4>
                 </div>
@@ -657,7 +657,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 {/* Nome completo */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Nome completo <span className="text-amber-400">*</span>
+                    Nome completo <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -668,7 +668,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   />
                 </div>
 
@@ -676,7 +676,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      E-mail profissional <span className="text-amber-400">*</span>
+                      E-mail profissional <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -690,7 +690,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       autoComplete="off"
                       autoCorrect="off"
                       spellCheck={false}
-                      className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 ${
                         duplicateEmailError ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700/80'
                       }`}
                     />
@@ -701,7 +701,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      Telefone <span className="text-amber-400">*</span>
+                      Telefone <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -710,7 +710,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       placeholder={formFields.phone.placeholder || '912 345 678'}
                       autoComplete="off"
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
                 </div>
@@ -727,13 +727,13 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       onChange={(e) => setClinic(e.target.value)}
                       placeholder="Nome da Clínica ou Consultório"
                       autoComplete="off"
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      Cidade <span className="text-amber-400">*</span>
+                      Cidade <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -742,7 +742,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       onChange={(e) => setCity(e.target.value)}
                       placeholder={formFields.city.placeholder || 'Ex: Lisboa, Porto, Coimbra...'}
                       autoComplete="off"
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
                 </div>
@@ -760,7 +760,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       onChange={(e) => handleDocumentChange(e.target.value)}
                       placeholder={formFields.document.placeholder || ''}
                       autoComplete="off"
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
                 )}
@@ -769,12 +769,12 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               {/* SEÇÃO 2: Especialidade (Multi-seleção) */}
               <div className="space-y-3 pt-4 border-t border-slate-800">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-mono">2</span>
+                  <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-[10px] font-mono">2</span>
                     <span>Especialidade(s)</span>
-                    <span className="text-amber-400">*</span>
+                    <span className="text-red-500">*</span>
                   </h4>
-                  <span className="text-[11px] text-amber-300/80 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  <span className="text-[11px] text-red-300 font-medium bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
                     Pode selecionar mais de uma opção ({selectedSpecialties.length} selecionada{selectedSpecialties.length === 1 ? '' : 's'})
                   </span>
                 </div>
@@ -787,7 +787,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         key={spec}
                         className={`flex items-center gap-3 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-amber-500/15 border-amber-500 text-white font-semibold ring-1 ring-amber-500/30 shadow-sm'
+                            ? 'bg-red-500/15 border-red-500 text-white font-semibold ring-1 ring-red-500/30 shadow-sm'
                             : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
                         }`}
                       >
@@ -796,10 +796,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           value={spec}
                           checked={isSelected}
                           onChange={() => handleToggleSpecialty(spec)}
-                          className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-amber-500 cursor-pointer"
+                          className="w-4 h-4 rounded text-[#E30613] bg-slate-900 border-slate-700 focus:ring-red-500 cursor-pointer"
                         />
                         <span className="flex-1">{spec}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-red-400 shrink-0" />}
                       </label>
                     );
                   })}
@@ -808,7 +808,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 {/* Se 'Outra' for selecionada, campo de texto específico */}
                 {selectedSpecialties.includes('Outra') && (
                   <div className="mt-2.5 animate-in fade-in duration-200">
-                    <label className="block text-[11px] font-semibold text-amber-400 uppercase tracking-wider mb-1">
+                    <label className="block text-[11px] font-semibold text-red-400 uppercase tracking-wider mb-1">
                       Outra Especialidade:
                     </label>
                     <input
@@ -817,7 +817,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       value={specialtyOther}
                       onChange={(e) => setSpecialtyOther(e.target.value)}
                       placeholder="Indique a sua especialidade..."
-                      className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-slate-950 border border-red-500/50 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
                 )}
@@ -833,7 +833,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     type="checkbox"
                     checked={wantsLacerVisit}
                     onChange={(e) => setWantsLacerVisit(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-[#E30613] focus:ring-red-500"
                   />
                   <span>Sim, gostaria de agendar uma visita.</span>
                 </label>
@@ -849,10 +849,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       required
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 shrink-0 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                      className="mt-0.5 w-4 h-4 shrink-0 rounded bg-slate-900 border-slate-700 text-[#E30613] focus:ring-red-500"
                     />
                     <span className="leading-relaxed">
-                      Declaro que li e aceito o regulamento do sorteio e a política de privacidade da Lacer, e autorizo o tratamento dos meus dados pessoais para a gestão da minha participação no sorteio, nos termos da legislação aplicável de proteção de dados. <span className="text-amber-400 font-bold">*</span>
+                      Declaro que li e aceito o regulamento do sorteio e a política de privacidade da Lacer, e autorizo o tratamento dos meus dados pessoais para a gestão da minha participação no sorteio, nos termos da legislação aplicável de proteção de dados. <span className="text-red-500 font-bold">*</span>
                     </span>
                   </label>
                   <div className="pl-7 pt-1">
@@ -868,15 +868,15 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           console.error('Error generating PDF:', err);
                         }
                       }}
-                      className="text-amber-400 hover:text-amber-300 text-xs font-semibold underline decoration-amber-400/80 hover:decoration-amber-300 inline-flex items-center gap-1.5 cursor-pointer group transition-all"
+                      className="text-red-400 hover:text-white text-xs font-semibold underline decoration-red-400/80 hover:decoration-white inline-flex items-center gap-1.5 cursor-pointer group transition-all"
                       title="Abrir e descarregar documento oficial em formato PDF"
                     >
-                      <FileText className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+                      <FileText className="w-3.5 h-3.5 text-red-400 group-hover:scale-110 transition-transform shrink-0" />
                       <span>Consulte o regulamento completo do sorteio e a política de privacidade</span>
-                      <span className="inline-flex items-center text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded no-underline">
+                      <span className="inline-flex items-center text-[10px] font-mono font-bold bg-red-500/20 text-red-200 border border-red-500/40 px-1 py-0.2 rounded no-underline">
                         PDF
                       </span>
-                      <ExternalLink className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                      <ExternalLink className="w-3 h-3 text-red-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
                     </a>
                   </div>
                 </div>
@@ -887,7 +887,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     type="checkbox"
                     checked={marketingConsent}
                     onChange={(e) => setMarketingConsent(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 shrink-0 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded bg-slate-900 border-slate-700 text-[#E30613] focus:ring-red-500"
                   />
                   <span className="leading-relaxed">
                     Autorizo a Lacer a contactar-me para receber informação sobre produtos, novidades, eventos e visitas comerciais.
@@ -898,8 +898,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               <button
                 type="submit"
                 disabled={!acceptedTerms || isSubmitting}
-                style={{ backgroundColor: brand.primaryColor }}
-                className="w-full py-4 px-6 rounded-xl font-bold text-slate-950 text-base shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-4 px-6 rounded-xl font-black text-white text-base shadow-xl shadow-red-600/30 bg-[#E30613] hover:bg-[#C80510] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Sparkles className="w-5 h-5 fill-current" />
                 <span>
@@ -914,7 +913,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           {/* Nova Tela de Sucesso: Apresentada ao clicar em 'Participar do sorteio' */}
           {newlyCreatedTicket && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-              <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-10 max-w-2xl w-full shadow-2xl relative my-auto animate-in zoom-in-95 duration-200">
+              <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-red-600/70 rounded-3xl p-6 sm:p-10 max-w-2xl w-full shadow-2xl relative my-auto animate-in zoom-in-95 duration-200">
                 {/* Botão Fechar no canto superior */}
                 <button
                   type="button"
@@ -926,7 +925,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </button>
 
                 {/* Ícone de Sucesso */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto text-emerald-400 mb-5 shadow-xl shadow-emerald-500/20 animate-bounce">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mx-auto text-red-500 mb-5 shadow-xl shadow-red-500/30 animate-bounce">
                   <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
                 </div>
 
@@ -936,11 +935,11 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     Participação registada com sucesso!
                   </h2>
 
-                  <p className="text-base sm:text-lg font-bold text-emerald-400">
+                  <p className="text-base sm:text-lg font-bold text-white">
                     Obrigado por participar no sorteio de um Irrigador Oral Lacer.
                   </p>
 
-                  <p className="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider py-1">
+                  <p className="text-3xl sm:text-4xl font-black text-[#E30613] tracking-wider py-1 drop-shadow-sm">
                     Boa sorte!
                   </p>
 
@@ -948,27 +947,27 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     O vencedor será contactado através dos dados fornecidos no formulário.
                   </p>
 
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/90 border border-slate-800 text-center max-w-lg mx-auto shadow-inner">
-                    <p className="text-xs sm:text-sm text-amber-200 font-semibold flex items-center justify-center gap-2">
-                      <span className="text-amber-400">📍</span>
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-red-950/30 border border-red-500/40 text-center max-w-lg mx-auto shadow-inner">
+                    <p className="text-xs sm:text-sm text-red-100 font-semibold flex items-center justify-center gap-2">
+                      <span className="text-[#E30613]">📍</span>
                       <span>Visite a nossa equipa no stand e descubra as novidades Lacer.</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Golden Ticket Layout */}
-                <div className="bg-slate-950 border border-amber-500/50 rounded-2xl p-5 text-center shadow-inner relative mb-6">
+                <div className="bg-slate-950 border border-red-500/50 rounded-2xl p-5 text-center shadow-inner relative mb-6">
                   <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">
                     O Seu Número da Sorte Oficial
                   </p>
-                  <div className="text-4xl sm:text-5xl font-black font-mono text-amber-400 tracking-wider my-2">
+                  <div className="text-4xl sm:text-5xl font-black font-mono text-[#E30613] tracking-wider my-2">
                     #{newlyCreatedTicket.ticketNumber}
                   </div>
                   <p className="text-base sm:text-lg font-bold text-white">
                     {newlyCreatedTicket.name}
                   </p>
                   {newlyCreatedTicket.clinic && (
-                    <p className="text-xs text-amber-300 font-medium mt-0.5">
+                    <p className="text-xs text-red-300 font-medium mt-0.5">
                       🏥 {newlyCreatedTicket.clinic}
                     </p>
                   )}
@@ -986,7 +985,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopyTicket(newlyCreatedTicket.ticketNumber)}
-                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-colors border border-amber-500/30"
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-colors border border-red-500/30"
                     >
                       {copiedTicket ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                       <span>{copiedTicket ? 'Número Copiado!' : 'Copiar Número do Bilhete'}</span>
@@ -1025,7 +1024,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setNewlyCreatedTicket(null)}
-                    className="flex-1 py-3 px-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
+                    className="flex-1 py-3 px-5 bg-[#E30613] hover:bg-[#C80510] text-white font-bold rounded-xl text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
                   >
                     <Check className="w-4 h-4" />
                     <span>Concluir e Voltar ao Início</span>
@@ -1038,7 +1037,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           {/* Card: Consultar Meus Bilhetes */}
           <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-              <Search className="w-4 h-4 text-amber-400" />
+              <Search className="w-4 h-4 text-red-400" />
               <span>{brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes'}</span>
             </h3>
             <p className="text-xs text-slate-400 mb-4">
@@ -1051,11 +1050,11 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Insira NIF, telemóvel, e-mail ou número de bilhete..."
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
               />
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                className="px-5 py-2.5 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-red-600/20"
               >
                 <Search className="w-4 h-4" />
                 <span>Pesquisar</span>
@@ -1076,7 +1075,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         <p className="text-slate-400 text-[11px]">{p.phone} · {p.city}</p>
                       </div>
                       <div className="text-right">
-                        <span className="font-mono font-bold text-amber-400 text-sm bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+                        <span className="font-mono font-bold text-red-400 text-sm bg-red-500/10 px-2 py-1 rounded border border-red-500/20">
                           #{p.ticketNumber}
                         </span>
                         <p className="text-[10px] text-slate-500 mt-0.5">
@@ -1099,7 +1098,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         <div className="lg:col-span-5 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" />
+              <Trophy className="w-5 h-5 text-red-400" />
               <span>{brand.prizesSectionTitle || 'Prémios Desta Edição'}</span>
             </h2>
             <span className="text-xs text-slate-400">
@@ -1126,7 +1125,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       className="w-24 h-24 rounded-xl object-cover bg-slate-950 shrink-0 border border-slate-800"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-xl bg-slate-800 flex items-center justify-center shrink-0 text-amber-400">
+                    <div className="w-24 h-24 rounded-xl bg-slate-800 flex items-center justify-center shrink-0 text-red-400">
                       <Gift className="w-8 h-8" />
                     </div>
                   )}
@@ -1134,7 +1133,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <div className="flex flex-col justify-between flex-1 min-w-0">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
                           {index + 1}º Prémio
                         </span>
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${

@@ -95,15 +95,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-bold text-base sm:text-lg tracking-tight text-white group-hover:text-amber-400 transition-colors truncate">
-                {brand.companyName || 'SorteioLive Pro'}
+              <span className="font-bold text-base sm:text-lg tracking-tight text-white group-hover:text-red-400 transition-colors truncate">
+                {brand.companyName || 'Lacer - Sorteio OMD 2026'}
               </span>
-              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded shrink-0">
+              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/30 rounded shrink-0">
                 Oficial
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block truncate max-w-[280px]">
-              {brand.companySlogan || 'Sorteios e prémios em tempo real'}
+              {brand.companySlogan || 'Higiene e Saúde Oral • Stand Lacer'}
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
               title="Clique para sincronizar os dados em tempo real com a base de dados central"
             >
-              <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncing ? 'animate-spin text-amber-400' : ''}`} />
+              <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncing ? 'animate-spin text-red-400' : ''}`} />
               <span className="hidden lg:inline">{isSyncing ? 'A sincronizar...' : 'Base Sincronizada'}</span>
               <span className="lg:hidden">{isSyncing ? 'Sync...' : 'BD'}</span>
             </button>
@@ -136,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="text-[11px] sm:text-xs">
                 <span className="text-slate-400 mr-1 font-medium hidden xs:inline">Próximo:</span>
-                <span className="font-mono font-bold text-amber-400">
+                <span className="font-mono font-bold text-red-400">
                   {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
                   {String(timeLeft.hours).padStart(2, '0')}:
                   {String(timeLeft.minutes).padStart(2, '0')}:
@@ -153,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onViewChange('public')}
             className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
               currentView === 'public'
-                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md'
+                ? 'bg-[#E30613] text-white font-semibold shadow-md shadow-red-500/25'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -165,14 +165,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onViewChange('live')}
             className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
               currentView === 'live'
-                ? 'bg-red-500 text-white font-semibold shadow-lg shadow-red-500/20 animate-pulse'
+                ? 'bg-[#E30613] text-white font-semibold shadow-lg shadow-red-500/30 ring-1 ring-white/20'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <Tv className="w-4 h-4" />
             <span className="flex items-center gap-1.5">
               <span>Ecrã em Direto</span>
-              <span className="w-2 h-2 rounded-full bg-red-400"></span>
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
             </span>
           </button>
 
@@ -183,12 +183,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onViewChange('admin')}
                 className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
                   currentView === 'admin'
-                    ? 'bg-slate-800 text-amber-400 font-semibold border border-amber-500/40 shadow-md ring-1 ring-amber-500/30'
-                    : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'
+                    ? 'bg-slate-800 text-red-400 font-semibold border border-red-500/40 shadow-md ring-1 ring-red-500/30'
+                    : 'text-red-400 hover:text-red-300 hover:bg-slate-800/50'
                 }`}
                 title="Painel de Administração"
               >
-                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <ShieldCheck className="w-4 h-4 text-red-400" />
                 <span className="hidden sm:inline">Admin [Alt+C]</span>
                 <span className="sm:hidden">Admin</span>
               </button>

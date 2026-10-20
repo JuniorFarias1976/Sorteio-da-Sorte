@@ -402,12 +402,12 @@ export const generateRegulationPDFDoc = (brand: BrandConfig): jsPDF => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const company = brand.companyName || 'Sorteio Lacer OMD 2026';
 
-  // --- HEADER BANNER: Slate 900 ---
-  doc.setFillColor(15, 23, 42); // slate-900
+  // --- HEADER BANNER: Lacer Red (#E30613) & Crisp White ---
+  doc.setFillColor(227, 6, 19); // Lacer Red #E30613
   doc.rect(0, 0, 210, 32, 'F');
 
-  // Accent Line: Emerald Green
-  doc.setFillColor(16, 185, 129); // emerald-500
+  // Accent Line: Deep Carmine
+  doc.setFillColor(153, 27, 27); // red-800
   doc.rect(0, 31, 210, 1.8, 'F');
 
   doc.setTextColor(255, 255, 255);

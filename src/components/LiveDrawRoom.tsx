@@ -640,15 +640,15 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                   {activeSchedule ? activeSchedule.title : 'Sorteio Oficial'}
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-bold">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-red-300 font-bold">
+                    <Calendar className="w-3.5 h-3.5 text-red-400 shrink-0" />
                     <span className="text-slate-400 font-normal">Dia:</span>
                     <span className="text-white capitalize">{formatScheduleFullDate(activeSchedule?.scheduledDate)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-bold">
-                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-red-300 font-bold">
+                    <Clock className="w-3.5 h-3.5 text-red-400 shrink-0" />
                     <span className="text-slate-400 font-normal">Horário:</span>
-                    <span className="font-mono text-amber-400 font-extrabold text-sm">{activeSchedule?.scheduledTime || '10:00'}</span>
+                    <span className="font-mono text-red-400 font-extrabold text-sm">{activeSchedule?.scheduledTime || '10:00'}</span>
                   </div>
                 </div>
               </div>
@@ -656,22 +656,22 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
               {/* Countdown overlay if active */}
               {countdown !== null ? (
                 <div className="py-12 animate-bounce">
-                  <div className="text-8xl font-black font-mono text-amber-400 drop-shadow-[0_0_35px_rgba(245,158,11,0.8)]">
+                  <div className="text-8xl font-black font-mono text-red-500 drop-shadow-[0_0_35px_rgba(227,6,19,0.8)]">
                     {countdown}
                   </div>
-                  <p className="text-sm font-semibold text-slate-300 uppercase tracking-widest mt-4">
-                    Preparando Roleta...
+                  <p className="text-sm font-semibold text-white uppercase tracking-widest mt-4">
+                    Preparando Roleta Lacer...
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Big Lucky Ticket Number Display */}
                   <div className="my-4">
-                    <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+                    <p className="text-xs uppercase tracking-widest text-slate-300 font-semibold mb-2">
                       {latestWinner ? 'BILHETE CONTEMPLADO' : 'NÚMERO DA SORTE'}
                     </p>
-                    <div className="font-mono text-5xl sm:text-7xl font-extrabold tracking-widest bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-md py-2">
-                      #{currentDisplayTicket}
+                    <div className="font-mono text-5xl sm:text-7xl font-extrabold tracking-widest text-white drop-shadow-[0_2px_15px_rgba(227,6,19,0.6)] py-2">
+                      <span className="text-[#E30613]">#</span>{currentDisplayTicket}
                     </div>
                   </div>
 
@@ -681,7 +681,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                       {currentDisplayName}
                     </h4>
                     {currentDisplayCity && currentDisplayCity.toUpperCase() !== 'BRASIL' ? (
-                      <p className="text-xs text-amber-400/90 font-medium tracking-wide mt-1 uppercase">
+                      <p className="text-xs text-red-400 font-medium tracking-wide mt-1 uppercase">
                         📍 {currentDisplayCity}
                       </p>
                     ) : (
@@ -705,7 +705,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                           ? 'bg-red-950/60 text-red-400 border border-red-500/50 cursor-not-allowed opacity-90'
                           : isDrawing || countdown !== null
                           ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                          : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 hover:brightness-110 active:scale-98 shadow-amber-500/25 cursor-pointer ring-4 ring-amber-500/20'
+                          : 'bg-[#E30613] hover:bg-[#C80510] text-white active:scale-98 shadow-red-600/30 cursor-pointer ring-4 ring-red-500/25'
                       }`}
                     >
                       <Flame className="w-6 h-6 fill-current animate-pulse shrink-0" />
@@ -718,15 +718,15 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                       </span>
                     </button>
                     {activeSchedule && (
-                      <p className="text-xs text-amber-400/80 font-mono mt-2 text-center">
+                      <p className="text-xs text-red-400/90 font-mono mt-2 text-center">
                         📅 Agendado para {formatScheduleFullDate(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
                       </p>
                     )}
                   </div>
                 ) : (
                   <div className="py-4 px-6 rounded-2xl bg-slate-900/90 border border-slate-800/80 max-w-md mx-auto text-center shadow-xl">
-                    <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <div className="flex items-center justify-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wider mb-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#E30613] animate-ping"></span>
                       <span>Transmissão Oficial ao Vivo</span>
                     </div>
                     <p className="text-xs text-slate-300">
@@ -747,11 +747,11 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
           {/* Winner Celebration Modal / Card when chosen */}
           {latestWinner && (
-            <div className="w-full mt-6 bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/40 border-2 border-amber-500 rounded-2xl p-6 shadow-2xl backdrop-blur-md animate-fadeIn">
+            <div className="w-full mt-6 bg-gradient-to-r from-red-950/40 via-slate-900 to-red-950/40 border-2 border-red-500 rounded-2xl p-6 shadow-2xl backdrop-blur-md animate-fadeIn">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4 text-center sm:text-left">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500 flex items-center justify-center shrink-0">
-                    <Award className="w-8 h-8 text-amber-400" />
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-500 flex items-center justify-center shrink-0">
+                    <Award className="w-8 h-8 text-red-400" />
                   </div>
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-400">

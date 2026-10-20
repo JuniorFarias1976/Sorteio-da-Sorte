@@ -12,8 +12,7 @@ const PORT = 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 
-// Initial Seed Data matching default configurations
-const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48" fill="%230f172a" stroke="%23f59e0b" stroke-width="4"/><path d="M32 30h36v18c0 10-8 18-18 18s-18-8-18-18V30z" fill="%23f59e0b"/><path d="M26 34c-4 0-8 4-8 9s4 9 8 9h6v-6h-6c-1 0-2-1-2-3s1-3 2-3h6v-6h-6zm48 0h-6v6h6c1 0 2 1 2 3s-1 3-2 3h-6v6h6c4 0 8-4 8-9s-4-9-8-9z" fill="%23fbbf24"/><path d="M46 66h8v12h-8z" fill="%23d97706"/><path d="M36 78h28v6H36z" fill="%23f59e0b"/><polygon points="50,37 52.5,43 59,43.5 54,48 55.5,54.5 50,51 44.5,54.5 46,48 41,43.5 47.5,43" fill="%23ffffff"/></svg>`;
+const DEFAULT_BRAND_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" fill="none"><path d="M42 10 C76 11, 80 42, 69 66 C52 76, 24 74, 14 52 C4 28, 16 10, 42 10 Z" stroke="%23E30613" stroke-width="4.5" fill="%23E30613" fill-opacity="0.15"/><text x="42" y="49" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="19" fill="%23E30613" letter-spacing="0.5">Lacer</text><text x="82" y="51" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="28" fill="%23FFFFFF" letter-spacing="1.2">LACER</text></svg>`;
 
 const INITIAL_DATABASE = {
   participants: [] as any[],
@@ -143,18 +142,18 @@ const INITIAL_DATABASE = {
     messageTemplate: 'Olá {nome}! 🎟️ O seu bilhete da sorte é #{bilhete}. O sorteio "{evento}" começará em breve com prémios incríveis! Assista em direto: {link_sorteio}',
   },
   brand: {
-    companyName: 'Sorteio Lacer OMD 2026',
-    companySlogan: 'Sorteios 100% Auditados',
+    companyName: 'Lacer - Sorteio OMD 2026',
+    companySlogan: 'Higiene e Saúde Oral • Stand Lacer',
     logoUrl: DEFAULT_BRAND_LOGO,
-    primaryColor: '#2563eb',
-    secondaryColor: '#d97706',
-    accentColor: '#10b981',
+    primaryColor: '#E30613',
+    secondaryColor: '#B91C1C',
+    accentColor: '#FFFFFF',
     backgroundTheme: 'dark',
     raffleUrl: '',
-    contactEmail: 'contacto@sorteiolive.pt',
+    contactEmail: 'contacto@lacer.pt',
     termsAndConditions: 'Sorteio autorizado e auditado em tempo real. Cada participante concorre com os seus bilhetes únicos gerados no momento da inscrição. Os vencedores devem apresentar documento oficial com fotografia e comprovar a posse do número sorteado no prazo de até 30 dias corridos.',
-    roundsBannerTitle: '4 Sorteios Oficiais no Mesmo Dia',
-    roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as 4 rondas diárias!',
+    roundsBannerTitle: '2 Sorteios Oficiais por Dia',
+    roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!',
     showRoundsBanner: true,
     formTitle: 'Garanta o seu Bilhete da Sorte',
     formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
@@ -163,9 +162,9 @@ const INITIAL_DATABASE = {
     searchSectionTitle: 'Já se inscreveu? Consulte os seus Bilhetes',
     searchSectionSubtitle: 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados',
     ticketNotice: 'Validação única: limite de 1 inscrição por e-mail',
-    heroBadgeText: 'Sorteio Oficial 2026 • Auditoria em Tempo Real',
-    ticketModalTitle: 'INSCRIÇÃO CONFIRMADA COM SUCESSO!',
-    ticketModalSubtitle: 'O Seu Bilhete Oficial',
+    heroBadgeText: 'Sorteio Oficial Lacer OMD 2026 • Auditoria em Tempo Real',
+    ticketModalTitle: 'PARTICIPAÇÃO REGISTADA COM SUCESSO!',
+    ticketModalSubtitle: 'O Seu Bilhete Oficial Lacer',
   },
   formFields: {
     name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },
