@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Participant, Prize, DrawSchedule, BrandConfig, FormFieldsConfig, DENTAL_SPECIALTIES } from '../types';
 import { 
   Ticket, 
@@ -37,6 +37,7 @@ interface PublicRaffleViewProps {
   onGoToLive: () => void;
   onUpdateBrand?: (brand: BrandConfig) => void;
   isAdmin?: boolean;
+  onRequestUnlockAdmin?: () => void;
 }
 
 export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
@@ -50,7 +51,27 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   onGoToLive,
   onUpdateBrand,
   isAdmin = false,
+  onRequestUnlockAdmin,
 }) => {
+  const [heroLogoClicks, setHeroLogoClicks] = useState<number>(0);
+  const heroLogoTimerRef = useRef<any>(null);
+
+  const handleHeroLogoClick = () => {
+    const nextCount = heroLogoClicks + 1;
+    if (heroLogoTimerRef.current) {
+      clearTimeout(heroLogoTimerRef.current);
+    }
+    if (nextCount >= 3) {
+      setHeroLogoClicks(0);
+      onRequestUnlockAdmin?.();
+    } else {
+      setHeroLogoClicks(nextCount);
+      heroLogoTimerRef.current = setTimeout(() => {
+        setHeroLogoClicks(0);
+      }, 1600);
+    }
+  };
+
   const formatScheduleFullDate = (dateStr?: string) => {
     if (!dateStr) return 'Data Oficial';
     try {
@@ -409,20 +430,24 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
         <div className="relative z-10 max-w-4xl mx-auto">
 
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
+          {/* Logo (Clique 3 vezes para aceder ao painel de administração) */}
+          <div 
+            onClick={handleHeroLogoClick}
+            className="flex justify-center mb-6 cursor-pointer select-none group"
+            title="Logótipo Oficial (Toque 3 vezes para acesso de administrador)"
+          >
             {brand.logoUrl ? (
               <img
                 src={brand.logoUrl}
                 alt={brand.companyName}
-                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-contain p-2 border-2 shadow-2xl ${
+                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-contain p-2 border-2 shadow-2xl group-hover:scale-105 transition-transform ${
                   isLight ? 'bg-white border-red-100' : 'bg-slate-900 border-slate-700/80'
                 }`}
               />
             ) : (
               <div 
                 style={{ backgroundColor: brand.primaryColor }}
-                className="w-20 h-20 rounded-3xl flex items-center justify-center text-white font-black text-3xl shadow-2xl"
+                className="w-20 h-20 rounded-3xl flex items-center justify-center text-white font-black text-3xl shadow-2xl group-hover:scale-105 transition-transform"
               >
                 ★
               </div>
@@ -532,8 +557,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           return (
                             <div
                               key={sch.id}
-                              onClick={onGoToLive}
-                              className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-3 ${
+                              onClick={isAdmin ? onGoToLive : undefined}
+                              className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                                isAdmin ? 'cursor-pointer group' : ''
+                              } ${
                                 isLive
                                   ? isLight 
                                     ? 'bg-red-50/90 border-[#E30613] ring-2 ring-red-500/20 shadow-md' 
@@ -541,8 +568,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                                   : isCompleted
                                   ? isLight ? 'bg-slate-100/70 border-slate-200 opacity-60' : 'bg-slate-900/60 border-slate-800/80 opacity-60'
                                   : isLight 
-                                    ? 'bg-white border-slate-200 hover:border-[#E30613] hover:shadow-md' 
-                                    : 'bg-slate-900/90 border-slate-800 hover:border-red-500/50 hover:bg-slate-850'
+                                    ? 'bg-white border-slate-200 hover:border-[#E30613]' 
+                                    : 'bg-slate-900/90 border-slate-800 hover:border-red-500/50'
                               }`}
                             >
                               <div className="min-w-0">

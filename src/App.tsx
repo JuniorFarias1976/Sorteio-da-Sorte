@@ -23,7 +23,6 @@ import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { MobileBottomNav } from './components/MobileBottomNav';
 import { Lock, Key, ShieldCheck, CheckCircle2, AlertCircle, X, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -597,7 +596,15 @@ export default function App() {
         participantsCount={participants.length}
         isAdminUnlocked={isAdminUnlocked}
         onToggleAdminLock={handleToggleAdminLock}
-        onRequestUnlockAdmin={() => setShowAdminModal(true)}
+        onRequestUnlockAdmin={() => {
+          if (isAdminUnlocked) {
+            setCurrentView('admin');
+            setAdminToast('🔑 Painel de Administrador Ativo');
+            setTimeout(() => setAdminToast(null), 3000);
+          } else {
+            setShowAdminModal(true);
+          }
+        }}
         isServerConnected={isServerConnected}
         isSyncing={isSyncing}
         onManualSync={handleManualSync}
@@ -711,7 +718,7 @@ export default function App() {
       )}
 
       {/* Main Active View */}
-      <main className="flex-1 pb-16 sm:pb-0">
+      <main className="flex-1 pb-4 sm:pb-0">
         {currentView === 'public' && (
           <PublicRaffleView
             brand={brand}
@@ -724,6 +731,15 @@ export default function App() {
             onGoToLive={() => setCurrentView('live')}
             onUpdateBrand={handleUpdateBrand}
             isAdmin={isAdminUnlocked}
+            onRequestUnlockAdmin={() => {
+              if (isAdminUnlocked) {
+                setCurrentView('admin');
+                setAdminToast('🔑 Painel de Administrador Ativo');
+                setTimeout(() => setAdminToast(null), 3000);
+              } else {
+                setShowAdminModal(true);
+              }
+            }}
           />
         )}
 
@@ -764,6 +780,7 @@ export default function App() {
             onUpdatePosterConfig={handleUpdatePosterConfig}
             onUpdateReportConfig={handleUpdateReportConfig}
             onGoToLive={() => setCurrentView('live')}
+            onGoToPublic={() => setCurrentView('public')}
             onResetAllData={handleResetAllData}
             onManualSync={handleManualSync}
             isSyncing={isSyncing}
@@ -771,68 +788,19 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer (Hidden on print, extra bottom space on mobile for navigation bar) */}
-      <footer className={`no-print py-6 pb-24 sm:pb-6 text-center text-xs transition-colors duration-200 ${
+      {/* Footer (Clean & Official - Links removed as requested) */}
+      <footer className={`no-print py-6 text-center text-xs transition-colors duration-200 ${
         isLight 
           ? 'bg-white border-t border-slate-200 text-slate-500' 
           : 'bg-slate-950 border-t border-slate-900 text-slate-500'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-400'}`}>
-              {brand.companyName || 'Lacer - Sorteio OMD 2026'}
-            </span>
-            <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>· 2 Sorteios Diários Oficiais Auditados</span>
-          </div>
-
-          <div className={`flex items-center gap-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-            <button 
-              onClick={() => setCurrentView('public')} 
-              className={`transition-colors cursor-pointer ${isLight ? 'hover:text-[#E30613]' : 'hover:text-white'}`}
-            >
-              Inscrição & Bilhetes
-            </button>
-            <button 
-              onClick={() => setCurrentView('live')} 
-              className={`transition-colors cursor-pointer ${isLight ? 'hover:text-[#E30613]' : 'hover:text-white'}`}
-            >
-              Telão Ao Vivo
-            </button>
-            {isAdminUnlocked && (
-              <button
-                onClick={handleManualSync}
-                className="hover:text-emerald-500 flex items-center gap-1 transition-colors cursor-pointer"
-                title="Sincronizar dados com o banco de dados central"
-              >
-                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-[#E30613]' : ''}`} />
-                <span>Sincronizar</span>
-              </button>
-            )}
-
-            {/* In-app admin shortcut (visible only when admin is already unlocked) */}
-            {isAdminUnlocked && (
-              <button
-                onClick={() => setCurrentView('admin')}
-                className="text-[#E30613] hover:text-[#B91C1C] font-semibold text-xs flex items-center gap-1 transition-colors cursor-pointer"
-                title="Aceder ao Painel de Administrador"
-              >
-                <Lock className="w-3 h-3" />
-                <span>Painel Admin</span>
-              </button>
-            )}
-          </div>
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-center gap-2">
+          <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-400'}`}>
+            {brand.companyName || 'Lacer - Sorteio OMD 2026'}
+          </span>
+          <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>· 2 Sorteios Diários Oficiais Auditados</span>
         </div>
       </footer>
-
-      {/* Dedicated Mobile Bottom App Bar (Optimized for Smartphones) */}
-      <MobileBottomNav
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        brand={brand}
-        isAdminUnlocked={isAdminUnlocked}
-        onRequestUnlockAdmin={() => setShowAdminModal(true)}
-        nextSchedule={nextSchedule}
-      />
     </div>
   );
 }

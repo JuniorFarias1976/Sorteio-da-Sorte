@@ -59,6 +59,7 @@ interface AdminDashboardProps {
   onUpdatePosterConfig?: (config: QRCodePosterConfig) => void;
   onUpdateReportConfig?: (config: ReportPdfConfig) => void;
   onGoToLive: () => void;
+  onGoToPublic?: () => void;
   onResetAllData: () => void;
   onManualSync?: () => void;
   isSyncing?: boolean;
@@ -96,6 +97,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdatePosterConfig,
   onUpdateReportConfig,
   onGoToLive,
+  onGoToPublic,
   onResetAllData,
   onManualSync,
   isSyncing = false,
@@ -131,12 +133,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div 
-      className={`min-h-screen py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 sm:pb-8 transition-colors duration-200 ${
+      className={`min-h-screen py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-12 sm:pb-8 transition-colors duration-200 ${
         isLight ? 'bg-white text-slate-900' : 'bg-slate-950 text-slate-100'
       }`}
       style={{ backgroundColor: appBg, color: appTextColor }}
     >
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Mobile Header: Voltar ao Sorteio */}
+        {onGoToPublic && (
+          <div className="sm:hidden flex items-center justify-between gap-2">
+            <button
+              onClick={onGoToPublic}
+              className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
+                isLight 
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
+                  : 'bg-slate-900 hover:bg-slate-850 text-slate-200 border-slate-700'
+              }`}
+            >
+              <span>← Voltar ao Sorteio (Página Pública)</span>
+            </button>
+          </div>
+        )}
+
         {/* Mobile Tab Selector (< sm) */}
         <div className={`sm:hidden border rounded-2xl p-2.5 shadow-sm flex items-center justify-between gap-2 ${
           isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800'

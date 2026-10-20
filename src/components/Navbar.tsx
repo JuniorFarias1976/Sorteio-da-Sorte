@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrandConfig, DrawSchedule } from '../types';
 import { isLightColor } from '../utils/storage';
 import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw } from 'lucide-react';
@@ -31,16 +31,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   onManualSync,
 }) => {
   const [logoTapCount, setLogoTapCount] = useState<number>(0);
+  const logoTimerRef = useRef<any>(null);
 
   const handleLogoClick = () => {
-    onViewChange('public');
     const nextCount = logoTapCount + 1;
-    setLogoTapCount(nextCount);
+    if (logoTimerRef.current) {
+      clearTimeout(logoTimerRef.current);
+    }
+
     if (nextCount >= 3) {
       setLogoTapCount(0);
       onRequestUnlockAdmin?.();
+    } else {
+      setLogoTapCount(nextCount);
+      logoTimerRef.current = setTimeout(() => {
+        setLogoTapCount(0);
+      }, 1600);
     }
-    setTimeout(() => setLogoTapCount(0), 1200);
   };
 
   const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
