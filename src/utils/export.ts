@@ -55,48 +55,80 @@ export const getLogoImageForPdf = async (logoUrl?: string): Promise<string | nul
   });
 };
 
-// Draw crisp vector logo badge in jsPDF as guaranteed fallback
+// Draw crisp vector logo badge in jsPDF with guaranteed perfect proportions (NEVER stretched)
 export const drawFallbackLogo = (
   doc: jsPDF,
   brand: BrandConfig,
   x: number,
   y: number,
-  width: number,
-  height: number
+  boxW: number,
+  boxH: number
 ) => {
   const primary = hexToRgb(brand.primaryColor || '#E30613');
+
+  // 1. Clean crisp white rounded card badge
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(x, y, width, height, 2, 2, 'F');
+  doc.roundedRect(x, y, boxW, boxH, 2.5, 2.5, 'F');
+
+  // 2. Proportional Lacer Shield (fixed aspect ratio ~ 1.32 : 1, never horizontally stretched)
+  const cx = x + boxW / 2;
+  const cy = y + boxH / 2;
+
+  // Calculate proportional radius ensuring comfortable inner padding
+  const maxAvailableH = (boxH - 3.5) / 2;
+  const maxAvailableW = (boxW - 4) / 2 / 1.32;
+  const ry = Math.max(Math.min(maxAvailableH, maxAvailableW), 4);
+  const rx = ry * 1.32; // Fixed harmonious ratio matching official Lacer brand oval/shield
+
+  // Lacer Red Outline
   doc.setDrawColor(primary[0], primary[1], primary[2]);
-  doc.setLineWidth(0.8);
-  doc.ellipse(x + width / 2, y + height / 2, width * 0.42, height * 0.35, 'S');
+  doc.setLineWidth(0.7);
+  doc.ellipse(cx, cy, rx, ry, 'S');
+
+  // Lacer Red Typography centered inside shield
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.setFontSize(height * 0.5);
   doc.setFont('helvetica', 'bold');
-  doc.text('lacer', x + width / 2, y + height / 2 + (height * 0.16), { align: 'center' });
+  const fontSize = Math.max(ry * 1.55, 8);
+  doc.setFontSize(fontSize);
+  doc.text('lacer', cx, cy + (ry * 0.3), { align: 'center' });
 };
 
-// Render Logo in PDF (Raster PNG image or vector badge)
+// Render Logo in PDF (Raster PNG image or vector badge, always preserving aspect ratio)
 export const renderLogoInDoc = (
   doc: jsPDF,
   brand: BrandConfig,
   logoImgData: string | null,
   x: number,
   y: number,
-  width: number,
-  height: number
+  boxW: number,
+  boxH: number
 ) => {
   if (logoImgData) {
     try {
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(x - 0.8, y - 0.8, width + 1.6, height + 1.6, 2, 2, 'F');
-      doc.addImage(logoImgData, 'PNG', x, y, width, height);
+      doc.roundedRect(x, y, boxW, boxH, 2.5, 2.5, 'F');
+
+      // Keep generous padding so image doesn't touch the border or get distorted
+      const pad = 2;
+      const targetW = boxW - pad * 2;
+      const targetH = boxH - pad * 2;
+
+      doc.addImage(
+        logoImgData,
+        'PNG',
+        x + pad,
+        y + pad,
+        targetW,
+        targetH,
+        undefined,
+        'FAST'
+      );
       return;
     } catch {
       // fallback
     }
   }
-  drawFallbackLogo(doc, brand, x, y, width, height);
+  drawFallbackLogo(doc, brand, x, y, boxW, boxH);
 };
 
 // Export participants to Excel
@@ -157,19 +189,19 @@ export const exportParticipantsToPDF = async (participants: Participant[], brand
   doc.setFillColor(secondary[0], secondary[1], secondary[2]);
   doc.rect(0, 27, 297, 1.8, 'F');
 
-  // Render Company Logo on top left
-  renderLogoInDoc(doc, brand, logoData, 12, 4, 30, 19);
+  // Render Company Logo on top left (compact rounded square, never stretched)
+  renderLogoInDoc(doc, brand, logoData, 12, 4, 22, 20);
 
   // Header Text
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
-  doc.text(brand.companyName || 'Sorteio Lacer OMD 2026', 48, 14);
+  doc.text(brand.companyName || 'Lacer - Sorteio OMD 2026', 39, 13.5);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Relatório Oficial de Participantes & Contactos Profissionais', 48, 22);
+  doc.text('Relatório Oficial de Participantes & Contactos Profissionais', 39, 21.5);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8.5);
@@ -288,13 +320,13 @@ export const exportWinnersReportPDF = async (
   doc.setFillColor(secondary[0], secondary[1], secondary[2]);
   doc.rect(0, 31, 210, 1.8, 'F');
 
-  // Render Company Logo
-  renderLogoInDoc(doc, brand, logoData, 12, 5, 28, 18);
+  // Render Company Logo (compact rounded card, never stretched)
+  renderLogoInDoc(doc, brand, logoData, 12, 5, 24, 20);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(brand.companyName || 'Sorteio Lacer OMD 2026', 45, 14);
+  doc.text(brand.companyName || 'Sorteio Lacer OMD 2026', 40, 14);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
@@ -412,109 +444,149 @@ export const exportWinnersReportPDF = async (
 
 // Export Individual Award Certificate to PDF (Themed with Active App Colors & Company Logo)
 export const exportCertificatePDF = async (winner: DrawWinner, brand: BrandConfig) => {
-  const doc = new jsPDF({ orientation: 'landscape' });
-  const primary = hexToRgb(brand.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const primary = hexToRgb(brand?.primaryColor || '#E30613');
+  const secondary = hexToRgb(brand?.secondaryColor || '#B91C1C');
 
   // Convert company logo
-  const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
+  const logoData = await getLogoImageForPdf(brand?.logoUrl || '/favicon.svg');
 
-  // Border ornament in Active App Color
+  // 1. Double Luxury Border in Active App Colors (Lacer Red & Dark Red)
+  // Outer frame
   doc.setDrawColor(primary[0], primary[1], primary[2]);
-  doc.setLineWidth(3);
+  doc.setLineWidth(2.2);
   doc.rect(10, 10, 277, 190);
 
+  // Inner frame
   doc.setDrawColor(secondary[0], secondary[1], secondary[2]);
-  doc.setLineWidth(0.8);
-  doc.rect(14, 14, 269, 182);
+  doc.setLineWidth(0.7);
+  doc.rect(13.5, 13.5, 270, 183);
 
-  // Top Accent Bar
+  // Corner decorative accents in primary color
   doc.setFillColor(primary[0], primary[1], primary[2]);
-  doc.rect(14, 14, 269, 15, 'F');
+  doc.rect(9, 9, 6, 6, 'F');
+  doc.rect(282, 9, 6, 6, 'F');
+  doc.rect(9, 195, 6, 6, 'F');
+  doc.rect(282, 195, 6, 6, 'F');
+
+  // 2. Top Header Ribbon in Active App Primary Color (#E30613)
+  doc.setFillColor(primary[0], primary[1], primary[2]);
+  doc.rect(14, 14, 269, 20, 'F');
+
+  // Accent Line in Secondary Color
   doc.setFillColor(secondary[0], secondary[1], secondary[2]);
-  doc.rect(14, 28, 269, 1.5, 'F');
+  doc.rect(14, 34, 269, 1.6, 'F');
 
-  // Render Logo inside top left bar
-  renderLogoInDoc(doc, brand, logoData, 20, 15, 20, 11);
+  // Render Crisp Company Logo on top left (22mm x 16mm, perfectly proportioned)
+  renderLogoInDoc(doc, brand, logoData, 20, 16, 20, 16);
 
-  // Header inside top bar
+  // Top Bar Brand Titles
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text((brand.companyName || 'Sorteio Oficial Lacer OMD 2026').toUpperCase(), 148, 23, { align: 'center' });
+  doc.text((brand?.companyName || 'LACER - SORTEIO OMD 2026').toUpperCase(), 45, 23.5);
 
-  // Certificate Title
-  doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.setFontSize(26);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(brand?.companySlogan || 'Higiene e Saúde Oral • Stand Lacer', 45, 29.5);
+
+  // Top Bar Right Metadata
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('CERTIFICADO OFICIAL DE HOMOLOGAÇÃO', 148, 48, { align: 'center' });
+  doc.text('SISTEMA OFICIAL DE AUDITORIA', 273, 22.5, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.text('HOMOLOGAÇÃO 100% EM TEMPO REAL', 273, 28.5, { align: 'right' });
+
+  // 3. Main Certificate Heading in Primary Color
+  doc.setTextColor(primary[0], primary[1], primary[2]);
+  doc.setFontSize(23);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CERTIFICADO OFICIAL DE HOMOLOGAÇÃO', 148.5, 52, { align: 'center' });
 
   doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('COMPROVATIVO DE CONTEMPLAÇÃO E AUDITORIA EM TEMPO REAL', 148.5, 60, { align: 'center' });
+
+  // 4. Recipient Introduction
+  doc.setTextColor(51, 65, 85);
   doc.setFontSize(10.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('COMPROVATIVO DE CONTEMPLAÇÃO E AUDITORIA EM TEMPO REAL', 148, 56, { align: 'center' });
+  doc.text('Certificamos para os devidos efeitos que o(a) participante profissional', 148.5, 74, { align: 'center' });
 
-  // Recipient text
-  doc.setTextColor(51, 65, 85);
-  doc.setFontSize(11);
-  doc.text('Certificamos para os devidos efeitos que o(a) participante profissional', 148, 74, { align: 'center' });
-
-  // Winner Name
+  // 5. Winner Name (Bold, Large, Dark Slate)
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(winner.participantName.toUpperCase(), 148, 88, { align: 'center' });
+  doc.text(winner.participantName.toUpperCase(), 148.5, 88, { align: 'center' });
 
-  // Clinic & Specialty details
+  // 6. Clinic & Specialty Details
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   const clinicText = winner.participantClinic ? `Clínica: ${winner.participantClinic}` : '';
   const specText = winner.participantSpecialty ? `Especialidade: ${winner.participantSpecialty}` : '';
-  const details = [clinicText, specText].filter(Boolean).join('  |  ');
+  const details = [clinicText, specText].filter(Boolean).join('   •   ');
   if (details) {
-    doc.text(details, 148, 97, { align: 'center' });
+    doc.text(details, 148.5, 96, { align: 'center' });
   }
 
-  // Winning ticket badge in Active App Color
-  doc.setFontSize(15);
+  // 7. Winning Lucky Ticket Badge (Active App Color: Red Badge)
+  doc.setFillColor(255, 241, 242); // Soft Red #FFF1F2
+  doc.setDrawColor(primary[0], primary[1], primary[2]);
+  doc.setLineWidth(0.8);
+  doc.roundedRect(148.5 - 45, 103, 90, 11, 2.5, 2.5, 'FD');
+
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text(`BILHETE PREMIADO: #${winner.participantTicket}`, 148, 110, { align: 'center' });
+  doc.text(`BILHETE PREMIADO: #${winner.participantTicket}`, 148.5, 110.5, { align: 'center' });
 
-  doc.setFontSize(11);
+  // 8. Prize Announcement
+  doc.setFontSize(10.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(51, 65, 85);
-  doc.text('Foi legitimamente contemplado(a) no sorteio oficial com a seguinte atribuição:', 148, 122, { align: 'center' });
+  doc.text('Foi legitimamente contemplado(a) no sorteio oficial com a seguinte atribuição:', 148.5, 123, { align: 'center' });
 
-  // Prize Title
-  doc.setFontSize(18);
+  // Prize Title in Bold Red (cleanly formatted with stars)
+  doc.setFontSize(17);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text(`★ ${winner.prizeTitle} ★`, 148, 134, { align: 'center' });
+  doc.text(`★  ${winner.prizeTitle.toUpperCase()}  ★`, 148.5, 135, { align: 'center' });
 
-  // Footer & security
+  // 9. Audit Details & Security Hash
   const wonDate = new Date(winner.wonAt);
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
   doc.setFont('helvetica', 'normal');
   doc.text(
     `Sorteio realizado em ${wonDate.toLocaleDateString('pt-PT')} às ${wonDate.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })} (Horário de Portugal Continental)`,
-    148,
+    148.5,
     148,
     { align: 'center' }
   );
-  doc.text(`Código Criptográfico de Auditoria: ${winner.validationHash}`, 148, 155, { align: 'center' });
+  doc.text(`Código Criptográfico de Auditoria: ${winner.validationHash}`, 148.5, 154, { align: 'center' });
 
-  // Signatures
+  // 10. Official Signatures with Active App Red Lines
   doc.setDrawColor(primary[0], primary[1], primary[2]);
-  doc.line(40, 178, 110, 178);
-  doc.line(186, 178, 256, 178);
+  doc.setLineWidth(0.8);
+  doc.line(40, 175, 115, 175);
+  doc.line(182, 175, 257, 175);
 
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text('Assinatura do Responsável Lacer / Direção', 75, 183, { align: 'center' });
-  doc.text('Assinatura da Comissão de Auditoria', 221, 183, { align: 'center' });
+  doc.setFont('helvetica', 'bold');
+  doc.text('Assinatura do Responsável Lacer / Direção', 77.5, 180, { align: 'center' });
+  doc.text('Assinatura da Comissão de Auditoria', 219.5, 180, { align: 'center' });
+
+  // Circular Seal in Secondary Red in bottom center
+  doc.setDrawColor(secondary[0], secondary[1], secondary[2]);
+  doc.setLineWidth(0.6);
+  doc.circle(148.5, 175, 7.5, 'S');
+  doc.setFontSize(5.5);
+  doc.setTextColor(secondary[0], secondary[1], secondary[2]);
+  doc.text('LACER', 148.5, 173.5, { align: 'center' });
+  doc.text('HOMOLOGADO', 148.5, 177, { align: 'center' });
 
   doc.save(`certificado_${winner.participantTicket}_${winner.participantName.replace(/\s+/g, '_')}.pdf`);
 };
@@ -534,18 +606,18 @@ export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: string |
   doc.setFillColor(secondary[0], secondary[1], secondary[2]);
   doc.rect(0, 31, 210, 1.8, 'F');
 
-  // Render Company Logo
-  renderLogoInDoc(doc, brand, logoData || null, 12, 5, 28, 18);
+  // Render Company Logo (compact rounded card, never stretched)
+  renderLogoInDoc(doc, brand, logoData || null, 12, 5, 24, 20);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('REGULAMENTO OFICIAL DO SORTEIO & POLÍTICA DE PRIVACIDADE', 44, 15);
+  doc.text('REGULAMENTO OFICIAL DO SORTEIO & POLÍTICA DE PRIVACIDADE', 40, 15);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${company.toUpperCase()} • LACER FARMACÊUTICA • EDIÇÃO OFICIAL 2026`, 44, 23);
+  doc.text(`${company.toUpperCase()} • LACER FARMACÊUTICA • EDIÇÃO OFICIAL 2026`, 40, 23);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(7);
