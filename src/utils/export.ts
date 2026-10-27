@@ -1,7 +1,8 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Participant, DrawWinner, BrandConfig, ReportPdfConfig } from '../types';
+import QRCode from 'qrcode';
+import { Participant, DrawWinner, BrandConfig, ReportPdfConfig, QRCodePosterConfig } from '../types';
 
 // Convert hex color to RGB tuple for jsPDF
 export const hexToRgb = (hex?: string): [number, number, number] => {
@@ -747,4 +748,328 @@ export const getRegulationPDFBlobUrl = (brand: BrandConfig): string => {
   const doc = generateRegulationPDFDoc(brand);
   const blob = doc.output('blob');
   return URL.createObjectURL(blob);
+};
+
+// Export High-Resolution A4 Print Poster to PNG (300 DPI, 2480x3508px standard print format)
+export const exportPosterToPNG = async (
+  brand: BrandConfig,
+  posterConfig: QRCodePosterConfig,
+  qrCodeLink: string,
+  filename?: string
+): Promise<void> => {
+  // 1. Generate high-resolution QR code canvas
+  const qrCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrCanvas, qrCodeLink || (typeof window !== 'undefined' ? window.location.origin : 'https://sorteiolive.pt'), {
+    width: 900,
+    margin: 1,
+    color: {
+      dark: '#0f172a',
+      light: '#ffffff',
+    },
+  });
+
+  // 2. High-res standard A4 canvas (2480 x 3508 px at 300 DPI)
+  const W = 2480;
+  const H = 3508;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer primary brand border
+  const primaryHex = brand.primaryColor || '#E30613';
+  ctx.strokeStyle = primaryHex;
+  ctx.lineWidth = 32;
+  const radius = 54;
+  
+  const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  };
+
+  drawRoundedRect(75, 75, W - 150, H - 150, radius);
+  ctx.stroke();
+
+  // Inner subtle accent border
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 6;
+  drawRoundedRect(115, 115, W - 230, H - 230, 36);
+  ctx.stroke();
+
+  // 4 Corner brackets (Classic poster ornaments)
+  ctx.strokeStyle = '#0F172A';
+  ctx.lineWidth = 14;
+  const brk = 90;
+  const off = 135;
+  // Top-left
+  ctx.beginPath(); ctx.moveTo(off, off + brk); ctx.lineTo(off, off); ctx.lineTo(off + brk, off); ctx.stroke();
+  // Top-right
+  ctx.beginPath(); ctx.moveTo(W - off - brk, off); ctx.lineTo(W - off, off); ctx.lineTo(W - off, off + brk); ctx.stroke();
+  // Bottom-left
+  ctx.beginPath(); ctx.moveTo(off, H - off - brk); ctx.lineTo(off, H - off); ctx.lineTo(off + brk, H - off); ctx.stroke();
+  // Bottom-right
+  ctx.beginPath(); ctx.moveTo(W - off - brk, H - off); ctx.lineTo(W - off, H - off); ctx.lineTo(W - off, H - off - brk); ctx.stroke();
+
+  let curY = 220;
+
+  // Draw Logo if provided
+  if (brand.logoUrl) {
+    try {
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve();
+        logoImg.src = brand.logoUrl!;
+      });
+
+      if (logoImg.width > 0 && logoImg.height > 0) {
+        const maxLogoW = 460;
+        const maxLogoH = 210;
+        const ratio = logoImg.width / logoImg.height;
+        let renderW = maxLogoW;
+        let renderH = maxLogoW / ratio;
+        if (renderH > maxLogoH) {
+          renderH = maxLogoH;
+          renderW = maxLogoH * ratio;
+        }
+        ctx.drawImage(logoImg, (W - renderW) / 2, curY, renderW, renderH);
+        curY += renderH + 45;
+      } else {
+        curY += 30;
+      }
+    } catch {
+      curY += 30;
+    }
+  } else {
+    curY += 30;
+  }
+
+  // Company Name / Stand Subheading
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 44px Inter, system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = primaryHex;
+  const companyName = (brand.companyName || 'LACER • STAND OMD 2026').toUpperCase();
+  ctx.fillText(companyName, W / 2, curY);
+  curY += 75;
+
+  // Main Poster Title (Wrapped text)
+  const mainTitle = posterConfig.title || 'PARTICIPE NO NOSSO GRANDE SORTEIO!';
+  ctx.font = '900 82px Inter, system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = '#0F172A';
+  
+  // Wrap title lines
+  const words = mainTitle.split(' ');
+  const titleLines: string[] = [];
+  let currentLine = words[0] || '';
+  for (let i = 1; i < words.length; i++) {
+    const testLine = currentLine + ' ' + words[i];
+    if (ctx.measureText(testLine).width > 2000) {
+      titleLines.push(currentLine);
+      currentLine = words[i];
+    } else {
+      currentLine = testLine;
+    }
+  }
+  titleLines.push(currentLine);
+
+  for (const line of titleLines) {
+    ctx.fillText(line, W / 2, curY);
+    curY += 95;
+  }
+
+  // Subtitle
+  const subtitle = posterConfig.subtitle || 'Habilite-se a prémios incríveis transmitidos 100% em direto!';
+  ctx.font = '500 42px Inter, system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = '#475569';
+  ctx.fillText(subtitle, W / 2, curY);
+  curY += 65;
+
+  // Schedule Highlight Banner (if enabled)
+  if (posterConfig.showDate) {
+    curY += 20;
+    const scheduleText = posterConfig.scheduleHighlight || '2 Sorteios Diários Oficiais: 13:00 · 19:00';
+    ctx.font = 'bold 38px Inter, system-ui, -apple-system, sans-serif';
+    const textW = ctx.measureText(scheduleText).width;
+    const badgeW = Math.max(textW + 120, 700);
+    const badgeH = 78;
+    const badgeX = (W - badgeW) / 2;
+
+    ctx.fillStyle = '#FEF2F2';
+    drawRoundedRect(badgeX, curY - 50, badgeW, badgeH, 39);
+    ctx.fill();
+    ctx.strokeStyle = '#FCA5A5';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.fillStyle = '#991B1B';
+    ctx.fillText('🕒  ' + scheduleText, W / 2, curY);
+    curY += 75;
+  }
+
+  // QR Code Frame Card
+  curY += 30;
+  const qrCardSize = 1060;
+  const qrCardX = (W - qrCardSize) / 2;
+  const qrCardY = curY;
+
+  // Soft card shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(15, 23, 42, 0.12)';
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 16;
+  ctx.fillStyle = '#FFFFFF';
+  drawRoundedRect(qrCardX, qrCardY, qrCardSize, qrCardSize, 64);
+  ctx.fill();
+  ctx.restore();
+
+  // QR card border
+  ctx.strokeStyle = '#0F172A';
+  ctx.lineWidth = 8;
+  drawRoundedRect(qrCardX, qrCardY, qrCardSize, qrCardSize, 64);
+  ctx.stroke();
+
+  // Draw QR code inside card
+  const qrSize = 920;
+  const qrPadding = (qrCardSize - qrSize) / 2;
+  ctx.drawImage(qrCanvas, qrCardX + qrPadding, qrCardY + qrPadding, qrSize, qrSize);
+
+  curY += qrCardSize + 55;
+
+  // Scan instruction callout
+  ctx.font = 'bold 36px Inter, system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = '#64748B';
+  ctx.fillText('📱 Aponte a câmara do telemóvel para se inscrever gratuitamente', W / 2, curY);
+  curY += 65;
+
+  // Prize highlight banner
+  if (posterConfig.prizeHighlight) {
+    const prizeText = '🏆 ' + posterConfig.prizeHighlight;
+    ctx.font = 'bold 40px Inter, system-ui, -apple-system, sans-serif';
+    const boxW = 1860;
+    const boxH = 96;
+    const boxX = (W - boxW) / 2;
+
+    ctx.fillStyle = '#F8FAFC';
+    drawRoundedRect(boxX, curY, boxW, boxH, 28);
+    ctx.fill();
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.fillStyle = '#1E293B';
+    ctx.fillText(prizeText, W / 2, curY + 62);
+    curY += boxH + 35;
+  }
+
+  // 3-Steps Instructions Box (if enabled)
+  if (posterConfig.showSteps) {
+    const boxW = 1860;
+    const boxH = 310;
+    const boxX = (W - boxW) / 2;
+
+    ctx.fillStyle = '#FFF1F2';
+    drawRoundedRect(boxX, curY, boxW, boxH, 36);
+    ctx.fill();
+    ctx.strokeStyle = '#FECDD3';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Box Header
+    ctx.font = '900 34px Inter, system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#9F1239';
+    ctx.fillText('COMO PARTICIPAR EM 3 PASSOS SIMPLES:', W / 2, curY + 60);
+
+    // Steps lines
+    const startStepY = curY + 125;
+    const stepSpacing = 65;
+    const stepLeftX = boxX + 80;
+
+    ctx.textAlign = 'left';
+
+    const steps = [
+      { num: '1.', text: posterConfig.step1 || 'Aponte a câmara do seu telemóvel para o Código QR acima.' },
+      { num: '2.', text: posterConfig.step2 || 'Preencha os seus dados reais e receba o seu Número da Sorte oficial.' },
+      { num: '3.', text: posterConfig.step3 || 'Assista à transmissão em direto e confirme se foi premiado!' },
+    ];
+
+    steps.forEach((st, idx) => {
+      const lineY = startStepY + idx * stepSpacing;
+      ctx.font = '900 34px Inter, system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = primaryHex;
+      ctx.fillText(st.num, stepLeftX, lineY);
+
+      ctx.font = '600 32px Inter, system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#1E293B';
+      ctx.fillText(st.text, stepLeftX + 50, lineY);
+    });
+
+    curY += boxH + 40;
+  }
+
+  // Footer divider line
+  const footerLineY = H - 200;
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(140, footerLineY);
+  ctx.lineTo(W - 140, footerLineY);
+  ctx.stroke();
+
+  // Footer labels
+  const footerTextY = H - 135;
+  ctx.font = '600 34px Inter, system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = '#64748B';
+
+  // Left
+  ctx.textAlign = 'left';
+  ctx.fillText(posterConfig.footerLeft || 'Inscrição 100% Gratuita', 150, footerTextY);
+
+  // Center URL (bold monospace)
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 36px monospace, Inter, sans-serif';
+  ctx.fillStyle = '#0F172A';
+  ctx.fillText(qrCodeLink || 'sorteiolive.lacer.pt', W / 2, footerTextY);
+
+  // Right
+  ctx.textAlign = 'right';
+  ctx.font = '600 34px Inter, system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = '#64748B';
+  ctx.fillText(posterConfig.footerRight || 'Sorteio Seguro & Auditado', W - 150, footerTextY);
+
+  // 12. Save to PNG file
+  return new Promise<void>((resolve) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        resolve();
+        return;
+      }
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const cleanCompName = (brand.companyName || 'lacer').toLowerCase().replace(/\s+/g, '_');
+      link.download = filename || `cartaz_sorteio_impressao_${cleanCompName}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        resolve();
+      }, 1000);
+    }, 'image/png');
+  });
 };

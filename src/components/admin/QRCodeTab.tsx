@@ -12,10 +12,14 @@ import {
   Sparkles,
   Trophy,
   Clock,
-  Save
+  Save,
+  FileImage,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { StorageService, DEFAULT_POSTER_CONFIG } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
+import { exportPosterToPNG } from '../../utils/export';
 
 interface QRCodeTabProps {
   brand: BrandConfig;
@@ -143,12 +147,30 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const [isExportingPoster, setIsExportingPoster] = useState<boolean>(false);
+  const [exportSuccessNotice, setExportSuccessNotice] = useState<string | null>(null);
+
+  const handleExportPosterPNG = async () => {
+    setIsExportingPoster(true);
+    try {
+      await exportPosterToPNG(brand, posterConfig, customLink);
+      setExportSuccessNotice('Cartaz de impressão em formato PNG (A4 / 300 DPI) exportado com sucesso!');
+      setTimeout(() => setExportSuccessNotice(null), 3500);
+    } catch (err) {
+      console.error('Erro ao exportar cartaz PNG:', err);
+    } finally {
+      setIsExportingPoster(false);
+    }
+  };
+
   const handleDownloadPNG = () => {
     if (!qrCodeUrl) return;
     const a = document.createElement('a');
     a.href = qrCodeUrl;
     a.download = `qrcode_sorteio_${(brand.companyName || 'sorteio').replace(/\s+/g, '_')}.png`;
     a.click();
+    setExportSuccessNotice('Imagem individual do QR Code (PNG) descarregada com sucesso!');
+    setTimeout(() => setExportSuccessNotice(null), 3000);
   };
 
   const handlePrintA4Poster = () => {
@@ -173,18 +195,51 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner (Hidden on print) */}
-      <div className="no-print flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+      <div className="no-print flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <QrCode className="w-5 h-5 text-[#E30613]" />
             <span>QR Code & Cartaz para Impressão em Papel</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Insira e edite todas as informações que serão impressas no cartaz A4 e gere o código de acesso rápido
+            Personalize as informações do cartaz e exporte em alta resolução (PNG ou Impressão direta A4)
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Botão de Exportação do Cartaz Completo em formato de Impressão PNG */}
+          <button
+            onClick={handleExportPosterPNG}
+            disabled={isExportingPoster}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-700/25 transition-all cursor-pointer disabled:opacity-50 ring-2 ring-emerald-500/20"
+            title="Exportar cartaz oficial completo com QR Code em imagem PNG de alta resolução (A4 a 300 DPI) para gráfica ou impressão"
+          >
+            {isExportingPoster ? (
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            ) : (
+              <FileImage className="w-4 h-4 shrink-0" />
+            )}
+            <span>{isExportingPoster ? 'A Gerar Cartaz PNG...' : 'Exportar Cartaz (PNG Impressão)'}</span>
+          </button>
+
+          <button
+            onClick={handleDownloadPNG}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+            title="Descarregar apenas o código QR em formato PNG simples"
+          >
+            <Download className="w-4 h-4 shrink-0" />
+            <span>QR Code Isolado (PNG)</span>
+          </button>
+
+          <button
+            onClick={handlePrintA4Poster}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors cursor-pointer"
+            title="Imprimir diretamente para a impressora do computador"
+          >
+            <Printer className="w-4 h-4 shrink-0" />
+            <span>Imprimir Cartaz A4</span>
+          </button>
+
           <button
             onClick={() => setShowEditor(!showEditor)}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
@@ -193,24 +248,8 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
                 : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>{showEditor ? 'Ocultar Painel de Edição' : 'Editar Informações do Cartaz'}</span>
-          </button>
-
-          <button
-            onClick={handleDownloadPNG}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>Baixar PNG</span>
-          </button>
-
-          <button
-            onClick={handlePrintA4Poster}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Imprimir Cartaz A4</span>
+            <SlidersHorizontal className="w-4 h-4 shrink-0" />
+            <span>{showEditor ? 'Ocultar Edição' : 'Editar Cartaz'}</span>
           </button>
         </div>
       </div>
@@ -451,8 +490,37 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
         </div>
       )}
 
+      {/* Poster Preview Control Bar (Hidden on print) */}
+      <div className="no-print max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 border border-slate-800 px-5 py-3.5 rounded-2xl shadow-lg">
+        <div className="flex items-center gap-2">
+          <FileImage className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="text-xs font-bold text-white">Pré-visualização do Cartaz de Impressão</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-bold">
+            A4 • 300 DPI (PNG)
+          </span>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            onClick={handleExportPosterPNG}
+            disabled={isExportingPoster}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-700/25 transition-all cursor-pointer disabled:opacity-50"
+            title="Exportar cartaz oficial completo com QR Code em imagem PNG de alta resolução"
+          >
+            {isExportingPoster ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileImage className="w-3.5 h-3.5" />
+            )}
+            <span>{isExportingPoster ? 'A exportar...' : 'Baixar Cartaz em PNG'}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Printable A4 Poster (Styled for both screen preview and print output) */}
-      <div className="print-card bg-white text-slate-900 rounded-3xl p-8 sm:p-12 shadow-2xl max-w-2xl mx-auto border-4 border-amber-500 text-center relative overflow-hidden">
+      <div 
+        style={{ borderColor: brand.primaryColor || '#E30613' }}
+        className="print-card bg-white text-slate-900 rounded-3xl p-8 sm:p-12 shadow-2xl max-w-2xl mx-auto border-4 text-center relative overflow-hidden"
+      >
         {/* Decorative corner borders */}
         <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-slate-900 m-3"></div>
         <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-slate-900 m-3"></div>
@@ -468,7 +536,10 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
               className="w-16 h-16 object-contain mb-2"
             />
           )}
-          <span className="text-xs font-black uppercase tracking-widest text-amber-600">
+          <span 
+            style={{ color: brand.primaryColor || '#E30613' }}
+            className="text-xs font-black uppercase tracking-widest"
+          >
             {brand.companyName || 'SorteioLive Pro'}
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1 uppercase tracking-tight">
@@ -480,8 +551,8 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
 
           {/* Schedule Banner in Print */}
           {posterConfig.showDate && (
-            <div className="mt-3 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-300 text-xs font-bold text-amber-900 inline-flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-600" />
+            <div className="mt-3 px-4 py-1.5 rounded-full bg-red-50 border border-red-200 text-xs font-bold text-red-900 inline-flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#E30613]" />
               <span>
                 {posterConfig.scheduleHighlight || '4 Sorteios no Mesmo Dia: 10:00 · 14:00 · 18:00 · 21:00'}
               </span>
@@ -502,6 +573,31 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
           )}
         </div>
 
+        {/* Quick actions directly under QR Code */}
+        <div className="no-print flex flex-wrap items-center justify-center gap-2 my-2">
+          <button
+            onClick={handleExportPosterPNG}
+            disabled={isExportingPoster}
+            className="text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exportar este cartaz oficial em formato PNG de alta resolução para impressão"
+          >
+            {isExportingPoster ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+            ) : (
+              <FileImage className="w-3.5 h-3.5 text-emerald-700" />
+            )}
+            <span>Exportar Cartaz Completo em PNG</span>
+          </button>
+          <button
+            onClick={handleDownloadPNG}
+            className="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Descarregar apenas o código QR isolado"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>Apenas QR (PNG)</span>
+          </button>
+        </div>
+
         {/* Prize Highlights on Poster */}
         {posterConfig.prizeHighlight && (
           <div className="max-w-md mx-auto my-3 text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 flex items-center justify-center gap-2">
@@ -512,19 +608,19 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
 
         {/* Clear Instructions */}
         {posterConfig.showSteps && (
-          <div className="max-w-md mx-auto my-4 text-left bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <p className="text-xs font-black uppercase tracking-wider text-amber-900 mb-2 text-center">
+          <div className="max-w-md mx-auto my-4 text-left bg-red-50/60 border border-red-200 rounded-2xl p-4">
+            <p className="text-xs font-black uppercase tracking-wider text-red-950 mb-2 text-center">
               COMO PARTICIPAR EM 3 PASSOS SIMPLES:
             </p>
             <div className="space-y-1.5 text-xs text-slate-800">
               <p className="flex items-start gap-2">
-                <strong className="text-amber-600 shrink-0">1.</strong> {posterConfig.step1}
+                <strong className="text-[#E30613] shrink-0">1.</strong> {posterConfig.step1}
               </p>
               <p className="flex items-start gap-2">
-                <strong className="text-amber-600 shrink-0">2.</strong> {posterConfig.step2}
+                <strong className="text-[#E30613] shrink-0">2.</strong> {posterConfig.step2}
               </p>
               <p className="flex items-start gap-2">
-                <strong className="text-amber-600 shrink-0">3.</strong> {posterConfig.step3}
+                <strong className="text-[#E30613] shrink-0">3.</strong> {posterConfig.step3}
               </p>
             </div>
           </div>
@@ -537,6 +633,14 @@ export const QRCodeTab: React.FC<QRCodeTabProps> = ({
           <span>{posterConfig.footerRight || 'Sorteio Seguro & Auditado'}</span>
         </div>
       </div>
+
+      {/* Toast Feedback */}
+      {exportSuccessNotice && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold animate-in fade-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-white" />
+          <span>{exportSuccessNotice}</span>
+        </div>
+      )}
     </div>
   );
 };
