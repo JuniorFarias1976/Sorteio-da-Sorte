@@ -407,6 +407,15 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
     setHasSearched(true);
   };
 
+  // Prémio ativo em disputa no próximo sorteio ou prémio principal da lista
+  const activePrize = prizes.find((p) => nextSchedule?.prizeIds?.includes(p.id)) || prizes[0] || {
+    id: 'prz-1',
+    title: 'LACER HIDRO - Irrigador bucal portátil',
+    description: 'Limpeza profunda e eficaz, 3 níveis de pressão, design ergonómico e bateria recarregável.',
+    imageUrl: '/assets/lacer_hidro.jpg',
+    estimatedValue: 89.90,
+  };
+
   const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
   const appBg = brand.backgroundColor || (isLight ? '#FFFFFF' : '#0B0F19');
   const appTextColor = brand.textColor || (isLight ? '#0F172A' : '#F8FAFC');
@@ -1054,26 +1063,45 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </label>
               </div>
 
-              {/* Destaque do Prémio: Irrigador Oral Lacer */}
-              <div className={`p-3 rounded-2xl border flex items-center gap-3 shadow-sm ${
-                isLight ? 'bg-gradient-to-r from-red-50 to-white border-red-200' : 'bg-slate-950/80 border-red-500/30'
+              {/* Destaque do Prémio: Irrigador Oral Lacer e Botão de Boa Sorte */}
+              <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-md transition-all ${
+                isLight 
+                  ? 'bg-gradient-to-r from-red-50/90 via-white to-red-50/30 border-red-200/90 shadow-red-950/5' 
+                  : 'bg-slate-900/90 border-red-500/40 shadow-black/40'
               }`}>
-                <img
-                  src="/assets/lacer_hidro.jpg"
-                  alt="LACER HIDRO - Irrigador Bucal"
-                  className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-red-200 shadow-sm shrink-0"
-                />
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="text-[11px] font-bold text-[#E30613] uppercase tracking-wider flex items-center gap-1">
-                    <span>Prémio em Sorteio</span>
-                  </p>
-                  <p className={`text-xs font-semibold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                    LACER HIDRO - Irrigador bucal portátil
-                  </p>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-1 border-2 border-red-100 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={activePrize.imageUrl || '/assets/lacer_hidro.jpg'}
+                      alt={activePrize.title || 'LACER HIDRO - Irrigador Bucal'}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/assets/lacer_hidro.jpg';
+                      }}
+                      className="w-full h-full object-contain hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-[11px] font-bold text-[#E30613] uppercase tracking-wider flex items-center gap-1">
+                      <Gift className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
+                      <span>Prémio em Sorteio</span>
+                    </p>
+                    <p className={`text-xs sm:text-sm font-extrabold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      {activePrize.title || 'LACER HIDRO - Irrigador bucal portátil'}
+                    </p>
+                    <p className={`text-[11px] truncate hidden sm:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {activePrize.description || 'Limpeza profunda e eficaz com tecnologia Lacer'}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-xs font-black text-[#E30613] bg-red-100/80 dark:bg-red-950/60 border border-red-200 dark:border-red-800 px-2.5 py-1 rounded-xl shrink-0">
-                  Boa sorte!
-                </span>
+
+                {/* Botão Novo Boa Sorte (Fundo Vermelho Oficial Vibrante com texto branco e ícone dourado, sem fundo cinza) */}
+                <div 
+                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-red-600/30 border border-red-500/80 shrink-0 select-none hover:scale-105 transition-all cursor-default"
+                  title="Desejamos-lhe muita sorte no sorteio oficial Lacer!"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse shrink-0" />
+                  <span className="drop-shadow-sm">Boa sorte!</span>
+                </div>
               </div>
 
               <button
@@ -1135,8 +1163,11 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
                       <div className="relative shrink-0">
                         <img 
-                          src="/assets/lacer_hidro.jpg" 
-                          alt="LACER HIDRO - Irrigador Bucal Portátil" 
+                          src={activePrize.imageUrl || '/assets/lacer_hidro.jpg'} 
+                          alt={activePrize.title || 'LACER HIDRO - Irrigador Bucal Portátil'} 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/assets/lacer_hidro.jpg';
+                          }}
                           className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-2xl bg-white p-2 border-2 border-red-200 shadow-md"
                         />
                         <span className="absolute -top-2 -right-2 bg-[#E30613] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full shadow-md">
@@ -1149,10 +1180,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           Em Sorteio Oficial
                         </span>
                         <h3 className={`text-lg sm:text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                          LACER HIDRO
+                          {activePrize.title || 'LACER HIDRO'}
                         </h3>
                         <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
-                          Irrigador bucal portátil com tecnologia de microjatos e bateria recarregável
+                          {activePrize.description || 'Irrigador bucal portátil com tecnologia de microjatos e bateria recarregável'}
                         </p>
                         <div className="pt-1.5">
                           <span className="inline-block text-2xl sm:text-3xl font-black text-[#E30613] tracking-wide animate-pulse drop-shadow-sm">
