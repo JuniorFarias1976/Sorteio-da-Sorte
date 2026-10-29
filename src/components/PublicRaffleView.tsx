@@ -24,7 +24,7 @@ import confetti from 'canvas-confetti';
 import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor } from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
-import { exportRegulationPDF } from '../utils/export';
+import { exportRegulationPDF, openPdfDocument } from '../utils/export';
 
 interface PublicRaffleViewProps {
   brand: BrandConfig;
@@ -1027,22 +1027,16 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     </span>
                   </label>
                   <div className="pl-7 pt-1">
-                    <a
-                      href={brand.regulationPdfUrl && brand.regulationPdfUrl.trim() ? brand.regulationPdfUrl : '/regulamento.pdf'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
+                    <button
+                      type="button"
+                      onClick={() => {
                         if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
-                          // Allow native browser opening/downloading for custom PDF
-                          return;
-                        }
-                        try {
+                          openPdfDocument(brand.regulationPdfUrl, brand.regulationPdfName || 'Regulamento_Oficial.pdf');
+                        } else {
                           exportRegulationPDF(brand);
-                        } catch (err) {
-                          console.error('Error generating PDF:', err);
                         }
                       }}
-                      className="text-[#E30613] hover:underline text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer group transition-all"
+                      className="text-[#E30613] hover:underline text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer group transition-all text-left"
                       title={brand.regulationPdfName ? `Abrir ${brand.regulationPdfName}` : 'Abrir e descarregar documento oficial em formato PDF'}
                     >
                       <FileText className="w-3.5 h-3.5 text-[#E30613] group-hover:scale-110 transition-transform shrink-0" />
@@ -1051,7 +1045,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         PDF
                       </span>
                       <ExternalLink className="w-3 h-3 text-[#E30613] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-                    </a>
+                    </button>
                   </div>
                 </div>
 
@@ -1572,7 +1566,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 type="button"
                 onClick={() => {
                   if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
-                    window.open(brand.regulationPdfUrl, '_blank', 'noopener,noreferrer');
+                    openPdfDocument(brand.regulationPdfUrl, brand.regulationPdfName || 'Regulamento_Oficial.pdf');
                   } else {
                     exportRegulationPDF(brand);
                   }

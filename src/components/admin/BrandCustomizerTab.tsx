@@ -24,6 +24,7 @@ import {
 import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
 import { compressImageFile } from '../../utils/imageCompressor';
+import { openPdfDocument } from '../../utils/export';
 
 interface BrandCustomizerTabProps {
   brand: BrandConfig;
@@ -264,41 +265,56 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      setPdfUploadError('Por favor, selecione um ficheiro PDF válido (.pdf).');
-      return;
+    setPdfUploadError(null);
+
+    const rawName = file.name || 'Regulamento_Oficial.pdf';
+    let targetName = rawName;
+    if (!targetName.toLowerCase().endsWith('.pdf')) {
+      targetName = `${targetName}.pdf`;
     }
 
     if (file.size > 25 * 1024 * 1024) {
-      setPdfUploadError('O ficheiro PDF é demasiado grande (limite de 25MB).');
+      setPdfUploadError('O ficheiro selecionado é demasiado grande (limite de 25MB).');
       return;
     }
 
     setIsUploadingPdf(true);
-    setPdfUploadError(null);
 
     try {
+      // 1. Read file as Base64 Data URL (always works in browser)
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
+        reader.onerror = () => reject(new Error('Falha ao ler o ficheiro no navegador.'));
         reader.readAsDataURL(file);
       });
       const fileData = await base64Promise;
 
-      const res = await fetch('/api/upload-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileData, fileName: file.name }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Falha no upload do servidor.');
+      if (!fileData || !fileData.startsWith('data:')) {
+        throw new Error('Falha ao processar os dados do ficheiro.');
       }
 
-      const result = await res.json();
-      const targetUrl = result.url || `/uploads/${file.name}`;
-      const targetName = result.fileName || file.name;
+      // 2. Default targetUrl to base64 Data URL (guarantees immediate persistence and display)
+      let targetUrl = fileData;
+
+      // 3. Attempt server upload to disk for clean /uploads/ URL if server is available
+      try {
+        const res = await fetch('/api/upload-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileData, fileName: targetName }),
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          if (result.url) {
+            targetUrl = result.url;
+            targetName = result.fileName || targetName;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('Server storage fallback to Data URL:', uploadErr);
+      }
 
       setRegulationPdfUrl(targetUrl);
       setRegulationPdfName(targetName);
@@ -308,16 +324,19 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
         regulationPdfUrl: targetUrl,
         regulationPdfName: targetName,
       };
+
       onUpdateBrand(updated);
-      setSavedSuccessMessage(`Ficheiro PDF "${targetName}" carregado e associado à página pública com sucesso!`);
+      setSavedSuccessMessage(`Ficheiro PDF "${targetName}" carregado e associado com sucesso!`);
       setTimeout(() => setSavedSuccessMessage(null), 4500);
       checkDatabaseLiveStatus();
     } catch (err: any) {
       console.error('PDF upload error:', err);
-      setPdfUploadError('Erro ao carregar o PDF: ' + (err.message || 'Falha de comunicação.'));
+      setPdfUploadError('Erro ao carregar o PDF: ' + (err.message || 'Falha ao processar ficheiro.'));
     } finally {
       setIsUploadingPdf(false);
-      e.target.value = '';
+      try {
+        e.target.value = '';
+      } catch {}
     }
   };
 
@@ -1084,15 +1103,14 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <a
-                      href={regulationPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openPdfDocument(regulationPdfUrl, regulationPdfName || 'Regulamento_Oficial.pdf')}
                       className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <span>Abrir / Testar</span>
                       <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={handleRemovePdf}
@@ -1113,7 +1131,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
             {pdfUploadError && (
               <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/50 text-red-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                 <span>{pdfUploadError}</span>
               </div>
             )}
@@ -1125,22 +1143,32 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   1. Carregar Ficheiro PDF do seu Computador (.pdf)
                 </label>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                  <label 
+                    htmlFor="pdf-upload-file-input"
+                    className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                     isUploadingPdf 
                       ? 'bg-slate-800 text-slate-400 cursor-not-allowed' 
                       : 'bg-[#E30613] hover:bg-[#C80510] text-white shadow-md shadow-red-500/20 active:scale-95'
                   }`}>
-                    <Upload className="w-4 h-4" />
-                    <span>{isUploadingPdf ? 'A carregar ficheiro...' : 'Escolher Ficheiro PDF...'}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      disabled={isUploadingPdf}
-                      onChange={handlePdfFileUpload}
-                      className="hidden"
-                    />
+                    {isUploadingPdf ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span>{isUploadingPdf ? 'A processar e gravar PDF...' : 'Escolher Ficheiro PDF...'}</span>
                   </label>
-                  <span className="text-[11px] text-slate-500">
+                  <input
+                    id="pdf-upload-file-input"
+                    type="file"
+                    accept=".pdf,application/pdf,application/x-pdf,*/*"
+                    disabled={isUploadingPdf}
+                    onClick={(e) => {
+                      (e.target as HTMLInputElement).value = '';
+                    }}
+                    onChange={handlePdfFileUpload}
+                    className="hidden"
+                  />
+                  <span className="text-[11px] text-slate-400">
                     Formatos aceites: .pdf (máx. 25MB)
                   </span>
                 </div>

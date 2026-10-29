@@ -737,7 +737,51 @@ export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: LogoImag
 };
 
 // Export Official Raffle Regulation & Privacy Policy (RGPD) to PDF
+// Safe PDF opener (handles Base64 Data URLs, Blob URLs, and static server URLs)
+export const openPdfDocument = (pdfUrl?: string, fileName = 'Regulamento_Oficial.pdf') => {
+  if (!pdfUrl) return;
+
+  // Handle Base64 Data URL by converting to Blob URL (avoids Chrome top-frame navigation block!)
+  if (pdfUrl.startsWith('data:')) {
+    try {
+      const parts = pdfUrl.split(';base64,');
+      const contentType = parts[0].replace('data:', '') || 'application/pdf';
+      const b64Data = parts[1] || '';
+      const byteCharacters = atob(b64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: contentType });
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      if (!win) {
+        // Fallback for popup blocker
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      return;
+    } catch (e) {
+      console.error('Error opening base64 PDF:', e);
+    }
+  }
+
+  // Regular URL
+  window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+};
+
 export const exportRegulationPDF = async (brand: BrandConfig) => {
+  // If custom uploaded PDF exists, open it directly!
+  if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
+    openPdfDocument(brand.regulationPdfUrl, brand.regulationPdfName || 'Regulamento_Oficial.pdf');
+    return;
+  }
   const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
   const doc = generateRegulationPDFDoc(brand, logoData);
   doc.save('Regulamento_Oficial_Sorteio_Lacer_OMD_2026.pdf');
@@ -745,6 +789,9 @@ export const exportRegulationPDF = async (brand: BrandConfig) => {
 
 // Get Regulation PDF Blob URL for in-app viewing or target="_blank"
 export const getRegulationPDFBlobUrl = (brand: BrandConfig): string => {
+  if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
+    return brand.regulationPdfUrl;
+  }
   const doc = generateRegulationPDFDoc(brand);
   const blob = doc.output('blob');
   return URL.createObjectURL(blob);
