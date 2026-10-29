@@ -360,9 +360,52 @@ async function startServer() {
       };
     }
 
+    // Safe Union Merge for participants: never erase registered participants unless explicit deletion was requested
+    let mergedParticipants = db.participants;
+    if (Array.isArray(updates.participants)) {
+      if (updates.isFactoryReset || updates.allowParticipantDeletion) {
+        mergedParticipants = updates.participants;
+      } else {
+        const partMap = new Map<string, any>();
+        for (const p of db.participants || []) {
+          const key = p?.id || (p?.ticketNumber ? `ticket-${p.ticketNumber}` : '');
+          if (key) partMap.set(key, p);
+        }
+        for (const p of updates.participants) {
+          const key = p?.id || (p?.ticketNumber ? `ticket-${p.ticketNumber}` : '');
+          if (!key) continue;
+          const existing = partMap.get(key);
+          partMap.set(key, { ...existing, ...p });
+        }
+        mergedParticipants = Array.from(partMap.values());
+      }
+    }
+
+    // Safe Union Merge for winners
+    let mergedWinners = db.winners;
+    if (Array.isArray(updates.winners)) {
+      if (updates.isFactoryReset || updates.allowWinnerDeletion) {
+        mergedWinners = updates.winners;
+      } else {
+        const winnerMap = new Map<string, any>();
+        for (const w of db.winners || []) {
+          if (w?.id) winnerMap.set(w.id, w);
+        }
+        for (const w of updates.winners) {
+          if (w?.id) {
+            const existing = winnerMap.get(w.id);
+            winnerMap.set(w.id, { ...existing, ...w });
+          }
+        }
+        mergedWinners = Array.from(winnerMap.values());
+      }
+    }
+
     db = {
       ...db,
       ...updates,
+      participants: mergedParticipants,
+      winners: mergedWinners,
       brand: mergedBrand,
       settings: updates.settings ? { ...db.settings, ...updates.settings } : db.settings,
       posterConfig: updates.posterConfig ? { ...db.posterConfig, ...updates.posterConfig } : db.posterConfig,

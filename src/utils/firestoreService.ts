@@ -257,19 +257,21 @@ export const FirestoreService = {
     }
   },
 
-  // Full synchronization of participants collection (handles additions, updates, and DELETIONS)
-  async saveParticipantsBatch(participants: Participant[]): Promise<void> {
+  // Safe synchronization of participants collection (upserts participants; deletes only if allowDelete === true)
+  async saveParticipantsBatch(participants: Participant[], allowDelete = false): Promise<void> {
     try {
       const snap = await getDocs(collection(db, 'participants'));
       const keepIds = new Set(participants.map((p) => p.id));
       const batch = writeBatch(db);
 
-      // 1. Delete documents that are no longer in the array
-      snap.docs.forEach((docSnap) => {
-        if (!keepIds.has(docSnap.id)) {
-          batch.delete(docSnap.ref);
-        }
-      });
+      // 1. Delete documents only if explicitly allowed (e.g. deliberate admin clear)
+      if (allowDelete) {
+        snap.docs.forEach((docSnap) => {
+          if (!keepIds.has(docSnap.id)) {
+            batch.delete(docSnap.ref);
+          }
+        });
+      }
 
       // 2. Set/update all active participants
       for (const p of participants) {

@@ -11,6 +11,9 @@ export interface AppServerData {
   formFields: FormFieldsConfig;
   posterConfig: QRCodePosterConfig;
   reportConfig: ReportPdfConfig;
+  allowParticipantDeletion?: boolean;
+  allowWinnerDeletion?: boolean;
+  isFactoryReset?: boolean;
 }
 
 export interface LiveState {

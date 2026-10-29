@@ -77,15 +77,23 @@ export default function App() {
   // Next Upcoming Draw
   const nextSchedule = schedules.find((s) => s.status === 'scheduled') || schedules[0];
 
-  // Helper to safely apply full server data across all states and LocalStorage
+  // Helper to safely apply full server data across all states and LocalStorage (additive union merge)
   const applyServerData = useCallback((serverData: Partial<AppServerData>) => {
     if (!serverData) return;
 
     if (Array.isArray(serverData.participants)) {
       setParticipants((current) => {
-        const merged = serverData.participants!.map((serverP) => {
-          const local = current.find((c) => c.id === serverP.id || c.ticketNumber === serverP.ticketNumber);
-          return {
+        // Safe Union Merge: Never discard existing participants from local storage or Firestore
+        const map = new Map<string, Participant>();
+        for (const p of current) {
+          const key = p.id || (p.ticketNumber ? `ticket-${p.ticketNumber}` : '');
+          if (key) map.set(key, p);
+        }
+        for (const serverP of serverData.participants!) {
+          const key = serverP.id || (serverP.ticketNumber ? `ticket-${serverP.ticketNumber}` : '');
+          if (!key) continue;
+          const local = map.get(key) || current.find((c) => c.id === serverP.id || c.ticketNumber === serverP.ticketNumber);
+          map.set(key, {
             ...local,
             ...serverP,
             clinic: serverP.clinic?.trim() ? serverP.clinic : (local?.clinic || ''),
@@ -93,10 +101,11 @@ export default function App() {
             wantsLacerVisit: serverP.wantsLacerVisit !== undefined ? serverP.wantsLacerVisit : local?.wantsLacerVisit,
             marketingConsent: serverP.marketingConsent !== undefined ? serverP.marketingConsent : local?.marketingConsent,
             termsAccepted: serverP.termsAccepted !== undefined ? serverP.termsAccepted : local?.termsAccepted,
-          };
-        });
+          });
+        }
+        const merged = Array.from(map.values());
         try { StorageService.saveParticipants(merged); } catch {}
-        FirestoreService.saveParticipantsBatch(merged).catch(() => {});
+        // Do NOT call saveParticipantsBatch here to prevent overwriting cloud Firestore during initial load/refresh
         return merged;
       });
     }
@@ -114,8 +123,18 @@ export default function App() {
       try { StorageService.saveSchedules(sortedSchedules); } catch {}
     }
     if (Array.isArray(serverData.winners)) {
-      setWinners(serverData.winners);
-      try { StorageService.saveWinners(serverData.winners); } catch {}
+      setWinners((current) => {
+        const winnerMap = new Map<string, DrawWinner>();
+        for (const w of current) {
+          if (w?.id) winnerMap.set(w.id, w);
+        }
+        for (const w of serverData.winners!) {
+          if (w?.id) winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+        }
+        const mergedWinners = Array.from(winnerMap.values());
+        try { StorageService.saveWinners(mergedWinners); } catch {}
+        return mergedWinners;
+      });
     }
     if (Array.isArray(serverData.notifications)) {
       setNotifications(serverData.notifications);
@@ -203,19 +222,33 @@ export default function App() {
       },
       onParticipantsChange: (pList) => {
         setParticipants((current) => {
-          const merged = pList.map((remote) => {
-            const local = current.find((c) => c.id === remote.id || c.ticketNumber === remote.ticketNumber);
-            if (!local) return remote;
-            return {
+          const map = new Map<string, Participant>();
+          // 1. Seed with current participants (so nothing is ever dropped)
+          for (const c of current) {
+            const key = c.id || (c.ticketNumber ? `ticket-${c.ticketNumber}` : '');
+            if (key) map.set(key, c);
+          }
+          // 2. Incorporate or update all Firestore participants
+          for (const remote of pList) {
+            const key = remote.id || (remote.ticketNumber ? `ticket-${remote.ticketNumber}` : '');
+            if (!key) continue;
+            const local = map.get(key) || current.find((c) => c.id === remote.id || c.ticketNumber === remote.ticketNumber);
+            map.set(key, {
+              ...local,
               ...remote,
-              clinic: remote.clinic?.trim() ? remote.clinic : (local.clinic || ''),
-              specialty: (remote.specialty?.trim() && remote.specialty !== 'Não especificada') ? remote.specialty : (local.specialty || ''),
-              wantsLacerVisit: remote.wantsLacerVisit !== undefined ? remote.wantsLacerVisit : local.wantsLacerVisit,
-              marketingConsent: remote.marketingConsent !== undefined ? remote.marketingConsent : local.marketingConsent,
-              termsAccepted: remote.termsAccepted !== undefined ? remote.termsAccepted : local.termsAccepted,
-            };
-          });
+              clinic: remote.clinic?.trim() ? remote.clinic : (local?.clinic || ''),
+              specialty: (remote.specialty?.trim() && remote.specialty !== 'Não especificada') ? remote.specialty : (local?.specialty || ''),
+              wantsLacerVisit: remote.wantsLacerVisit !== undefined ? remote.wantsLacerVisit : local?.wantsLacerVisit,
+              marketingConsent: remote.marketingConsent !== undefined ? remote.marketingConsent : local?.marketingConsent,
+              termsAccepted: remote.termsAccepted !== undefined ? remote.termsAccepted : local?.termsAccepted,
+            });
+          }
+          const merged = Array.from(map.values());
           try { StorageService.saveParticipants(merged); } catch {}
+          // Automatically synchronize all Firestore participants into server database.json so Git pushes/pulls retain them!
+          if (merged.length > 0) {
+            ApiService.saveData({ participants: merged }).catch(() => {});
+          }
           return merged;
         });
         setIsServerConnected(true);
@@ -240,8 +273,21 @@ export default function App() {
         }
       },
       onWinnersChange: (wList) => {
-        setWinners(wList);
-        try { StorageService.saveWinners(wList); } catch {}
+        setWinners((current) => {
+          const winnerMap = new Map<string, DrawWinner>();
+          for (const w of current) {
+            if (w?.id) winnerMap.set(w.id, w);
+          }
+          for (const w of wList) {
+            if (w?.id) winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+          }
+          const mergedWinners = Array.from(winnerMap.values());
+          try { StorageService.saveWinners(mergedWinners); } catch {}
+          if (mergedWinners.length > 0) {
+            ApiService.saveData({ winners: mergedWinners }).catch(() => {});
+          }
+          return mergedWinners;
+        });
         setIsServerConnected(true);
       },
       onSettingsChange: (s) => {
@@ -333,8 +379,8 @@ export default function App() {
     if (deletedId) {
       FirestoreService.deleteParticipant(deletedId).catch(() => {});
     }
-    FirestoreService.saveParticipantsBatch(data).catch(() => {});
-    ApiService.saveData({ participants: data });
+    FirestoreService.saveParticipantsBatch(data, !!deletedId).catch(() => {});
+    ApiService.saveData({ participants: data, allowParticipantDeletion: !!deletedId });
     broadcastCrossTab({ participants: data });
   };
 
@@ -342,7 +388,7 @@ export default function App() {
     setParticipants([]);
     try { StorageService.saveParticipants([]); } catch {}
     FirestoreService.clearAllParticipants().catch(() => {});
-    ApiService.saveData({ participants: [] });
+    ApiService.saveData({ participants: [], allowParticipantDeletion: true });
     broadcastCrossTab({ participants: [] });
   };
 
