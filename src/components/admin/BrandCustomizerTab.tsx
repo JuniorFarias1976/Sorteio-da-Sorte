@@ -16,7 +16,10 @@ import {
   Lock,
   Key,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  ExternalLink,
+  Trash2
 } from 'lucide-react';
 import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
@@ -70,6 +73,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [ticketModalSubtitle, setTicketModalSubtitle] = useState(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [regulationPdfUrl, setRegulationPdfUrl] = useState(brand.regulationPdfUrl || '');
+  const [regulationPdfName, setRegulationPdfName] = useState(brand.regulationPdfName || '');
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [pdfUploadError, setPdfUploadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
   const [dbStatusInfo, setDbStatusInfo] = useState<{
@@ -92,6 +99,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setBackgroundColor(brand.backgroundColor || '#FFFFFF');
     setTextColor(brand.textColor || '#0F172A');
     setTerms(brand.termsAndConditions);
+    setRegulationPdfUrl(brand.regulationPdfUrl || '');
+    setRegulationPdfName(brand.regulationPdfName || '');
     setHeroBadgeText(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
     setRoundsBannerTitle(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
     setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
@@ -233,6 +242,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       showNavbarBrandText: overrides.showNavbarBrandText !== undefined ? overrides.showNavbarBrandText : showNavbarBrandText,
       showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
       showPrizesSection: overrides.showPrizesSection !== undefined ? overrides.showPrizesSection : showPrizesSection,
+      regulationPdfUrl: overrides.regulationPdfUrl !== undefined ? overrides.regulationPdfUrl : (regulationPdfUrl || '').trim(),
+      regulationPdfName: overrides.regulationPdfName !== undefined ? overrides.regulationPdfName : (regulationPdfName || '').trim(),
     };
 
     onUpdateBrand(updated);
@@ -247,6 +258,80 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
         setTimeout(() => setSavedSuccessMessage(null), 4000);
       }, 350);
     }
+  };
+
+  const handlePdfFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfUploadError('Por favor, selecione um ficheiro PDF válido (.pdf).');
+      return;
+    }
+
+    if (file.size > 25 * 1024 * 1024) {
+      setPdfUploadError('O ficheiro PDF é demasiado grande (limite de 25MB).');
+      return;
+    }
+
+    setIsUploadingPdf(true);
+    setPdfUploadError(null);
+
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const fileData = await base64Promise;
+
+      const res = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileData, fileName: file.name }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha no upload do servidor.');
+      }
+
+      const result = await res.json();
+      const targetUrl = result.url || `/uploads/${file.name}`;
+      const targetName = result.fileName || file.name;
+
+      setRegulationPdfUrl(targetUrl);
+      setRegulationPdfName(targetName);
+
+      const updated: BrandConfig = {
+        ...brand,
+        regulationPdfUrl: targetUrl,
+        regulationPdfName: targetName,
+      };
+      onUpdateBrand(updated);
+      setSavedSuccessMessage(`Ficheiro PDF "${targetName}" carregado e associado à página pública com sucesso!`);
+      setTimeout(() => setSavedSuccessMessage(null), 4500);
+      checkDatabaseLiveStatus();
+    } catch (err: any) {
+      console.error('PDF upload error:', err);
+      setPdfUploadError('Erro ao carregar o PDF: ' + (err.message || 'Falha de comunicação.'));
+    } finally {
+      setIsUploadingPdf(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemovePdf = () => {
+    setRegulationPdfUrl('');
+    setRegulationPdfName('');
+    const updated: BrandConfig = {
+      ...brand,
+      regulationPdfUrl: '',
+      regulationPdfName: '',
+    };
+    onUpdateBrand(updated);
+    setSavedSuccessMessage('PDF personalizado removido. O sistema voltará a gerar o PDF oficial automaticamente.');
+    setTimeout(() => setSavedSuccessMessage(null), 3500);
   };
 
   const handleApplyPreset = (theme: { 
@@ -949,17 +1034,150 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-              Regulamento & Termos do Sorteio
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-300 uppercase">
+              Regulamento & Termos do Sorteio (Texto Resumo)
             </label>
             <textarea
               rows={3}
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
               onBlur={() => syncAndSave()}
+              placeholder="Sorteio autorizado e auditado em tempo real..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
+          </div>
+
+          {/* Card Especial de Carregamento do Documento PDF do Regulamento */}
+          <div className="p-4 rounded-2xl bg-slate-950 border-2 border-red-500/40 space-y-4 shadow-lg">
+            <div className="flex items-start justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#E30613]" />
+                  <span>Documento PDF do Regulamento & Política de Privacidade</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Carregue aqui o ficheiro PDF oficial do regulamento. É exatamente este documento que abre quando o participante clica na ligação assinalada no formulário: <strong className="text-white">"Consulte o regulamento completo do sorteio e a política de privacidade [PDF]"</strong>.
+                </p>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 uppercase shrink-0">
+                PDF Oficial
+              </span>
+            </div>
+
+            {/* Status do PDF Ativo */}
+            {regulationPdfUrl ? (
+              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <span>Ficheiro PDF Personalizado Ativo</span>
+                      </p>
+                      <p className="text-[11px] text-slate-300 font-mono truncate" title={regulationPdfName || regulationPdfUrl}>
+                        {regulationPdfName || regulationPdfUrl}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href={regulationPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Abrir / Testar</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleRemovePdf}
+                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+                      title="Remover ficheiro e voltar ao gerador padrão"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+                <span>Nenhum PDF carregado. A aplicação gera atualmente o PDF oficial de modo automático.</span>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">Modo Padrão</span>
+              </div>
+            )}
+
+            {pdfUploadError && (
+              <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/50 text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{pdfUploadError}</span>
+              </div>
+            )}
+
+            {/* Ações de Upload */}
+            <div className="space-y-3 pt-1">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  1. Carregar Ficheiro PDF do seu Computador (.pdf)
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                    isUploadingPdf 
+                      ? 'bg-slate-800 text-slate-400 cursor-not-allowed' 
+                      : 'bg-[#E30613] hover:bg-[#C80510] text-white shadow-md shadow-red-500/20 active:scale-95'
+                  }`}>
+                    <Upload className="w-4 h-4" />
+                    <span>{isUploadingPdf ? 'A carregar ficheiro...' : 'Escolher Ficheiro PDF...'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      disabled={isUploadingPdf}
+                      onChange={handlePdfFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-[11px] text-slate-500">
+                    Formatos aceites: .pdf (máx. 25MB)
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-900">
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  2. Ou Inserir Link / URL Direto de um PDF Externo
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={regulationPdfUrl}
+                    onChange={(e) => setRegulationPdfUrl(e.target.value)}
+                    onBlur={() => {
+                      if (regulationPdfUrl !== brand.regulationPdfUrl) {
+                        syncAndSave({ regulationPdfUrl: regulationPdfUrl.trim() }, true);
+                      }
+                    }}
+                    placeholder="https://exemplo.pt/documentos/regulamento_lacer.pdf"
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
+                  />
+                  {regulationPdfUrl && (
+                    <button
+                      type="button"
+                      onClick={() => syncAndSave({ regulationPdfUrl: regulationPdfUrl.trim() }, true)}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Guardar Link
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Pode usar um link direto para o PDF alojado no Google Drive, OneDrive, Dropbox ou site institucional.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

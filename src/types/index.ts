@@ -113,6 +113,8 @@ export interface BrandConfig {
   backgroundTheme: 'white' | 'light' | 'dark' | 'midnight' | 'slate';
   contactEmail: string;
   termsAndConditions: string;
+  regulationPdfUrl?: string; // Caminho ou URL do ficheiro PDF de regulamento e privacidade
+  regulationPdfName?: string; // Nome original do ficheiro PDF carregado
   forceResetLogo?: boolean;
   adminPassword?: string;
   raffleUrl?: string;

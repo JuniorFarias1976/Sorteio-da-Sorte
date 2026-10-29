@@ -1028,10 +1028,14 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   </label>
                   <div className="pl-7 pt-1">
                     <a
-                      href="/regulamento.pdf"
+                      href={brand.regulationPdfUrl && brand.regulationPdfUrl.trim() ? brand.regulationPdfUrl : '/regulamento.pdf'}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => {
+                        if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
+                          // Allow native browser opening/downloading for custom PDF
+                          return;
+                        }
                         try {
                           exportRegulationPDF(brand);
                         } catch (err) {
@@ -1039,7 +1043,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                         }
                       }}
                       className="text-[#E30613] hover:underline text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer group transition-all"
-                      title="Abrir e descarregar documento oficial em formato PDF"
+                      title={brand.regulationPdfName ? `Abrir ${brand.regulationPdfName}` : 'Abrir e descarregar documento oficial em formato PDF'}
                     >
                       <FileText className="w-3.5 h-3.5 text-[#E30613] group-hover:scale-110 transition-transform shrink-0" />
                       <span>Consulte o regulamento completo do sorteio e a política de privacidade</span>
@@ -1566,13 +1570,19 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             }`}>
               <button
                 type="button"
-                onClick={() => exportRegulationPDF(brand)}
+                onClick={() => {
+                  if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
+                    window.open(brand.regulationPdfUrl, '_blank', 'noopener,noreferrer');
+                  } else {
+                    exportRegulationPDF(brand);
+                  }
+                }}
                 className={`px-4 py-2 border font-semibold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors ${
                   isLight 
                     ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
                     : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 }`}
-                title="Descarregar documento oficial em formato PDF"
+                title="Abrir ou descarregar documento oficial em formato PDF"
               >
                 <FileText className="w-3.5 h-3.5 text-[#E30613]" />
                 <span>Descarregar PDF Oficial</span>

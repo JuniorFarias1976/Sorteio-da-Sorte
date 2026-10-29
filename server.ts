@@ -198,6 +198,8 @@ const INITIAL_DATABASE = {
     heroBadgeText: '',
     ticketModalTitle: 'PARTICIPAÇÃO REGISTADA COM SUCESSO!',
     ticketModalSubtitle: 'O Seu Bilhete Oficial Lacer',
+    regulationPdfUrl: '',
+    regulationPdfName: '',
   },
   formFields: {
     name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },
@@ -515,8 +517,23 @@ async function startServer() {
     res.status(201).json({ success: true, participant: newParticipant });
   });
 
+  const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+  app.use('/uploads', express.static(UPLOADS_DIR));
+
   // Regulation & Privacy Policy PDF endpoint
   const serveRegulationPDF = (_req: Request, res: Response) => {
+    db = loadDB();
+    if (db.brand?.regulationPdfUrl && db.brand.regulationPdfUrl.startsWith('/uploads/')) {
+      const customPath = path.join(__dirname, 'public', db.brand.regulationPdfUrl);
+      if (fs.existsSync(customPath)) {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${db.brand.regulationPdfName || 'Regulamento_Oficial.pdf'}"`);
+        return res.sendFile(customPath);
+      }
+    }
     const pdfPath = path.join(__dirname, 'public', 'regulamento.pdf');
     if (fs.existsSync(pdfPath)) {
       res.setHeader('Content-Type', 'application/pdf');
@@ -528,6 +545,45 @@ async function startServer() {
 
   app.get('/regulamento.pdf', serveRegulationPDF);
   app.get('/api/regulamento.pdf', serveRegulationPDF);
+
+  // Upload custom Regulation PDF endpoint (from Admin Dashboard)
+  app.post('/api/upload-pdf', (req, res) => {
+    try {
+      const { fileData, fileName } = req.body;
+      if (!fileData) {
+        return res.status(400).json({ error: 'Nenhum ficheiro fornecido' });
+      }
+
+      const cleanName = (fileName || 'regulamento.pdf').replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const targetFileName = `${Date.now()}-${cleanName}`;
+      const filePath = path.join(UPLOADS_DIR, targetFileName);
+
+      const base64Content = fileData.replace(/^data:application\/pdf;base64,/, '').replace(/^data:.*;base64,/, '');
+      const buffer = Buffer.from(base64Content, 'base64');
+      fs.writeFileSync(filePath, buffer);
+
+      // Also sync to public/regulamento.pdf
+      const defaultPath = path.join(__dirname, 'public', 'regulamento.pdf');
+      fs.writeFileSync(defaultPath, buffer);
+
+      const fileUrl = `/uploads/${targetFileName}`;
+
+      db = loadDB();
+      db.brand = {
+        ...db.brand,
+        regulationPdfUrl: fileUrl,
+        regulationPdfName: fileName || cleanName,
+      };
+      saveDB(db);
+      broadcastSSE('DATA_UPDATED', db);
+
+      console.log(`[PDF-UPLOAD] Successfully saved regulation PDF: ${fileUrl} (${buffer.length} bytes)`);
+      res.json({ success: true, url: fileUrl, fileName: fileName || cleanName });
+    } catch (err: any) {
+      console.error('Error uploading regulation PDF:', err);
+      res.status(500).json({ error: 'Erro ao carregar o ficheiro PDF: ' + err.message });
+    }
+  });
 
   // 4. Network Info Endpoint to help mobile devices connect cleanly
   app.get('/api/network-info', (req, res) => {
