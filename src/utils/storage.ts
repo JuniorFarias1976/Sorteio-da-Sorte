@@ -60,9 +60,11 @@ export const DEFAULT_BRAND: BrandConfig = {
   roundsBannerTitle: '2 Sorteios Oficiais por Dia',
   roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!',
   showRoundsBanner: true,
-  showHeroTitle: false, // Keeps only the logo in hero as requested
-  showNavbarBrandText: false, // Keeps only the logo in navbar as requested
-  showNavbarParticipateButton: false, // Removes the participate button in navbar as requested
+  showNavbar: false, // Ocultar a barra de navegação superior por padrão (solicitado pelo utilizador)
+  heroLogoSize: 'large', // Logótipo oficial central com tamanho maior
+  showHeroTitle: false, // Mantém apenas o logótipo no cabeçalho como solicitado
+  showNavbarBrandText: false, // Mantém apenas o logótipo na barra de navegação
+  showNavbarParticipateButton: false, // Remove o botão de participar da barra superior
   formTitle: 'Garanta o seu Bilhete da Sorte',
   formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
   formButtonText: 'Participar do sorteio',
@@ -82,7 +84,7 @@ export const DEFAULT_PRIZES: Prize[] = [
     description: 'Limpeza profunda e eficaz, 3 níveis de pressão, design ergonómico e bateria recarregável.',
     totalQuantity: 4,
     drawnQuantity: 0,
-    imageUrl: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=600&auto=format&fit=crop&q=80',
+    imageUrl: '/assets/lacer_hidro.jpg',
     estimatedValue: 89.90,
     drawOrder: 1,
   },

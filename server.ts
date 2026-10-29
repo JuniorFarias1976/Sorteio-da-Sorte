@@ -19,12 +19,12 @@ const INITIAL_DATABASE = {
   prizes: [
     {
       id: 'prz-1',
-      title: 'iPhone 16 Pro Max 256GB Titânio',
-      description: 'Aparelho novo na caixa lacrada com garantia Apple Brasil de 1 ano.',
-      totalQuantity: 2,
+      title: 'LACER HIDRO - Irrigador bucal portátil',
+      description: 'Limpeza profunda e eficaz, 3 níveis de pressão, design ergonómico e bateria recarregável.',
+      totalQuantity: 4,
       drawnQuantity: 0,
-      imageUrl: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80',
-      estimatedValue: 9899.00,
+      imageUrl: '/assets/lacer_hidro.jpg',
+      estimatedValue: 89.90,
       drawOrder: 1,
     },
     {
@@ -182,6 +182,8 @@ const INITIAL_DATABASE = {
     roundsBannerTitle: '2 Sorteios Oficiais por Dia',
     roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!',
     showRoundsBanner: true,
+    showNavbar: false,
+    heroLogoSize: 'large',
     showHeroTitle: false,
     showNavbarBrandText: false,
     showNavbarParticipateButton: false,

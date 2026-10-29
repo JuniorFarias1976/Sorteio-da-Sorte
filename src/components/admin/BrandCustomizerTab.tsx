@@ -45,6 +45,10 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [adminPassword, setAdminPassword] = useState(brand.adminPassword || 'admin');
 
   // Display toggles (Hero and Navbar)
+  const [showNavbar, setShowNavbar] = useState(brand.showNavbar !== false);
+  const [heroLogoSize, setHeroLogoSize] = useState<'normal' | 'medium' | 'large' | 'xlarge' | '2xlarge'>(
+    (brand.heroLogoSize as any) || 'large'
+  );
   const [showHeroTitle, setShowHeroTitle] = useState(brand.showHeroTitle === true);
   const [showNavbarBrandText, setShowNavbarBrandText] = useState(brand.showNavbarBrandText === true);
   const [showNavbarParticipateButton, setShowNavbarParticipateButton] = useState(brand.showNavbarParticipateButton === true);
@@ -101,6 +105,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setTicketModalTitle(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
     setTicketModalSubtitle(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
     setAdminPassword(brand.adminPassword || 'admin');
+    setShowNavbar(brand.showNavbar !== false);
+    setHeroLogoSize((brand.heroLogoSize as any) || 'large');
     setShowHeroTitle(brand.showHeroTitle === true);
     setShowNavbarBrandText(brand.showNavbarBrandText === true);
     setShowNavbarParticipateButton(brand.showNavbarParticipateButton === true);
@@ -219,6 +225,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       heroBadgeText: (overrides.heroBadgeText !== undefined ? overrides.heroBadgeText : heroBadgeText).trim(),
       ticketModalTitle: (overrides.ticketModalTitle !== undefined ? overrides.ticketModalTitle : ticketModalTitle).trim(),
       ticketModalSubtitle: (overrides.ticketModalSubtitle !== undefined ? overrides.ticketModalSubtitle : ticketModalSubtitle).trim(),
+      showNavbar: overrides.showNavbar !== undefined ? overrides.showNavbar : showNavbar,
+      heroLogoSize: overrides.heroLogoSize !== undefined ? overrides.heroLogoSize : heroLogoSize,
       showHeroTitle: overrides.showHeroTitle !== undefined ? overrides.showHeroTitle : showHeroTitle,
       showNavbarBrandText: overrides.showNavbarBrandText !== undefined ? overrides.showNavbarBrandText : showNavbarBrandText,
       showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
@@ -520,7 +528,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             </p>
           </div>
 
-          {/* Controlo de Exibição do Logótipo & Cabeçalho (Manter Apenas Logótipo) */}
+          {/* Controlo de Exibição do Logótipo & Cabeçalho (Manter Apenas Logótipo & Tamanho do Logo) */}
           <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
             <div>
               <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -528,11 +536,135 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 <span>Exibição do Logótipo & Cabeçalho</span>
               </h4>
               <p className="text-[11px] text-slate-400 mt-1">
-                Configure se deseja manter exclusivamente o logótipo em destaque ou exibir também os títulos e botões adicionais na página pública.
+                Ajuste o tamanho do logótipo oficial no centro da página e controle a visibilidade da barra de navegação superior.
+              </p>
+            </div>
+
+            {/* Seletor de Tamanho do Logótipo Central */}
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span>Tamanho do Logótipo Central</span>
+                  <span className="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.2 rounded font-normal">
+                    {heroLogoSize === 'normal' && 'Normal (120px)'}
+                    {heroLogoSize === 'medium' && 'Médio (170px)'}
+                    {heroLogoSize === 'large' && 'Grande (240px - Recomendado)'}
+                    {heroLogoSize === 'xlarge' && 'Extra Grande (300px)'}
+                    {heroLogoSize === '2xlarge' && 'Máximo (360px)'}
+                  </span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                {[
+                  { id: 'normal', label: 'Normal', sizeDesc: '120px' },
+                  { id: 'medium', label: 'Médio', sizeDesc: '170px' },
+                  { id: 'large', label: 'Grande ★', sizeDesc: '240px' },
+                  { id: 'xlarge', label: 'X-Grande', sizeDesc: '300px' },
+                  { id: '2xlarge', label: 'Máximo', sizeDesc: '360px' },
+                ].map((item) => {
+                  const isSelected = heroLogoSize === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        const newSize = item.id as any;
+                        setHeroLogoSize(newSize);
+                        syncAndSave({ heroLogoSize: newSize }, true);
+                      }}
+                      className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                        isSelected
+                          ? 'bg-[#E30613] text-white border-red-500 font-bold shadow-md shadow-red-500/30'
+                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xs">{item.label}</span>
+                      <span className={`text-[10px] ${isSelected ? 'text-red-100' : 'text-slate-500'}`}>
+                        {item.sizeDesc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                O logótipo oficial é ampliado mantendo proporção nítida e alta definição com cantos arredondados e sombra premium.
               </p>
             </div>
 
             <div className="space-y-3 pt-1">
+              {/* Barra de Navegação Superior (Navbar) toggle principal */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showNavbar}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setShowNavbar(val);
+                    syncAndSave({ showNavbar: val }, true);
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-[#E30613] focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block">
+                    Exibir Barra de Navegação Superior (Navbar)
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para <strong>ocultar completamente a barra superior</strong> da página pública (barra com logótipo pequeno e cadeado). O ecrã fica 100% limpo com o logótipo oficial ampliado em grande destaque.
+                  </span>
+                  <div className="mt-1.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300">
+                    💡 <strong>Acesso Admin garantido:</strong> mesmo com a barra oculta, o administrador pode abrir o painel clicando <strong>3 vezes seguidas no logótipo central</strong> ou pressionando o atalho <strong>Alt+C</strong> (ou através do ícone discreto no rodapé).
+                  </div>
+                </div>
+              </label>
+
+              {/* Sub-opções da Navbar (apenas quando a navbar estiver ativa) */}
+              {showNavbar && (
+                <div className="pl-4 space-y-2.5 border-l-2 border-slate-800 ml-2 animate-in fade-in duration-200">
+                  {/* Navbar Brand text toggle */}
+                  <label className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800 cursor-pointer hover:bg-slate-900 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={showNavbarBrandText}
+                      onChange={(e) => {
+                        setShowNavbarBrandText(e.target.checked);
+                        syncAndSave({ showNavbarBrandText: e.target.checked });
+                      }}
+                      className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <div className="text-xs">
+                      <span className="font-semibold text-slate-200 block">
+                        Exibir Nome da Empresa ao lado do logo na Navbar
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        Desmarque para manter apenas o ícone do logótipo na barra superior.
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Navbar Participate button toggle */}
+                  <label className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800 cursor-pointer hover:bg-slate-900 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={showNavbarParticipateButton}
+                      onChange={(e) => {
+                        setShowNavbarParticipateButton(e.target.checked);
+                        syncAndSave({ showNavbarParticipateButton: e.target.checked });
+                      }}
+                      className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <div className="text-xs">
+                      <span className="font-semibold text-slate-200 block">
+                        Exibir Botão "Participar" na Navbar
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        Desmarque para remover o botão de inscrição do topo da página.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
+
               {/* Hero Title toggle */}
               <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
                 <input
@@ -549,49 +681,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     Exibir Título do Sorteio no Centro da Página (Abaixo do Logótipo)
                   </span>
                   <span className="text-[11px] text-slate-400">
-                    Desmarque para <strong>manter apenas o logótipo oficial</strong> em destaque no topo central da página (recomendado para destaque visual limpo).
-                  </span>
-                </div>
-              </label>
-
-              {/* Navbar Brand text toggle */}
-              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={showNavbarBrandText}
-                  onChange={(e) => {
-                    setShowNavbarBrandText(e.target.checked);
-                    syncAndSave({ showNavbarBrandText: e.target.checked });
-                  }}
-                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
-                />
-                <div className="text-xs">
-                  <span className="font-semibold text-slate-200 block">
-                    Exibir Nome da Empresa / Sorteio na Barra Superior (Navbar)
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    Desmarque para <strong>manter apenas o logótipo</strong> na barra de navegação superior, sem o texto ao lado.
-                  </span>
-                </div>
-              </label>
-
-              {/* Navbar Participate button toggle */}
-              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={showNavbarParticipateButton}
-                  onChange={(e) => {
-                    setShowNavbarParticipateButton(e.target.checked);
-                    syncAndSave({ showNavbarParticipateButton: e.target.checked });
-                  }}
-                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
-                />
-                <div className="text-xs">
-                  <span className="font-semibold text-slate-200 block">
-                    Exibir Botão "Participar" na Barra Superior (Navbar)
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    Desmarque para remover o botão vermelho de inscrição do topo, mantendo o cabeçalho focado e limpo.
+                    Desmarque para <strong>manter exclusivamente o logótipo oficial</strong> no cabeçalho central da página (recomendado para destaque visual limpo).
                   </span>
                 </div>
               </label>

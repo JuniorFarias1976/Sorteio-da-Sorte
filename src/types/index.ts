@@ -118,6 +118,8 @@ export interface BrandConfig {
   raffleUrl?: string;
 
   // Header & Navbar Display Toggles
+  showNavbar?: boolean;
+  heroLogoSize?: 'normal' | 'medium' | 'large' | 'xlarge' | '2xlarge';
   showHeroTitle?: boolean;
   showNavbarBrandText?: boolean;
   showNavbarParticipateButton?: boolean;

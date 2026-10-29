@@ -647,28 +647,30 @@ export default function App() {
         color: brand.textColor || (isLight ? '#0F172A' : '#F8FAFC'),
       }}
     >
-      {/* Top Main Navigation */}
-      <Navbar
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        brand={brand}
-        nextSchedule={nextSchedule}
-        participantsCount={participants.length}
-        isAdminUnlocked={isAdminUnlocked}
-        onToggleAdminLock={handleToggleAdminLock}
-        onRequestUnlockAdmin={() => {
-          if (isAdminUnlocked) {
-            setCurrentView('admin');
-            setAdminToast('🔑 Painel de Administrador Ativo');
-            setTimeout(() => setAdminToast(null), 3000);
-          } else {
-            setShowAdminModal(true);
-          }
-        }}
-        isServerConnected={isServerConnected}
-        isSyncing={isSyncing}
-        onManualSync={handleManualSync}
-      />
+      {/* Top Main Navigation (Oculta se showNavbar for false, mas visível no Painel de Admin) */}
+      {(brand.showNavbar !== false || currentView === 'admin') && (
+        <Navbar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          brand={brand}
+          nextSchedule={nextSchedule}
+          participantsCount={participants.length}
+          isAdminUnlocked={isAdminUnlocked}
+          onToggleAdminLock={handleToggleAdminLock}
+          onRequestUnlockAdmin={() => {
+            if (isAdminUnlocked) {
+              setCurrentView('admin');
+              setAdminToast('🔑 Painel de Administrador Ativo');
+              setTimeout(() => setAdminToast(null), 3000);
+            } else {
+              setShowAdminModal(true);
+            }
+          }}
+          isServerConnected={isServerConnected}
+          isSyncing={isSyncing}
+          onManualSync={handleManualSync}
+        />
+      )}
 
       {/* Sync Confirmation Toast */}
       {syncToast && (
@@ -860,6 +862,20 @@ export default function App() {
             {brand.companyName || 'Lacer - Sorteio OMD 2026'}
           </span>
           <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>· 2 Sorteios Diários Oficiais Auditados</span>
+          {/* Acesso discreto de Administrador no rodapé */}
+          <button
+            onClick={() => {
+              if (isAdminUnlocked) {
+                setCurrentView('admin');
+              } else {
+                setShowAdminModal(true);
+              }
+            }}
+            className="ml-2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors opacity-40 hover:opacity-100"
+            title="Acesso de Administrador"
+          >
+            <Lock className="w-3.5 h-3.5" />
+          </button>
         </div>
       </footer>
     </div>

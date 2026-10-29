@@ -442,14 +442,34 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               <img
                 src={brand.logoUrl}
                 alt={brand.companyName}
-                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-contain p-2 border-2 shadow-2xl group-hover:scale-105 transition-transform ${
-                  isLight ? 'bg-white border-red-100' : 'bg-slate-900 border-slate-700/80'
+                className={`${
+                  brand.heroLogoSize === 'normal'
+                    ? 'w-24 h-24 sm:w-32 sm:h-32 p-2.5 rounded-3xl'
+                    : brand.heroLogoSize === 'medium'
+                    ? 'w-36 h-36 sm:w-48 sm:h-48 p-3.5 rounded-3xl'
+                    : brand.heroLogoSize === 'xlarge'
+                    ? 'w-56 h-56 sm:w-72 sm:h-72 p-5 rounded-4xl'
+                    : brand.heroLogoSize === '2xlarge'
+                    ? 'w-64 h-64 sm:w-88 sm:h-88 p-6 rounded-4xl'
+                    : 'w-44 h-44 sm:w-60 sm:h-60 p-4 rounded-3xl sm:rounded-4xl' // Default 'large'
+                } object-contain border-2 shadow-2xl group-hover:scale-105 transition-transform ${
+                  isLight ? 'bg-white border-red-100/80 shadow-red-500/10' : 'bg-slate-900 border-slate-700/80 shadow-black/50'
                 }`}
               />
             ) : (
               <div 
                 style={{ backgroundColor: brand.primaryColor }}
-                className="w-20 h-20 rounded-3xl flex items-center justify-center text-white font-black text-3xl shadow-2xl group-hover:scale-105 transition-transform"
+                className={`${
+                  brand.heroLogoSize === 'normal'
+                    ? 'w-24 h-24 sm:w-32 sm:h-32 text-3xl sm:text-4xl rounded-3xl'
+                    : brand.heroLogoSize === 'medium'
+                    ? 'w-36 h-36 sm:w-48 sm:h-48 text-4xl sm:text-5xl rounded-3xl'
+                    : brand.heroLogoSize === 'xlarge'
+                    ? 'w-56 h-56 sm:w-72 sm:h-72 text-6xl sm:text-7xl rounded-4xl'
+                    : brand.heroLogoSize === '2xlarge'
+                    ? 'w-64 h-64 sm:w-88 sm:h-88 text-7xl sm:text-8xl rounded-4xl'
+                    : 'w-44 h-44 sm:w-60 sm:h-60 text-5xl sm:text-6xl rounded-3xl sm:rounded-4xl'
+                } flex items-center justify-center text-white font-black shadow-2xl group-hover:scale-105 transition-transform`}
               >
                 ★
               </div>
@@ -1034,6 +1054,28 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </label>
               </div>
 
+              {/* Destaque do Prémio: Irrigador Oral Lacer */}
+              <div className={`p-3 rounded-2xl border flex items-center gap-3 shadow-sm ${
+                isLight ? 'bg-gradient-to-r from-red-50 to-white border-red-200' : 'bg-slate-950/80 border-red-500/30'
+              }`}>
+                <img
+                  src="/assets/lacer_hidro.jpg"
+                  alt="LACER HIDRO - Irrigador Bucal"
+                  className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-red-200 shadow-sm shrink-0"
+                />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="text-[11px] font-bold text-[#E30613] uppercase tracking-wider flex items-center gap-1">
+                    <span>Prémio em Sorteio</span>
+                  </p>
+                  <p className={`text-xs font-semibold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    LACER HIDRO - Irrigador bucal portátil
+                  </p>
+                </div>
+                <span className="text-xs font-black text-[#E30613] bg-red-100/80 dark:bg-red-950/60 border border-red-200 dark:border-red-800 px-2.5 py-1 rounded-xl shrink-0">
+                  Boa sorte!
+                </span>
+              </div>
+
               <button
                 type="submit"
                 disabled={!acceptedTerms || isSubmitting}
@@ -1079,21 +1121,52 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
 
                 {/* Bloco de Mensagens Obrigatórias */}
-                <div className="text-center space-y-3 mb-6">
+                <div className="text-center space-y-3.5 mb-6">
                   <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight ${
                     isLight ? 'text-slate-950' : 'text-white'
                   }`}>
                     Participação registada com sucesso!
                   </h2>
 
+                  {/* Destaque com Foto do Irrigador Bucal e Boa Sorte */}
+                  <div className={`p-4 sm:p-5 rounded-3xl border max-w-lg mx-auto shadow-xl transition-all ${
+                    isLight ? 'bg-gradient-to-br from-red-50/90 via-white to-red-50/50 border-red-200 shadow-red-900/10' : 'bg-slate-950 border-red-500/40 shadow-black/50'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+                      <div className="relative shrink-0">
+                        <img 
+                          src="/assets/lacer_hidro.jpg" 
+                          alt="LACER HIDRO - Irrigador Bucal Portátil" 
+                          className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-2xl bg-white p-2 border-2 border-red-200 shadow-md"
+                        />
+                        <span className="absolute -top-2 -right-2 bg-[#E30613] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full shadow-md">
+                          Prémio
+                        </span>
+                      </div>
+                      
+                      <div className="text-center sm:text-left space-y-1 flex-1 min-w-0">
+                        <span className="inline-block text-[10px] uppercase font-extrabold tracking-wider bg-red-100 text-[#E30613] px-2.5 py-0.5 rounded-md">
+                          Em Sorteio Oficial
+                        </span>
+                        <h3 className={`text-lg sm:text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                          LACER HIDRO
+                        </h3>
+                        <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                          Irrigador bucal portátil com tecnologia de microjatos e bateria recarregável
+                        </p>
+                        <div className="pt-1.5">
+                          <span className="inline-block text-2xl sm:text-3xl font-black text-[#E30613] tracking-wide animate-pulse drop-shadow-sm">
+                            Boa sorte!
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <p className={`text-base sm:text-lg font-bold ${
                     isLight ? 'text-slate-800' : 'text-white'
                   }`}>
                     Obrigado por participar no sorteio de um Irrigador Oral Lacer.
-                  </p>
-
-                  <p className="text-3xl sm:text-4xl font-black text-[#E30613] tracking-wider py-1 drop-shadow-sm">
-                    Boa sorte!
                   </p>
 
                   <p className={`text-xs sm:text-sm max-w-lg mx-auto leading-relaxed ${

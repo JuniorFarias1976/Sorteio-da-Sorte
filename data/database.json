@@ -76,7 +76,7 @@
       "description": "Limpeza profunda e eficaz, 3 níveis de pressão, design ergonómico e bateria recarregável.",
       "totalQuantity": 4,
       "drawnQuantity": 0,
-      "imageUrl": "https://images.unsplash.com/photo-1559599101-f09722fb4948?w=600&auto=format&fit=crop&q=80",
+      "imageUrl": "/assets/lacer_hidro.jpg",
       "estimatedValue": 89.9,
       "drawOrder": 1
     },
@@ -248,6 +248,8 @@
     "ticketModalSubtitle": "O Seu Bilhete Oficial",
     "forceResetLogo": true,
     "adminPassword": "admin",
+    "showNavbar": false,
+    "heroLogoSize": "large",
     "showHeroTitle": false,
     "showNavbarBrandText": false,
     "showNavbarParticipateButton": false
