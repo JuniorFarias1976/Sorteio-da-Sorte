@@ -187,6 +187,7 @@ const INITIAL_DATABASE = {
     showHeroTitle: false,
     showNavbarBrandText: false,
     showNavbarParticipateButton: false,
+    showPrizesSection: false,
     formTitle: 'Garanta o seu Bilhete da Sorte',
     formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
     formButtonText: 'Participar do sorteio',

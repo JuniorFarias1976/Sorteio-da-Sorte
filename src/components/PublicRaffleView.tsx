@@ -664,9 +664,13 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       </section>
 
       {/* Main Content Layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left: Registration Form + Search Bilhetes (7 cols) */}
-        <div className="lg:col-span-7 space-y-8">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 ${
+        brand.showPrizesSection === true 
+          ? 'grid grid-cols-1 lg:grid-cols-12 gap-10' 
+          : 'max-w-3xl'
+      }`}>
+        {/* Left: Registration Form + Search Bilhetes */}
+        <div className={brand.showPrizesSection === true ? 'lg:col-span-7 space-y-8' : 'space-y-8'}>
           {/* Card: Formulário de Inscrição */}
           <div 
             id="formulario-inscricao"
@@ -1399,8 +1403,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           </div>
         </div>
 
-        {/* Right: Prizes Showcase (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        {/* Right: Prizes Showcase (5 cols) - Controlado no Painel de Controlo */}
+        {brand.showPrizesSection === true && (
+          <div className="lg:col-span-5 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className={`text-xl font-bold flex items-center gap-2 ${
               isLight ? 'text-slate-950' : 'text-white'
@@ -1506,7 +1511,8 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             </p>
           </div>
         </div>
-      </div>
+      )}
+    </div>
 
       {/* Modal: Regulamento e Termos Oficiais do Sorteio */}
       {showTermsModal && (

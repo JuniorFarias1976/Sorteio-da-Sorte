@@ -123,6 +123,7 @@ export interface BrandConfig {
   showHeroTitle?: boolean;
   showNavbarBrandText?: boolean;
   showNavbarParticipateButton?: boolean;
+  showPrizesSection?: boolean; // Controla a exibição do bloco lateral 'Prémios Desta Edição'
 
   // Total application texts control
   heroBadgeText?: string;

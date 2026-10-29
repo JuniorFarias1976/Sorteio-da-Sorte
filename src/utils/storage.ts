@@ -65,6 +65,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   showHeroTitle: false, // Mantém apenas o logótipo no cabeçalho como solicitado
   showNavbarBrandText: false, // Mantém apenas o logótipo na barra de navegação
   showNavbarParticipateButton: false, // Remove o botão de participar da barra superior
+  showPrizesSection: false, // Ocultar bloco lateral de prémios por padrão conforme solicitado
   formTitle: 'Garanta o seu Bilhete da Sorte',
   formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
   formButtonText: 'Participar do sorteio',
