@@ -14,7 +14,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Lock,
-  Key
+  Key,
+  Calendar,
+  ArrowRight
 } from 'lucide-react';
 import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
@@ -23,11 +25,13 @@ import { compressImageFile } from '../../utils/imageCompressor';
 interface BrandCustomizerTabProps {
   brand: BrandConfig;
   onUpdateBrand: (brand: BrandConfig) => void;
+  onNavigateToCalendar?: () => void;
 }
 
 export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   brand,
   onUpdateBrand,
+  onNavigateToCalendar,
 }) => {
   const [companyName, setCompanyName] = useState(brand.companyName);
   const [companySlogan, setCompanySlogan] = useState(brand.companySlogan);
@@ -39,6 +43,11 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [textColor, setTextColor] = useState(brand.textColor || '#0F172A');
   const [terms, setTerms] = useState(brand.termsAndConditions);
   const [adminPassword, setAdminPassword] = useState(brand.adminPassword || 'admin');
+
+  // Display toggles (Hero and Navbar)
+  const [showHeroTitle, setShowHeroTitle] = useState(brand.showHeroTitle === true);
+  const [showNavbarBrandText, setShowNavbarBrandText] = useState(brand.showNavbarBrandText === true);
+  const [showNavbarParticipateButton, setShowNavbarParticipateButton] = useState(brand.showNavbarParticipateButton === true);
 
   // App-wide customizable texts
   const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
@@ -92,6 +101,9 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setTicketModalTitle(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
     setTicketModalSubtitle(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
     setAdminPassword(brand.adminPassword || 'admin');
+    setShowHeroTitle(brand.showHeroTitle === true);
+    setShowNavbarBrandText(brand.showNavbarBrandText === true);
+    setShowNavbarParticipateButton(brand.showNavbarParticipateButton === true);
   }, [brand]);
 
   // Initial check of server database status
@@ -207,6 +219,9 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       heroBadgeText: (overrides.heroBadgeText !== undefined ? overrides.heroBadgeText : heroBadgeText).trim(),
       ticketModalTitle: (overrides.ticketModalTitle !== undefined ? overrides.ticketModalTitle : ticketModalTitle).trim(),
       ticketModalSubtitle: (overrides.ticketModalSubtitle !== undefined ? overrides.ticketModalSubtitle : ticketModalSubtitle).trim(),
+      showHeroTitle: overrides.showHeroTitle !== undefined ? overrides.showHeroTitle : showHeroTitle,
+      showNavbarBrandText: overrides.showNavbarBrandText !== undefined ? overrides.showNavbarBrandText : showNavbarBrandText,
+      showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
     };
 
     onUpdateBrand(updated);
@@ -505,12 +520,96 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             </p>
           </div>
 
-          {/* Faixa das 4 Rondas Diárias */}
-          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-white uppercase tracking-wider">
-                Faixa dos 4 Horários / Rondas
+          {/* Controlo de Exibição do Logótipo & Cabeçalho (Manter Apenas Logótipo) */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+            <div>
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-amber-400" />
+                <span>Exibição do Logótipo & Cabeçalho</span>
+              </h4>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Configure se deseja manter exclusivamente o logótipo em destaque ou exibir também os títulos e botões adicionais na página pública.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              {/* Hero Title toggle */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showHeroTitle}
+                  onChange={(e) => {
+                    setShowHeroTitle(e.target.checked);
+                    syncAndSave({ showHeroTitle: e.target.checked });
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block">
+                    Exibir Título do Sorteio no Centro da Página (Abaixo do Logótipo)
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para <strong>manter apenas o logótipo oficial</strong> em destaque no topo central da página (recomendado para destaque visual limpo).
+                  </span>
+                </div>
               </label>
+
+              {/* Navbar Brand text toggle */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showNavbarBrandText}
+                  onChange={(e) => {
+                    setShowNavbarBrandText(e.target.checked);
+                    syncAndSave({ showNavbarBrandText: e.target.checked });
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block">
+                    Exibir Nome da Empresa / Sorteio na Barra Superior (Navbar)
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para <strong>manter apenas o logótipo</strong> na barra de navegação superior, sem o texto ao lado.
+                  </span>
+                </div>
+              </label>
+
+              {/* Navbar Participate button toggle */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showNavbarParticipateButton}
+                  onChange={(e) => {
+                    setShowNavbarParticipateButton(e.target.checked);
+                    syncAndSave({ showNavbarParticipateButton: e.target.checked });
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block">
+                    Exibir Botão "Participar" na Barra Superior (Navbar)
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para remover o botão vermelho de inscrição do topo, mantendo o cabeçalho focado e limpo.
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Faixa das Datas & Horários dos Sorteios */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-red-500" />
+                  <span>Datas e Horários dos Sorteios</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Faixa com as rondas e horários diários na página pública e gestão do calendário.
+                </p>
+              </div>
               <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
                 <input
                   type="checkbox"
@@ -521,7 +620,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   }}
                   className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
                 />
-                <span>Exibir Faixa</span>
+                <span>Exibir Faixa de Datas</span>
               </label>
             </div>
 
@@ -529,7 +628,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               <div className="space-y-3 pt-1">
                 <div>
                   <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
-                    Título da Faixa:
+                    Título da Faixa de Datas:
                   </label>
                   <input
                     type="text"
@@ -553,6 +652,23 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>
+              </div>
+            )}
+
+            {onNavigateToCalendar && (
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">
+                  Quer alterar os dias, horários e prémios de cada ronda?
+                </span>
+                <button
+                  type="button"
+                  onClick={onNavigateToCalendar}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 text-xs font-semibold border border-red-500/30 transition-all cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Gerir Calendário & Rondas</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
             )}
           </div>

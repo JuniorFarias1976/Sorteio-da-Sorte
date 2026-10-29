@@ -247,7 +247,10 @@
     "ticketModalTitle": "INSCRIÇÃO CONFIRMADA COM SUCESSO!",
     "ticketModalSubtitle": "O Seu Bilhete Oficial",
     "forceResetLogo": true,
-    "adminPassword": "admin"
+    "adminPassword": "admin",
+    "showHeroTitle": false,
+    "showNavbarBrandText": false,
+    "showNavbarParticipateButton": false
   },
   "formFields": {
     "name": {

@@ -456,23 +456,28 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight ${
-              isLight ? 'text-slate-950' : 'text-white'
-            }`}>
-              {brand.companyName || 'Lacer - Sorteio OMD 2026'}
-            </h1>
-          </div>
+          {/* Optional Title in Hero (When disabled, keeps ONLY the logo as requested) */}
+          {brand.showHeroTitle && (
+            <>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight ${
+                  isLight ? 'text-slate-950' : 'text-white'
+                }`}>
+                  {brand.companyName || 'Lacer - Sorteio OMD 2026'}
+                </h1>
+              </div>
 
-          <div className="max-w-2xl mx-auto mb-8">
-            {brand.companySlogan !== undefined && brand.companySlogan !== '' ? (
-              <p className={`text-base sm:text-xl font-normal leading-relaxed ${
-                isLight ? 'text-slate-600' : 'text-slate-300'
-              }`}>
-                {brand.companySlogan}
-              </p>
-            ) : null}
-          </div>
+              {brand.companySlogan ? (
+                <div className="max-w-2xl mx-auto mb-8">
+                  <p className={`text-base sm:text-xl font-normal leading-relaxed ${
+                    isLight ? 'text-slate-600' : 'text-slate-300'
+                  }`}>
+                    {brand.companySlogan}
+                  </p>
+                </div>
+              ) : null}
+            </>
+          )}
 
           {/* Official 2 Draws Per Day Schedule Banner */}
           {brand.showRoundsBanner !== false && (

@@ -346,6 +346,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <BrandCustomizerTab
               brand={brand}
               onUpdateBrand={onUpdateBrand}
+              onNavigateToCalendar={() => setActiveTab('calendar')}
             />
           )}
         </main>

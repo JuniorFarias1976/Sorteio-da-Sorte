@@ -60,6 +60,9 @@ export const DEFAULT_BRAND: BrandConfig = {
   roundsBannerTitle: '2 Sorteios Oficiais por Dia',
   roundsBannerSubtitle: 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!',
   showRoundsBanner: true,
+  showHeroTitle: false, // Keeps only the logo in hero as requested
+  showNavbarBrandText: false, // Keeps only the logo in navbar as requested
+  showNavbarParticipateButton: false, // Removes the participate button in navbar as requested
   formTitle: 'Garanta o seu Bilhete da Sorte',
   formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
   formButtonText: 'Participar do sorteio',

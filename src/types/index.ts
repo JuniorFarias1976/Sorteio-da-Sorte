@@ -117,6 +117,11 @@ export interface BrandConfig {
   adminPassword?: string;
   raffleUrl?: string;
 
+  // Header & Navbar Display Toggles
+  showHeroTitle?: boolean;
+  showNavbarBrandText?: boolean;
+  showNavbarParticipateButton?: boolean;
+
   // Total application texts control
   heroBadgeText?: string;
   roundsBannerTitle?: string;

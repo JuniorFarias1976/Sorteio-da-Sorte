@@ -95,23 +95,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               ★
             </div>
           )}
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className={`font-bold text-base sm:text-lg tracking-tight transition-colors truncate ${
-                isLight ? 'text-slate-900 group-hover:text-[#E30613]' : 'text-white group-hover:text-red-400'
+          {brand.showNavbarBrandText && (
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className={`font-bold text-base sm:text-lg tracking-tight transition-colors truncate ${
+                  isLight ? 'text-slate-900 group-hover:text-[#E30613]' : 'text-white group-hover:text-red-400'
+                }`}>
+                  {brand.companyName || 'Lacer - Sorteio OMD 2026'}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[#E30613] bg-red-50 border border-red-200 rounded shrink-0">
+                  Oficial
+                </span>
+              </div>
+              <p className={`text-[11px] sm:text-xs hidden sm:block truncate max-w-[280px] ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
               }`}>
-                {brand.companyName || 'Lacer - Sorteio OMD 2026'}
-              </span>
-              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[#E30613] bg-red-50 border border-red-200 rounded shrink-0">
-                Oficial
-              </span>
+                {brand.companySlogan || 'Higiene e Saúde Oral • Stand Lacer'}
+              </p>
             </div>
-            <p className={`text-[11px] sm:text-xs hidden sm:block truncate max-w-[280px] ${
-              isLight ? 'text-slate-500' : 'text-slate-400'
-            }`}>
-              {brand.companySlogan || 'Higiene e Saúde Oral • Stand Lacer'}
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Center: Live Sync (Admin only) */}
@@ -175,18 +177,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         <nav className={`hidden sm:flex items-center p-1.5 rounded-xl border text-xs sm:text-sm font-medium ${
           isLight ? 'bg-slate-100/90 border-slate-200' : 'bg-slate-950/70 border-slate-800'
         }`}>
-          <button
-            onClick={handleParticipateClick}
-            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer ${
-              currentView === 'public'
-                ? 'bg-[#E30613] text-white font-semibold shadow-md shadow-red-500/25'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-            }`}
-            title="Ir para o formulário de participação"
-          >
-            <Ticket className="w-4 h-4" />
-            <span>Participar</span>
-          </button>
+          {brand.showNavbarParticipateButton && (
+            <button
+              onClick={handleParticipateClick}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer ${
+                currentView === 'public'
+                  ? 'bg-[#E30613] text-white font-semibold shadow-md shadow-red-500/25'
+                  : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              }`}
+              title="Ir para o formulário de participação"
+            >
+              <Ticket className="w-4 h-4" />
+              <span>Participar</span>
+            </button>
+          )}
 
           {/* Admin Tab: Rendered when unlocked */}
           {isAdminUnlocked ? (
