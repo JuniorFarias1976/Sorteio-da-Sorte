@@ -19,10 +19,13 @@ import {
   ShieldAlert, 
   Flame,
   ArrowRight,
+  ArrowLeft,
+  Home,
   AlertCircle,
   Calendar,
   Clock,
-  Lock
+  Lock,
+  ChevronLeft
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
 
@@ -36,6 +39,8 @@ interface LiveDrawRoomProps {
   onWinnerAnnounced: (winner: DrawWinner) => void;
   onPrizeQuantityDrawn: (prizeId: string) => void;
   onRequestUnlockAdmin?: () => void;
+  onGoToAdmin?: () => void;
+  onGoToPublic?: () => void;
 }
 
 export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
@@ -48,6 +53,8 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   onWinnerAnnounced,
   onPrizeQuantityDrawn,
   onRequestUnlockAdmin,
+  onGoToAdmin,
+  onGoToPublic,
 }) => {
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>(prizes[0]?.id || '');
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -61,6 +68,26 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const [countdown, setCountdown] = useState<number | null>(null);
   const [drawErrorNotice, setDrawErrorNotice] = useState<string | null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
+  const countdownIntervalRef = useRef<any>(null);
+  const tumblerTimeoutRef = useRef<any>(null);
+  const authoritativeWinnerRef = useRef<DrawWinner | null>(null);
+
+  const clearAllTimers = () => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    if (tumblerTimeoutRef.current) {
+      clearTimeout(tumblerTimeoutRef.current);
+      tumblerTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearAllTimers();
+    };
+  }, []);
 
   const eligibleParticipants = participants.filter(p => p.status === 'active');
   const currentPrize = prizes.find(p => p.id === selectedPrizeId) || prizes[0];
@@ -162,6 +189,116 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     }, 250);
   };
 
+  // Helper to create certified local winner record if server is offline
+  const createLocalWinnerRecord = (participant: Participant): DrawWinner => {
+    const hashSeed = `${participant.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const validationHash = 'AUTH-' + Array.from(hashSeed)
+      .reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) | 0, 0)
+      .toString(16)
+      .toUpperCase()
+      .padStart(8, '0');
+
+    return {
+      id: `win-${Date.now()}`,
+      drawId: activeSchedule?.id || 'live-draw',
+      drawTitle: activeSchedule 
+        ? `${activeSchedule.title} (${activeSchedule.scheduledDate} às ${activeSchedule.scheduledTime})`
+        : currentPrize?.title || 'Sorteio Oficial',
+      participantId: participant.id,
+      participantName: participant.name,
+      participantEmail: participant.email,
+      participantPhone: participant.phone,
+      participantTicket: participant.ticketNumber,
+      participantDocument: participant.document || '',
+      participantClinic: participant.clinic || '',
+      participantCity: participant.city || '',
+      participantSpecialty: participant.specialty || '',
+      prizeId: currentPrize?.id || 'prz-1',
+      prizeTitle: currentPrize?.title || 'Prêmio Oficial',
+      wonAt: new Date().toISOString(),
+      validationHash,
+    };
+  };
+
+  const finalizeWinner = (winnerRecord: DrawWinner) => {
+    clearAllTimers();
+    setCountdown(null);
+    setIsDrawing(false);
+
+    setCurrentDisplayTicket(winnerRecord.participantTicket);
+    setCurrentDisplayName(winnerRecord.participantName);
+    setCurrentDisplayCity(winnerRecord.participantCity || winnerRecord.participantDocument || '');
+    setLatestWinner(winnerRecord);
+
+    onWinnerAnnounced(winnerRecord);
+    onPrizeQuantityDrawn(winnerRecord.prizeId);
+
+    broadcastEvent({
+      type: 'WINNER_REVEALED',
+      winner: winnerRecord,
+    });
+
+    if (soundEnabled) {
+      playWinFanfare();
+    }
+    triggerConfettiExplosion();
+  };
+
+  const executeTumblerRoll = () => {
+    // Guarantees countdown is cleared from screen
+    setCountdown(null);
+    if (soundEnabled) playSuspenseSound();
+
+    let step = 0;
+    const totalSteps = 42; // around 4-5 seconds of suspenseful deceleration
+    const randomFallback = eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)] || participants[0];
+
+    const tick = () => {
+      step++;
+
+      // Pick random participant display during the spin
+      const randomDisplay = eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)] || randomFallback;
+      if (randomDisplay) {
+        setCurrentDisplayTicket(randomDisplay.ticketNumber);
+        setCurrentDisplayName(randomDisplay.name);
+        setCurrentDisplayCity(randomDisplay.city || '');
+      }
+
+      if (step % 3 === 0 && randomDisplay) {
+        broadcastEvent({
+          type: 'TUMBLER_TICK',
+          ticket: randomDisplay.ticketNumber,
+          name: randomDisplay.name,
+          city: randomDisplay.city || '',
+        });
+      }
+
+      if (soundEnabled && step % 2 === 0) {
+        playTickSound(620 + step * 7);
+      }
+
+      if (step >= totalSteps) {
+        // Tumbler roll finished: lock onto the authoritative winner
+        const targetWinner = authoritativeWinnerRef.current || createLocalWinnerRecord(randomFallback);
+        finalizeWinner(targetWinner);
+      } else {
+        // Dramatic deceleration curve towards the end
+        let delay = 45;
+        if (step > 35) {
+          delay = 280 + (step - 35) * 65; // 280ms, 345ms, 410ms... dramatic climax
+        } else if (step > 26) {
+          delay = 120 + (step - 26) * 16; // 120ms, 136ms... starting to slow
+        } else if (step > 15) {
+          delay = 70;
+        }
+
+        tumblerTimeoutRef.current = setTimeout(tick, delay);
+      }
+    };
+
+    tumblerTimeoutRef.current = setTimeout(tick, 45);
+  };
+
   // Multi-device real-time sync (SSE + BroadcastChannel)
   useEffect(() => {
     // 1. Initial snapshot of live state
@@ -173,7 +310,6 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
         if (matched) setSelectedScheduleId(matched.id);
       }
       if (state.isDrawing) setIsDrawing(true);
-      if (state.countdown !== null) setCountdown(state.countdown);
       if (state.currentDisplayTicket) setCurrentDisplayTicket(state.currentDisplayTicket);
       if (state.currentDisplayName) setCurrentDisplayName(state.currentDisplayName);
       if (state.currentDisplayCity) setCurrentDisplayCity(state.currentDisplayCity);
@@ -186,7 +322,11 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
         if (!data) return;
 
         if (data.type === 'START_DRAW') {
-          setSelectedPrizeId(data.prizeId);
+          // If this is the admin who initiated the draw, their local controller is already running
+          if (isAdmin) return;
+
+          clearAllTimers();
+          if (data.prizeId) setSelectedPrizeId(data.prizeId);
           if (data.round) {
             const matched = schedules.find(s => s.roundNumber === data.round);
             if (matched) setSelectedScheduleId(matched.id);
@@ -196,23 +336,32 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           setCountdown(3);
           if (soundEnabled) playCountdownBeep(false);
 
-          const cd = setInterval(() => {
-            setCountdown((prev) => {
-              if (prev === null || prev <= 1) {
-                clearInterval(cd);
-                if (soundEnabled) playCountdownBeep(true);
-                return null;
+          let c = 3;
+          countdownIntervalRef.current = setInterval(() => {
+            c--;
+            if (c <= 0) {
+              if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
               }
+              setCountdown(null);
+              if (soundEnabled) playCountdownBeep(true);
+            } else {
+              setCountdown(c);
               if (soundEnabled) playCountdownBeep(false);
-              return prev - 1;
-            });
+            }
           }, 1000);
         } else if (data.type === 'TUMBLER_TICK') {
-          setCurrentDisplayTicket(data.ticket);
-          setCurrentDisplayName(data.name);
-          setCurrentDisplayCity(data.city);
-          if (soundEnabled) playTickSound(700);
+          if (!isAdmin) {
+            setCountdown(null);
+            setIsDrawing(true);
+            setCurrentDisplayTicket(data.ticket);
+            setCurrentDisplayName(data.name);
+            setCurrentDisplayCity(data.city);
+            if (soundEnabled) playTickSound(700);
+          }
         } else if (data.type === 'WINNER_REVEALED') {
+          clearAllTimers();
           setIsDrawing(false);
           setCountdown(null);
           setCurrentDisplayTicket(data.winner.participantTicket);
@@ -224,6 +373,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           if (soundEnabled) playWinFanfare();
           triggerConfettiExplosion();
         } else if (data.type === 'LIVE_RESET') {
+          clearAllTimers();
           setIsDrawing(false);
           setCountdown(null);
           setLatestWinner(null);
@@ -243,6 +393,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           const data = event.data;
           if (!data) return;
           if (data.type === 'LIVE_RESET') {
+            clearAllTimers();
             setIsDrawing(false);
             setCountdown(null);
             setLatestWinner(null);
@@ -260,7 +411,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       unsubscribe();
       channel?.close();
     };
-  }, [soundEnabled, onWinnerAnnounced, onPrizeQuantityDrawn]);
+  }, [isAdmin, soundEnabled, onWinnerAnnounced, onPrizeQuantityDrawn]);
 
   const broadcastEvent = (payload: object) => {
     try {
@@ -297,6 +448,9 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       return;
     }
 
+    // Reset previous timers and state
+    clearAllTimers();
+    authoritativeWinnerRef.current = null;
     setLatestWinner(null);
     setIsDrawing(true);
     setCountdown(3);
@@ -309,113 +463,41 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
     if (soundEnabled) playCountdownBeep(false);
 
-    // Call server to trigger authoritative draw across ALL connected devices (mobile + desktop)
-    try {
-      const res = await ApiService.triggerDraw(currentPrize.id, selectedRound);
-      if (!res.success) {
-        console.warn('Server triggerDraw fallback:', res.error);
-        runDigitalTumbler();
-      }
-    } catch (err) {
-      console.warn('Server connection error, running local tumbler:', err);
-      runDigitalTumbler();
-    }
-  };
-
-  const runDigitalTumbler = () => {
-    if (soundEnabled) playSuspenseSound();
-
-    let speed = 40;
-    let elapsedTicks = 0;
-    const totalTicks = 80; // around 5-6 seconds of exciting spinning
-    
-    // Select winner cryptographically pseudo-random from eligible list
-    const randomIndex = Math.floor(Math.random() * eligibleParticipants.length);
-    const chosenWinnerParticipant = eligibleParticipants[randomIndex];
-
-    const spinInterval = setInterval(() => {
-      elapsedTicks++;
-      
-      // Pick random participant display during the spin
-      const randomDisplay = eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)];
-      setCurrentDisplayTicket(randomDisplay.ticketNumber);
-      setCurrentDisplayName(randomDisplay.name);
-      setCurrentDisplayCity(randomDisplay.city);
-
-      if (elapsedTicks % 4 === 0) {
-        broadcastEvent({
-          type: 'TUMBLER_TICK',
-          ticket: randomDisplay.ticketNumber,
-          name: randomDisplay.name,
-          city: randomDisplay.city,
-        });
-      }
-
-      if (soundEnabled && elapsedTicks % 2 === 0) {
-        playTickSound(600 + (elapsedTicks * 5));
-      }
-
-      // Decelerate towards the end for supreme suspense
-      if (elapsedTicks > 50) {
-        speed += 12;
-      }
-
-      if (elapsedTicks >= totalTicks) {
-        clearInterval(spinInterval);
-        
-        // Final lock on chosen winner!
-        setCurrentDisplayTicket(chosenWinnerParticipant.ticketNumber);
-        setCurrentDisplayName(chosenWinnerParticipant.name);
-        setCurrentDisplayCity(chosenWinnerParticipant.city);
-        setIsDrawing(false);
-
-        // Security validation hash
-        const hashSeed = `${chosenWinnerParticipant.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const validationHash = 'AUTH-' + Array.from(hashSeed)
-          .reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) | 0, 0)
-          .toString(16)
-          .toUpperCase()
-          .padStart(8, '0');
-
-        const newWinnerRecord: DrawWinner = {
-          id: `win-${Date.now()}`,
-          drawId: activeSchedule?.id || 'live-draw',
-          drawTitle: activeSchedule 
-            ? `${activeSchedule.title} (${activeSchedule.scheduledDate} às ${activeSchedule.scheduledTime})`
-            : currentPrize.title,
-          participantId: chosenWinnerParticipant.id,
-          participantName: chosenWinnerParticipant.name,
-          participantEmail: chosenWinnerParticipant.email,
-          participantPhone: chosenWinnerParticipant.phone,
-          participantTicket: chosenWinnerParticipant.ticketNumber,
-          participantDocument: chosenWinnerParticipant.document || '',
-          participantClinic: chosenWinnerParticipant.clinic || '',
-          participantCity: chosenWinnerParticipant.city || '',
-          participantSpecialty: chosenWinnerParticipant.specialty || '',
-          prizeId: currentPrize.id,
-          prizeTitle: currentPrize.title,
-          wonAt: new Date().toISOString(),
-          validationHash,
-        };
-
-        setLatestWinner(newWinnerRecord);
-        onWinnerAnnounced(newWinnerRecord);
-        onPrizeQuantityDrawn(currentPrize.id);
-
-        broadcastEvent({
-          type: 'WINNER_REVEALED',
-          winner: newWinnerRecord,
-        });
-
-        if (soundEnabled) {
-          playWinFanfare();
+    // Call server to trigger draw asynchronously (does not block local animation)
+    ApiService.triggerDraw(currentPrize.id, selectedRound)
+      .then((res) => {
+        if (res.success && res.winner) {
+          authoritativeWinnerRef.current = res.winner;
         }
-        triggerConfettiExplosion();
+      })
+      .catch((err) => {
+        console.warn('Server triggerDraw async error (fallback local):', err);
+      });
+
+    // Start robust local countdown: 3 -> 2 -> 1 -> GO!
+    let count = 3;
+    countdownIntervalRef.current = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        setCountdown(null);
+        if (soundEnabled) playCountdownBeep(true);
+        // Start digital tumbler
+        executeTumblerRoll();
+      } else {
+        setCountdown(count);
+        if (soundEnabled) playCountdownBeep(false);
       }
-    }, speed);
+    }, 1000);
   };
 
   const handleResetScreen = async () => {
+    clearAllTimers();
+    setIsDrawing(false);
+    setCountdown(null);
     setLatestWinner(null);
     setCurrentDisplayTicket('-----');
     setCurrentDisplayName('AGUARDANDO SORTEIO...');
@@ -437,10 +519,62 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     >
       {/* Top Bar / Broadcast Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Navigation Back Buttons */}
           {isAdmin ? (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-500/50 rounded-full text-amber-300 text-xs font-bold tracking-wider uppercase">
-              👑 MESA DO ADMINISTRADOR [Alt+C]
+            <button
+              type="button"
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen().catch(() => {});
+                }
+                onGoToAdmin?.();
+              }}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs shadow-lg hover:shadow-amber-500/25 transition-all cursor-pointer ring-2 ring-amber-400/50 active:scale-95"
+              title="Voltar ao Painel de Administrador"
+            >
+              <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+              <span>Painel Admin</span>
+            </button>
+          ) : (
+            onRequestUnlockAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                  }
+                  onRequestUnlockAdmin();
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 hover:text-white font-bold text-xs border border-amber-500/40 shadow-md transition-all cursor-pointer"
+                title="Aceder ao Painel de Administrador com palavra-passe"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Entrar como Admin</span>
+              </button>
+            )
+          )}
+
+          {onGoToPublic && (
+            <button
+              type="button"
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen().catch(() => {});
+                }
+                onGoToPublic();
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 transition-colors cursor-pointer"
+              title="Voltar à página pública do sorteio"
+            >
+              <Home className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden sm:inline">Página Pública</span>
+            </button>
+          )}
+
+          {isAdmin ? (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-300 text-xs font-bold tracking-wider uppercase">
+              👑 MESA DO ADMINISTRADOR
             </div>
           ) : (
             <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/40 rounded-full text-red-400 text-xs font-bold tracking-wider uppercase animate-pulse">
@@ -802,10 +936,26 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {isAdmin && onGoToAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen().catch(() => {});
+                        }
+                        onGoToAdmin();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-bold text-xs border border-amber-500/40 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+                      title="Voltar ao Painel de Administrador"
+                    >
+                      <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+                      <span>Voltar ao Painel Admin</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => exportCertificatePDF(latestWinner, brand)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg transition-transform hover:scale-105"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg transition-transform hover:scale-105 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
                     <span>Baixar Certificado Oficial</span>

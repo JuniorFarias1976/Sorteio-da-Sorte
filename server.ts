@@ -680,7 +680,7 @@ async function startServer() {
     liveState.prizeId = prizeId;
     liveState.round = round || 1;
     liveState.latestWinner = null;
-    liveState.countdown = 3;
+    liveState.countdown = null;
 
     broadcastSSE('LIVE_EVENT', {
       type: 'START_DRAW',

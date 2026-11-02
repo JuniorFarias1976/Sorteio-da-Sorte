@@ -861,7 +861,21 @@ export default function App() {
             isAdmin={isAdminUnlocked}
             onWinnerAnnounced={handleWinnerAnnounced}
             onPrizeQuantityDrawn={handlePrizeQuantityDrawn}
-            onRequestUnlockAdmin={() => setShowAdminModal(true)}
+            onRequestUnlockAdmin={() => {
+              if (isAdminUnlocked) {
+                setCurrentView('admin');
+              } else {
+                setShowAdminModal(true);
+              }
+            }}
+            onGoToAdmin={() => {
+              if (isAdminUnlocked) {
+                setCurrentView('admin');
+              } else {
+                setShowAdminModal(true);
+              }
+            }}
+            onGoToPublic={() => setCurrentView('public')}
           />
         )}
 
