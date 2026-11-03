@@ -49,6 +49,7 @@ interface AdminDashboardProps {
   reportConfig?: ReportPdfConfig;
   onUpdateParticipants: (participants: Participant[], deletedId?: string) => void;
   onUpdatePrizes: (prizes: Prize[], deletedId?: string) => void;
+  onResetPrize?: (prizeId: string, clearAssociatedWinners?: boolean) => void;
   onClearAllParticipants?: () => void;
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
   onUpdateWinners: (winners: DrawWinner[]) => void;
@@ -87,6 +88,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   reportConfig,
   onUpdateParticipants,
   onUpdatePrizes,
+  onResetPrize,
   onClearAllParticipants,
   onUpdateSchedules,
   onUpdateWinners,
@@ -316,6 +318,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <PrizesTab
               prizes={prizes}
               onUpdatePrizes={onUpdatePrizes}
+              onResetPrize={onResetPrize}
+              winners={winners}
+              onUpdateWinners={onUpdateWinners}
             />
           )}
 

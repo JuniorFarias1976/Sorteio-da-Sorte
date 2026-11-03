@@ -403,6 +403,29 @@ export default function App() {
     broadcastCrossTab({ prizes: data });
   };
 
+  // Reset prize drawn count back to 0 (and optionally clear winners for that prize)
+  const handleResetPrize = (prizeId: string, clearAssociatedWinners: boolean = false) => {
+    let updatedPrizes: Prize[];
+    if (prizeId === 'all') {
+      updatedPrizes = prizes.map((p) => ({ ...p, drawnQuantity: 0 }));
+    } else {
+      updatedPrizes = prizes.map((p) =>
+        p.id === prizeId ? { ...p, drawnQuantity: 0 } : p
+      );
+    }
+    handleUpdatePrizes(updatedPrizes);
+
+    if (clearAssociatedWinners) {
+      const remainingWinners = prizeId === 'all'
+        ? []
+        : winners.filter((w) => w.prizeId !== prizeId);
+      handleUpdateWinners(remainingWinners);
+    }
+
+    // Call server API for atomic reset & SSE broadcast
+    ApiService.resetPrize(prizeId, clearAssociatedWinners).catch(() => {});
+  };
+
   const handleUpdateSchedules = (data: DrawSchedule[]) => {
     const sorted = [...data].sort((a, b) => {
       const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
@@ -876,6 +899,7 @@ export default function App() {
               }
             }}
             onGoToPublic={() => setCurrentView('public')}
+            onResetPrize={handleResetPrize}
           />
         )}
 
@@ -894,6 +918,7 @@ export default function App() {
             onUpdateParticipants={handleUpdateParticipants}
             onClearAllParticipants={handleClearAllParticipants}
             onUpdatePrizes={handleUpdatePrizes}
+            onResetPrize={handleResetPrize}
             onUpdateSchedules={handleUpdateSchedules}
             onUpdateWinners={handleUpdateWinners}
             onAddNotificationLog={handleAddNotificationLog}

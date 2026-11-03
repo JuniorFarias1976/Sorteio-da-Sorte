@@ -765,6 +765,39 @@ async function startServer() {
     res.json({ success: true, liveState });
   });
 
+  // 6b. Admin resets prize drawn counts
+  app.post('/api/prizes/reset', (req, res) => {
+    const { prizeId, clearWinners } = req.body || {};
+    db = loadDB();
+
+    if (prizeId === 'all') {
+      db.prizes = db.prizes.map((p) => ({ ...p, drawnQuantity: 0 }));
+      if (clearWinners) {
+        db.winners = [];
+      }
+    } else if (prizeId) {
+      db.prizes = db.prizes.map((p) =>
+        p.id === prizeId ? { ...p, drawnQuantity: 0 } : p
+      );
+      if (clearWinners) {
+        db.winners = db.winners.filter((w) => w.prizeId !== prizeId);
+      }
+    }
+
+    db.version = Date.now();
+    saveDB(db);
+
+    // Reset live state as well
+    liveState.isDrawing = false;
+    liveState.countdown = null;
+
+    broadcastSSE('DATA_UPDATED', db);
+    broadcastSSE('LIVE_EVENT', { type: 'LIVE_RESET' });
+
+    console.log(`[PRIZE-RESET] Successfully reset prize: ${prizeId} (clearWinners: ${!!clearWinners})`);
+    res.json({ success: true, prizes: db.prizes, winners: db.winners });
+  });
+
   // 7. Server-Sent Events (SSE) Stream for real-time synchronization on all devices (mobile & desktop)
   app.get('/api/live/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');

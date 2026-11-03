@@ -25,7 +25,8 @@ import {
   Calendar,
   Clock,
   Lock,
-  ChevronLeft
+  ChevronLeft,
+  X
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
 
@@ -41,6 +42,7 @@ interface LiveDrawRoomProps {
   onRequestUnlockAdmin?: () => void;
   onGoToAdmin?: () => void;
   onGoToPublic?: () => void;
+  onResetPrize?: (prizeId: string, clearAssociatedWinners?: boolean) => void;
 }
 
 export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
@@ -55,8 +57,12 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   onRequestUnlockAdmin,
   onGoToAdmin,
   onGoToPublic,
+  onResetPrize,
 }) => {
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>(prizes[0]?.id || '');
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState<boolean>(false);
+  const [clearWinnersOnReset, setClearWinnersOnReset] = useState<boolean>(true);
+  const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [currentDisplayTicket, setCurrentDisplayTicket] = useState<string>(winners[0]?.participantTicket || '00000');
   const [currentDisplayName, setCurrentDisplayName] = useState<string>(winners[0]?.participantName || 'AGUARDANDO SORTEIO...');
@@ -510,6 +516,19 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     }
   };
 
+  const handleResetCurrentPrize = () => {
+    if (!currentPrize) return;
+    if (onResetPrize) {
+      onResetPrize(currentPrize.id, clearWinnersOnReset);
+    }
+    if (latestWinner?.prizeId === currentPrize.id) {
+      setLatestWinner(null);
+    }
+    setShowResetConfirmModal(false);
+    setResetSuccessNotice(`Prémio "${currentPrize.title}" resetado com sucesso! Todas as ${currentPrize.totalQuantity} unidades estão novamente disponíveis.`);
+    setTimeout(() => setResetSuccessNotice(null), 4500);
+  };
+
   return (
     <div 
       ref={roomRef}
@@ -722,9 +741,48 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
               </div>
             )}
 
-            {isPrizeExhausted && (
-              <div className="p-2.5 mb-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs">
-                ⚠️ A quantidade estipulada pelo administrador para este prêmio ({currentPrize?.totalQuantity} unidades) já foi totalmente contemplada!
+            {isAdmin && currentPrize && (currentPrize.drawnQuantity > 0 || isPrizeExhausted) && (
+              <div className="mb-3 space-y-2">
+                {currentPrize.drawnQuantity > 0 && !isPrizeExhausted && (
+                  <div className="flex items-center justify-between p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs">
+                    <span className="text-slate-400">
+                      <strong className="text-amber-400 font-bold">{currentPrize.drawnQuantity}</strong> sorteados de {currentPrize.totalQuantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClearWinnersOnReset(true);
+                        setShowResetConfirmModal(true);
+                      }}
+                      disabled={isDrawing}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                      title="Zerar os sorteios já realizados deste prémio"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Resetar Prémio</span>
+                    </button>
+                  </div>
+                )}
+
+                {isPrizeExhausted && (
+                  <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/50 text-red-200 text-xs space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <span>A quantidade estipulada para este prémio ({currentPrize?.totalQuantity} unidades) já foi totalmente contemplada!</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClearWinnersOnReset(true);
+                        setShowResetConfirmModal(true);
+                      }}
+                      className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Resetar Prémio Agora ({currentPrize?.totalQuantity} unidades)</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -870,6 +928,25 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                           : `SORTEAR: ${activeSchedule ? `${activeSchedule.scheduledTime} - ${activeSchedule.title}` : 'SORTEIO OFICIAL'}!`}
                       </span>
                     </button>
+                    {isPrizeExhausted && currentPrize && (
+                      <div className="mt-3 flex flex-col items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClearWinnersOnReset(false);
+                            setShowResetConfirmModal(true);
+                          }}
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg transition-transform hover:scale-105 cursor-pointer active:scale-95"
+                          title="Zerar a contagem de sorteados deste prémio para poder sortear novamente"
+                        >
+                          <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                          <span>Resetar Prémio para Sortear Novamente ({currentPrize.drawnQuantity}/{currentPrize.totalQuantity})</span>
+                        </button>
+                        <span className="text-[11px] text-slate-400">
+                          Reinicia as {currentPrize.totalQuantity} unidades deste prémio para nova rodada de sorteios
+                        </span>
+                      </div>
+                    )}
                     {activeSchedule && (
                       <p className="text-xs text-red-400/90 font-mono mt-2 text-center">
                         📅 Agendado para {formatScheduleFullDate(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
@@ -1001,6 +1078,82 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           )}
         </div>
       </div>
+
+      {/* Toast Notice */}
+      {resetSuccessNotice && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-400 animate-bounce">
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-bold">{resetSuccessNotice}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal to Reset Prize */}
+      {showResetConfirmModal && currentPrize && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl text-left">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5 text-amber-400">
+                <RotateCcw className="w-5 h-5 stroke-[2.5]" />
+                <h3 className="text-lg font-bold text-white">Resetar Sorteios do Prémio</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded-2xl mb-4 text-xs text-slate-300 space-y-2">
+              <p>
+                <strong className="text-white font-semibold">Prémio:</strong> {currentPrize.title}
+              </p>
+              <p>
+                <strong className="text-white font-semibold">Estado Atual:</strong>{' '}
+                <span className="text-amber-400 font-bold">{currentPrize.drawnQuantity}</span> já sorteados de{' '}
+                <span className="text-white font-bold">{currentPrize.totalQuantity}</span> unidades.
+              </p>
+              <p className="text-slate-400">
+                Ao resetar, a quantidade de sorteados volta a <strong className="text-emerald-400">0</strong>, disponibilizando novamente todas as {currentPrize.totalQuantity} unidades para novos sorteios nesta e em outras sessões.
+              </p>
+            </div>
+
+            <label className="flex items-start gap-3 p-3 bg-slate-950/50 border border-slate-800/80 rounded-2xl cursor-pointer hover:bg-slate-800/40 transition-colors mb-6 text-xs text-slate-300">
+              <input
+                type="checkbox"
+                checked={clearWinnersOnReset}
+                onChange={(e) => setClearWinnersOnReset(e.target.checked)}
+                className="mt-0.5 rounded text-red-600 focus:ring-red-500 w-4 h-4 bg-slate-900 border-slate-700"
+              />
+              <div>
+                <span className="font-semibold text-white block">Limpar vencedores anteriores deste prémio</span>
+                <span className="text-slate-400 text-[11px] block mt-0.5">
+                  Remove os {winners.filter(w => w.prizeId === currentPrize.id).length} registo(s) de contemplados deste prémio da lista e relatório. Se desmarcar, o prémio é resetado mantendo os nomes no histórico.
+                </span>
+              </div>
+            </label>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleResetCurrentPrize}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                <span>Confirmar e Resetar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

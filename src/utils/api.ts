@@ -233,6 +233,22 @@ export const ApiService = {
     }
   },
 
+  // Reset prize drawn count (Admin only)
+  async resetPrize(prizeId: string, clearWinners: boolean = false): Promise<{ success: boolean; prizes?: Prize[]; winners?: DrawWinner[] }> {
+    try {
+      const res = await fetch(`${API_BASE}/prizes/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prizeId, clearWinners }),
+      });
+      if (!res.ok) return { success: false };
+      const data = await res.json();
+      return { success: true, prizes: data.prizes, winners: data.winners };
+    } catch {
+      return { success: false };
+    }
+  },
+
   // Get network and server host info to construct ideal mobile QR links
   async getNetworkInfo(): Promise<{
     localIp: string;
