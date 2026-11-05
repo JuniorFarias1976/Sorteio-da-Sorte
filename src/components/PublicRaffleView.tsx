@@ -1275,20 +1275,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     </p>
                   </div>
                 </div>
-
-                {/* Imagem de Boa Sorte (Emblema Ilustrado Oficial de Celebração) */}
-                <div 
-                  className="shrink-0 flex items-center justify-center select-none"
-                  title="Desejamos-lhe muita sorte no sorteio oficial Lacer!"
-                >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-0.5 bg-gradient-to-tr from-amber-400/40 via-red-500/20 to-amber-200/40 border border-amber-200/60 dark:border-red-900/40 shadow-sm flex items-center justify-center hover:scale-105 transition-transform overflow-hidden">
-                    <img
-                      src={brand.goodLuckBadgeUrl || '/assets/boa_sorte_badge.jpg'}
-                      alt="Boa Sorte - Sorteio Lacer"
-                      className="w-full h-full object-contain rounded-xl"
-                    />
-                  </div>
-                </div>
               </div>
 
               <button
