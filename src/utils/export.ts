@@ -182,8 +182,9 @@ export const exportParticipantsToExcel = (participants: Participant[], filename 
     'Clínica / Consultório': p.clinic || '-',
     'Cidade': p.city,
     'Especialidade': p.specialty || '-',
-    'Visita Representante Lacer': p.wantsLacerVisit ? 'Sim, solicitou visita' : 'Não',
-    'Autorização Comercial / Novidades': p.marketingConsent ? 'Sim, autorizado' : 'Não',
+    'Visita Representante Lacer': p.wantsLacerVisit ? 'Sim, autorizou' : 'Não',
+    'Comunicações Científicas / Novidades': p.marketingConsent ? 'Sim, autorizado' : 'Não',
+    'Perfil Profissional (Perfilado)': p.profilingConsent ? 'Sim, autorizado' : 'Não',
     'Termos & Privacidade': p.termsAccepted ? 'Aceite' : 'Pendente',
     'Status': p.status === 'active' ? 'Ativo' : p.status === 'winner' ? 'Premiado' : 'Banido',
     'Data de Inscrição': new Date(p.createdAt).toLocaleDateString('pt-PT') + ' ' + new Date(p.createdAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
@@ -200,6 +201,7 @@ export const exportParticipantsToExcel = (participants: Participant[], filename 
     { wch: 18 },
     { wch: 26 },
     { wch: 24 },
+    { wch: 26 },
     { wch: 24 },
     { wch: 18 },
     { wch: 12 },
@@ -264,6 +266,7 @@ export const exportParticipantsToPDF = async (participants: Participant[], brand
     p.specialty || '-',
     p.wantsLacerVisit ? 'Sim' : 'Não',
     p.marketingConsent ? 'Sim' : 'Não',
+    p.profilingConsent ? 'Sim' : 'Não',
     p.termsAccepted !== false ? 'Aceite' : 'Pendente',
   ]);
 
@@ -279,7 +282,8 @@ export const exportParticipantsToPDF = async (participants: Participant[], brand
       'Cidade',
       'Especialidade',
       'Visita Lacer',
-      'Comercial',
+      'Comunicações',
+      'Perfilado',
       'RGPD / Termos',
     ]],
     body: tableData,
@@ -736,7 +740,174 @@ export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: LogoImag
   return doc;
 };
 
-// Export Official Raffle Regulation & Privacy Policy (RGPD) to PDF
+// Generate Branded PDF: Política de Privacidade para Profissionais de Saúde - LACER, S.A.
+export const generateHcpPrivacyPDFDoc = (brand: BrandConfig, logoData?: LogoImageResult | string | null): jsPDF => {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const company = brand.companyName || 'LACER, S.A.';
+  const primary = hexToRgb(brand.primaryColor || '#E30613');
+  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+
+  // Header Banner
+  doc.setFillColor(primary[0], primary[1], primary[2]);
+  doc.rect(0, 0, 210, 32, 'F');
+  doc.setFillColor(secondary[0], secondary[1], secondary[2]);
+  doc.rect(0, 31, 210, 1.8, 'F');
+
+  renderLogoInDoc(doc, brand, logoData || null, 12, 5, 24, 20);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('POLÍTICA DE PRIVACIDADE PARA PROFISSIONAIS DE SAÚDE', 40, 15);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${company.toUpperCase()} • DEPARTAMENTO MÉDICO & RELAÇÕES CIENTÍFICAS`, 40, 23);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
+  doc.text('REGULAMENTO (UE) 2016/679 (RGPD)', 196, 23, { align: 'right' });
+
+  let y = 40;
+
+  const addSection = (title: string, text: string) => {
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title.toUpperCase(), 14, y);
+    y += 4.5;
+
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(text, 182);
+    doc.text(lines, 14, y);
+    y += lines.length * 3.7 + 4;
+  };
+
+  addSection(
+    '1. Responsável pelo Tratamento de Dados',
+    'A LACER, S.A. (doravante "LACER"), sociedade farmacêutica responsável pela gestão científica e institucional das suas marcas de saúde oral, assume o compromisso de proteger os dados pessoais dos profissionais de saúde em conformidade com o Regulamento Geral sobre a Proteção de Dados (RGPD - Regulamento UE 2016/679) e demais legislação setorial aplicável.'
+  );
+
+  addSection(
+    '2. Finalidades do Tratamento e Atividades Científicas',
+    'Com base no consentimento voluntário expresso pelo profissional de saúde, os dados recolhidos serão tratados para:\na) Inclusão e manutenção na base de dados de profissionais de saúde para gerir interações técnico-científicas, incluindo consultas médicas, visitas de delegados científicos à clínica ou consultório e apoio contínuo.\nb) Envio de comunicações científicas, educativas e clínicas, notícias biomédicas, novidades sobre produtos, congressos e eventos científicos, por e-mail ou outros meios eletrónicos, sendo esses envios acompanhados através de tecnologias de medição e rastreio para adequação de conteúdo.\nc) Criação de um perfil profissional (perfilado) que tenha em consideração os interesses técnico-profissionais em áreas terapêuticas relevantes, permitindo personalizar os apoios científicos.'
+  );
+
+  addSection(
+    '3. Cumprimento de Obrigações Legais do Setor Farmacêutico',
+    'A LACER processará igualmente os dados estritamente necessários para o cumprimento das obrigações legais, deontológicas e de transparência aplicáveis à indústria farmacêutica e aos dispositivos médicos vigentes em Portugal e na União Europeia.'
+  );
+
+  addSection(
+    '4. Conservação e Segurança dos Dados',
+    'Os dados pessoais serão conservados em servidores seguros, com medidas técnicas e organizativas de proteção criptográfica, durante o período em que se mantiver a relação científica ou até que o titular revogue o consentimento concedido.'
+  );
+
+  addSection(
+    '5. Exercício de Direitos do Titular',
+    'O titular dos dados pode, a qualquer momento e de forma gratuita, exercer os seus direitos de acesso, retificação, supressão, limitação do tratamento, portabilidade e oposição, bem como revogar o seu consentimento, através de comunicação dirigida ao Encarregado de Proteção de Dados da LACER pelo e-mail: contacto@lacer.pt.'
+  );
+
+  const sigY = Math.min(y + 3, 274);
+  doc.setDrawColor(primary[0], primary[1], primary[2]);
+  doc.line(14, sigY, 95, sigY);
+  doc.line(115, sigY, 196, sigY);
+
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Departamento de Relações Científicas • LACER, S.A.', 54.5, sigY + 4, { align: 'center' });
+  doc.text('Gabinete de Proteção de Dados (DPO) • LACER Farmacêutica', 155.5, sigY + 4, { align: 'center' });
+
+  return doc;
+};
+
+// Generate Branded PDF: Política de Privacidade do Sorteio - LACER, S.A.
+export const generateRafflePrivacyPDFDoc = (brand: BrandConfig, logoData?: LogoImageResult | string | null): jsPDF => {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const company = brand.companyName || 'LACER, S.A.';
+  const primary = hexToRgb(brand.primaryColor || '#E30613');
+  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+
+  // Header Banner
+  doc.setFillColor(primary[0], primary[1], primary[2]);
+  doc.rect(0, 0, 210, 32, 'F');
+  doc.setFillColor(secondary[0], secondary[1], secondary[2]);
+  doc.rect(0, 31, 210, 1.8, 'F');
+
+  renderLogoInDoc(doc, brand, logoData || null, 12, 5, 24, 20);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('POLÍTICA DE PRIVACIDADE DO SORTEIO OFICIAL', 40, 15);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${company.toUpperCase()} • AUDITORIA & GESTÃO DO SORTEIO`, 40, 23);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
+  doc.text('CONFORMIDADE RGPD UE 2016/679', 196, 23, { align: 'right' });
+
+  let y = 40;
+
+  const addSection = (title: string, text: string) => {
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title.toUpperCase(), 14, y);
+    y += 4.5;
+
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(text, 182);
+    doc.text(lines, 14, y);
+    y += lines.length * 3.7 + 4;
+  };
+
+  addSection(
+    '1. Identificação do Responsável',
+    'A LACER, S.A. processará os dados pessoais fornecidos pelos participantes com vista à gestão da sua participação no sorteio, atribuição de bilhetes únicos e garantia do cumprimento das normas aplicáveis.'
+  );
+
+  addSection(
+    '2. Finalidades Estritas do Sorteio',
+    'Os dados pessoais fornecidos (nome, e-mail profissional, telefone, clínica/consultório, localidade e especialidade) serão exclusivamente processados para:\na) Registo e validação da inscrição única no sorteio.\nb) Emissão do Número da Sorte oficial e transmissão auditável dos sorteios ao vivo.\nc) Seleção e contacto direto dos vencedores contemplados para a entrega dos respetivos prémios.\nd) Arquivo probatório e auditoria independente dos sorteios através de chaves criptográficas.'
+  );
+
+  addSection(
+    '3. Legitimidade e Consentimento',
+    'A base legal para o tratamento dos dados no âmbito do sorteio é a execução da relação contratual/regulamentar estabelecida pela aceitação voluntária dos Termos Legais do Sorteio e, quando assinalado, o consentimento do titular para finalidades complementares.'
+  );
+
+  addSection(
+    '4. Segurança e Transparência na Emissão de Prémios',
+    'Os sorteios utilizam um globo digital auditado criptograficamente com códigos hash imutáveis. Os dados dos premiados serão divulgados exclusivamente com os elementos necessários à comprovação pública do bilhete premiado, salvaguardando a privacidade e dignidade do participante.'
+  );
+
+  addSection(
+    '5. Direitos do Participante e Contactos',
+    'Os participantes têm o direito de solicitar a consulta, retificação ou apagamento dos seus dados após a conclusão e homologação das atas oficiais do sorteio, contactando a comissão do sorteio através de contacto@lacer.pt.'
+  );
+
+  const sigY = Math.min(y + 3, 274);
+  doc.setDrawColor(primary[0], primary[1], primary[2]);
+  doc.line(14, sigY, 95, sigY);
+  doc.line(115, sigY, 196, sigY);
+
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Comissão Oficial de Sorteios • LACER, S.A.', 54.5, sigY + 4, { align: 'center' });
+  doc.text('Direção Jurídica & Compliance • LACER Farmacêutica', 155.5, sigY + 4, { align: 'center' });
+
+  return doc;
+};
+
 // Safe PDF opener (handles Base64 Data URLs, Blob URLs, and static server URLs)
 export const openPdfDocument = (pdfUrl?: string, fileName = 'Regulamento_Oficial.pdf') => {
   if (!pdfUrl) return;
@@ -776,21 +947,55 @@ export const openPdfDocument = (pdfUrl?: string, fileName = 'Regulamento_Oficial
   window.open(pdfUrl, '_blank', 'noopener,noreferrer');
 };
 
-export const exportRegulationPDF = async (brand: BrandConfig) => {
-  // If custom uploaded PDF exists, open it directly!
-  if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
-    openPdfDocument(brand.regulationPdfUrl, brand.regulationPdfName || 'Regulamento_Oficial.pdf');
+// 1. Termos Legais do Sorteio (Export or Open)
+export const exportLegalTermsPDF = async (brand: BrandConfig) => {
+  const customUrl = brand.legalTermsPdfUrl || brand.regulationPdfUrl;
+  const customName = brand.legalTermsPdfName || brand.regulationPdfName || 'Termos_Legais_Sorteio_Lacer.pdf';
+  if (customUrl && customUrl.trim()) {
+    openPdfDocument(customUrl, customName);
     return;
   }
   const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
   const doc = generateRegulationPDFDoc(brand, logoData);
-  doc.save('Regulamento_Oficial_Sorteio_Lacer_OMD_2026.pdf');
+  doc.save(customName);
+};
+
+// 2. Política de Privacidade para Profissionais de Saúde (Export or Open)
+export const exportHcpPrivacyPDF = async (brand: BrandConfig) => {
+  const customUrl = brand.hcpPrivacyPdfUrl;
+  const customName = brand.hcpPrivacyPdfName || 'Politica_Privacidade_Profissionais_Saude_Lacer.pdf';
+  if (customUrl && customUrl.trim()) {
+    openPdfDocument(customUrl, customName);
+    return;
+  }
+  const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
+  const doc = generateHcpPrivacyPDFDoc(brand, logoData);
+  doc.save(customName);
+};
+
+// 3. Política de Privacidade do Sorteio (Export or Open)
+export const exportRafflePrivacyPDF = async (brand: BrandConfig) => {
+  const customUrl = brand.rafflePrivacyPdfUrl;
+  const customName = brand.rafflePrivacyPdfName || 'Politica_Privacidade_Sorteio_Lacer.pdf';
+  if (customUrl && customUrl.trim()) {
+    openPdfDocument(customUrl, customName);
+    return;
+  }
+  const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
+  const doc = generateRafflePrivacyPDFDoc(brand, logoData);
+  doc.save(customName);
+};
+
+// Legacy alias for compatibility
+export const exportRegulationPDF = async (brand: BrandConfig) => {
+  return exportLegalTermsPDF(brand);
 };
 
 // Get Regulation PDF Blob URL for in-app viewing or target="_blank"
 export const getRegulationPDFBlobUrl = (brand: BrandConfig): string => {
-  if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
-    return brand.regulationPdfUrl;
+  const custom = brand.legalTermsPdfUrl || brand.regulationPdfUrl;
+  if (custom && custom.trim()) {
+    return custom;
   }
   const doc = generateRegulationPDFDoc(brand);
   const blob = doc.output('blob');

@@ -1349,7 +1349,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Comercial e Marketing */}
+                  {/* Comunicações Científicas e Educacionais */}
                   <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
                     viewingParticipant.marketingConsent !== false
                       ? 'bg-purple-500/10 border-purple-500/30 text-purple-200'
@@ -1357,11 +1357,28 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   }`}>
                     <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${viewingParticipant.marketingConsent !== false ? 'text-purple-400' : 'text-slate-600'}`} />
                     <div>
-                      <p className="font-semibold text-white">Autorização Comercial & Novidades</p>
+                      <p className="font-semibold text-white">Comunicações Científicas & Educacionais</p>
                       <p className="text-[11px] mt-0.5">
                         {viewingParticipant.marketingConsent !== false
-                          ? '✓ Autorizou a Lacer a contactar para novidades, produtos, eventos e visitas comerciais.'
-                          : 'Não autorizou contactos comerciais adicionais.'}
+                          ? '✓ Autorizou o envio de comunicações científicas, educacionais e novidades.'
+                          : 'Não autorizou comunicações científicas/comerciais adicionais.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Perfil Profissional (Perfilado) */}
+                  <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+                    viewingParticipant.profilingConsent
+                      ? 'bg-blue-500/10 border-blue-500/30 text-blue-200'
+                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${viewingParticipant.profilingConsent ? 'text-blue-400' : 'text-slate-600'}`} />
+                    <div>
+                      <p className="font-semibold text-white">Criação de Perfil Profissional (Perfilado)</p>
+                      <p className="text-[11px] mt-0.5">
+                        {viewingParticipant.profilingConsent
+                          ? '✓ Autorizou a criação de perfil profissional com base nos interesses técnico-profissionais em áreas terapêuticas.'
+                          : 'Não autorizou perfilado profissional.'}
                       </p>
                     </div>
                   </div>

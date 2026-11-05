@@ -76,6 +76,20 @@ export const DEFAULT_BRAND: BrandConfig = {
   heroBadgeText: '',
   ticketModalTitle: 'INSCRIÇÃO CONFIRMADA COM SUCESSO!',
   ticketModalSubtitle: 'O Seu Bilhete Oficial',
+  legalTermsPdfUrl: '',
+  legalTermsPdfName: '',
+  hcpPrivacyPdfUrl: '',
+  hcpPrivacyPdfName: '',
+  rafflePrivacyPdfUrl: '',
+  rafflePrivacyPdfName: '',
+  consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+  consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
+  consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
+  consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
+  consentLegalNoticeP1: 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.',
+  consentLegalNoticeP2: 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.',
+  consentLegalNoticeP3: 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
+  consentTermsDeclaration: 'Declaro que li e aceito os Termos Legais do Sorteio e que fui informado(a) sobre o processamento dos meus dados pessoais através da Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
 };
 
 export const DEFAULT_PRIZES: Prize[] = [

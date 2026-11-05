@@ -136,6 +136,7 @@ export const ApiService = {
     specialtyOther?: string;
     wantsLacerVisit?: boolean;
     marketingConsent?: boolean;
+    profilingConsent?: boolean;
     termsAccepted?: boolean;
   }): Promise<{ 
     success: boolean; 

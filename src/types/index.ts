@@ -9,9 +9,10 @@ export interface Participant {
   specialty?: string; // Especialidade odontológica (ou múltiplas separadas por vírgula)
   specialties?: string[]; // Lista de especialidades selecionadas
   specialtyOther?: string; // Outra especialidade indicada
-  wantsLacerVisit?: boolean; // Gostaria que um representante da Lacer visitasse a sua clínica
-  marketingConsent?: boolean; // Autorização para informação sobre produtos, novidades, visitas
-  termsAccepted?: boolean; // Declaração de leitura e aceitação do regulamento e privacidade
+  wantsLacerVisit?: boolean; // Base de dados de profissionais de saúde / Visita científica
+  marketingConsent?: boolean; // Comunicações científicas e educacionais / Novidades
+  profilingConsent?: boolean; // Perfil profissional e interesses em áreas terapêuticas (perfilado)
+  termsAccepted?: boolean; // Declaração de leitura e aceitação dos termos legais e políticas de privacidade
   ticketNumber: string; // e.g., "74892"
   createdAt: string;
   status: 'active' | 'winner' | 'banned';
@@ -113,8 +114,14 @@ export interface BrandConfig {
   backgroundTheme: 'white' | 'light' | 'dark' | 'midnight' | 'slate';
   contactEmail: string;
   termsAndConditions: string;
-  regulationPdfUrl?: string; // Caminho ou URL do ficheiro PDF de regulamento e privacidade
+  regulationPdfUrl?: string; // Caminho ou URL do ficheiro PDF de regulamento e privacidade (legado / fallback)
   regulationPdfName?: string; // Nome original do ficheiro PDF carregado
+  legalTermsPdfUrl?: string; // Termos Legais do Sorteio (PDF)
+  legalTermsPdfName?: string;
+  hcpPrivacyPdfUrl?: string; // Política de Privacidade para Profissionais de Saúde (PDF)
+  hcpPrivacyPdfName?: string;
+  rafflePrivacyPdfUrl?: string; // Política de Privacidade do Sorteio (PDF)
+  rafflePrivacyPdfName?: string;
   forceResetLogo?: boolean;
   adminPassword?: string;
   raffleUrl?: string;
@@ -141,6 +148,16 @@ export interface BrandConfig {
   ticketNotice?: string;
   ticketModalTitle?: string;
   ticketModalSubtitle?: string;
+
+  // Consent & Legal Notice configuration (RGPD & Visitas)
+  consentVisitTitle?: string;
+  consentHcpDatabaseText?: string;
+  consentCommunicationsText?: string;
+  consentProfilingText?: string;
+  consentLegalNoticeP1?: string;
+  consentLegalNoticeP2?: string;
+  consentLegalNoticeP3?: string;
+  consentTermsDeclaration?: string;
 }
 
 export interface ParticipantFieldConfig {

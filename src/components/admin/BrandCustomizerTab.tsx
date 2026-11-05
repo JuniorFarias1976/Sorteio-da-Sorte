@@ -19,12 +19,18 @@ import {
   ArrowRight,
   FileText,
   ExternalLink,
-  Trash2
+  Trash2,
+  ShieldCheck
 } from 'lucide-react';
 import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
 import { compressImageFile } from '../../utils/imageCompressor';
-import { openPdfDocument } from '../../utils/export';
+import { 
+  openPdfDocument, 
+  exportLegalTermsPDF, 
+  exportHcpPrivacyPDF, 
+  exportRafflePrivacyPDF 
+} from '../../utils/export';
 
 interface BrandCustomizerTabProps {
   brand: BrandConfig;
@@ -73,10 +79,44 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [ticketModalTitle, setTicketModalTitle] = useState(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
   const [ticketModalSubtitle, setTicketModalSubtitle] = useState(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
 
+  // RGPD & Consent Text States
+  const [consentVisitTitle, setConsentVisitTitle] = useState(
+    brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'
+  );
+  const [consentHcpDatabaseText, setConsentHcpDatabaseText] = useState(
+    brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.'
+  );
+  const [consentCommunicationsText, setConsentCommunicationsText] = useState(
+    brand.consentCommunicationsText || 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.'
+  );
+  const [consentProfilingText, setConsentProfilingText] = useState(
+    brand.consentProfilingText || 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).'
+  );
+  const [consentLegalNoticeP1, setConsentLegalNoticeP1] = useState(
+    brand.consentLegalNoticeP1 || 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.'
+  );
+  const [consentLegalNoticeP2, setConsentLegalNoticeP2] = useState(
+    brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.'
+  );
+  const [consentLegalNoticeP3, setConsentLegalNoticeP3] = useState(
+    brand.consentLegalNoticeP3 || 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.'
+  );
+  const [consentTermsDeclaration, setConsentTermsDeclaration] = useState(
+    brand.consentTermsDeclaration || 'Declaro que li e aceito os Termos Legais do Sorteio e que fui informado(a) sobre o processamento dos meus dados pessoais através da Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.'
+  );
+
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [regulationPdfUrl, setRegulationPdfUrl] = useState(brand.regulationPdfUrl || '');
-  const [regulationPdfName, setRegulationPdfName] = useState(brand.regulationPdfName || '');
+  const [regulationPdfUrl, setRegulationPdfUrl] = useState(brand.legalTermsPdfUrl || brand.regulationPdfUrl || '');
+  const [regulationPdfName, setRegulationPdfName] = useState(brand.legalTermsPdfName || brand.regulationPdfName || '');
+  const [legalTermsPdfUrl, setLegalTermsPdfUrl] = useState(brand.legalTermsPdfUrl || brand.regulationPdfUrl || '');
+  const [legalTermsPdfName, setLegalTermsPdfName] = useState(brand.legalTermsPdfName || brand.regulationPdfName || '');
+  const [hcpPrivacyPdfUrl, setHcpPrivacyPdfUrl] = useState(brand.hcpPrivacyPdfUrl || '');
+  const [hcpPrivacyPdfName, setHcpPrivacyPdfName] = useState(brand.hcpPrivacyPdfName || '');
+  const [rafflePrivacyPdfUrl, setRafflePrivacyPdfUrl] = useState(brand.rafflePrivacyPdfUrl || '');
+  const [rafflePrivacyPdfName, setRafflePrivacyPdfName] = useState(brand.rafflePrivacyPdfName || '');
+  const [activePdfDocType, setActivePdfDocType] = useState<'legal_terms' | 'hcp_privacy' | 'raffle_privacy'>('legal_terms');
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const [pdfUploadError, setPdfUploadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
@@ -100,8 +140,16 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setBackgroundColor(brand.backgroundColor || '#FFFFFF');
     setTextColor(brand.textColor || '#0F172A');
     setTerms(brand.termsAndConditions);
-    setRegulationPdfUrl(brand.regulationPdfUrl || '');
-    setRegulationPdfName(brand.regulationPdfName || '');
+    const resolvedLegalTermsUrl = brand.legalTermsPdfUrl || brand.regulationPdfUrl || '';
+    const resolvedLegalTermsName = brand.legalTermsPdfName || brand.regulationPdfName || '';
+    setLegalTermsPdfUrl(resolvedLegalTermsUrl);
+    setLegalTermsPdfName(resolvedLegalTermsName);
+    setRegulationPdfUrl(resolvedLegalTermsUrl);
+    setRegulationPdfName(resolvedLegalTermsName);
+    setHcpPrivacyPdfUrl(brand.hcpPrivacyPdfUrl || '');
+    setHcpPrivacyPdfName(brand.hcpPrivacyPdfName || '');
+    setRafflePrivacyPdfUrl(brand.rafflePrivacyPdfUrl || '');
+    setRafflePrivacyPdfName(brand.rafflePrivacyPdfName || '');
     setHeroBadgeText(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
     setRoundsBannerTitle(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
     setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
@@ -115,6 +163,14 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setTicketNotice(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
     setTicketModalTitle(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
     setTicketModalSubtitle(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
+    setConsentVisitTitle(brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?');
+    setConsentHcpDatabaseText(brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.');
+    setConsentCommunicationsText(brand.consentCommunicationsText || 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.');
+    setConsentProfilingText(brand.consentProfilingText || 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).');
+    setConsentLegalNoticeP1(brand.consentLegalNoticeP1 || 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.');
+    setConsentLegalNoticeP2(brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.');
+    setConsentLegalNoticeP3(brand.consentLegalNoticeP3 || 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.');
+    setConsentTermsDeclaration(brand.consentTermsDeclaration || 'Declaro que li e aceito os Termos Legais do Sorteio e que fui informado(a) sobre o processamento dos meus dados pessoais através da Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.');
     setAdminPassword(brand.adminPassword || 'admin');
     setShowNavbar(brand.showNavbar !== false);
     setHeroLogoSize((brand.heroLogoSize as any) || 'large');
@@ -243,8 +299,22 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       showNavbarBrandText: overrides.showNavbarBrandText !== undefined ? overrides.showNavbarBrandText : showNavbarBrandText,
       showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
       showPrizesSection: overrides.showPrizesSection !== undefined ? overrides.showPrizesSection : showPrizesSection,
-      regulationPdfUrl: overrides.regulationPdfUrl !== undefined ? overrides.regulationPdfUrl : (regulationPdfUrl || '').trim(),
-      regulationPdfName: overrides.regulationPdfName !== undefined ? overrides.regulationPdfName : (regulationPdfName || '').trim(),
+      legalTermsPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || '').trim(),
+      legalTermsPdfName: overrides.legalTermsPdfName !== undefined ? overrides.legalTermsPdfName : (legalTermsPdfName || '').trim(),
+      regulationPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || overrides.regulationPdfUrl || regulationPdfUrl || '').trim(),
+      regulationPdfName: overrides.legalTermsPdfName !== undefined ? overrides.legalTermsPdfName : (legalTermsPdfName || overrides.regulationPdfName || regulationPdfName || '').trim(),
+      hcpPrivacyPdfUrl: overrides.hcpPrivacyPdfUrl !== undefined ? overrides.hcpPrivacyPdfUrl : (hcpPrivacyPdfUrl || '').trim(),
+      hcpPrivacyPdfName: overrides.hcpPrivacyPdfName !== undefined ? overrides.hcpPrivacyPdfName : (hcpPrivacyPdfName || '').trim(),
+      rafflePrivacyPdfUrl: overrides.rafflePrivacyPdfUrl !== undefined ? overrides.rafflePrivacyPdfUrl : (rafflePrivacyPdfUrl || '').trim(),
+      rafflePrivacyPdfName: overrides.rafflePrivacyPdfName !== undefined ? overrides.rafflePrivacyPdfName : (rafflePrivacyPdfName || '').trim(),
+      consentVisitTitle: (overrides.consentVisitTitle !== undefined ? overrides.consentVisitTitle : consentVisitTitle).trim(),
+      consentHcpDatabaseText: (overrides.consentHcpDatabaseText !== undefined ? overrides.consentHcpDatabaseText : consentHcpDatabaseText).trim(),
+      consentCommunicationsText: (overrides.consentCommunicationsText !== undefined ? overrides.consentCommunicationsText : consentCommunicationsText).trim(),
+      consentProfilingText: (overrides.consentProfilingText !== undefined ? overrides.consentProfilingText : consentProfilingText).trim(),
+      consentLegalNoticeP1: (overrides.consentLegalNoticeP1 !== undefined ? overrides.consentLegalNoticeP1 : consentLegalNoticeP1).trim(),
+      consentLegalNoticeP2: (overrides.consentLegalNoticeP2 !== undefined ? overrides.consentLegalNoticeP2 : consentLegalNoticeP2).trim(),
+      consentLegalNoticeP3: (overrides.consentLegalNoticeP3 !== undefined ? overrides.consentLegalNoticeP3 : consentLegalNoticeP3).trim(),
+      consentTermsDeclaration: (overrides.consentTermsDeclaration !== undefined ? overrides.consentTermsDeclaration : consentTermsDeclaration).trim(),
     };
 
     onUpdateBrand(updated);
@@ -254,21 +324,29 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       setSavedSuccessMessage(null);
       setTimeout(() => {
         setIsSaving(false);
-        setSavedSuccessMessage('Todas as alterações de cores, fundo e textos foram guardadas na Base de Dados e já estão ativas!');
+        setSavedSuccessMessage('Todas as alterações de cores, fundo, textos e PDFs foram guardadas na Base de Dados e já estão ativas!');
         checkDatabaseLiveStatus();
         setTimeout(() => setSavedSuccessMessage(null), 4000);
       }, 350);
     }
   };
 
-  const handlePdfFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSpecificPdfUpload = async (
+    docType: 'legal_terms' | 'hcp_privacy' | 'raffle_privacy',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setPdfUploadError(null);
 
-    const rawName = file.name || 'Regulamento_Oficial.pdf';
-    let targetName = rawName;
+    const docDefaultNames: Record<string, string> = {
+      legal_terms: 'Termos_Legais_Sorteio.pdf',
+      hcp_privacy: 'Politica_Privacidade_Profissionais_Saude.pdf',
+      raffle_privacy: 'Politica_Privacidade_Sorteio.pdf',
+    };
+
+    let targetName = file.name || docDefaultNames[docType];
     if (!targetName.toLowerCase().endsWith('.pdf')) {
       targetName = `${targetName}.pdf`;
     }
@@ -279,9 +357,9 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     }
 
     setIsUploadingPdf(true);
+    setUploadingDocType(docType);
 
     try {
-      // 1. Read file as Base64 Data URL (always works in browser)
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
@@ -294,15 +372,13 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
         throw new Error('Falha ao processar os dados do ficheiro.');
       }
 
-      // 2. Default targetUrl to base64 Data URL (guarantees immediate persistence and display)
       let targetUrl = fileData;
 
-      // 3. Attempt server upload to disk for clean /uploads/ URL if server is available
       try {
         const res = await fetch('/api/upload-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileData, fileName: targetName }),
+          body: JSON.stringify({ fileData, fileName: targetName, docType }),
         });
 
         if (res.ok) {
@@ -316,13 +392,31 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
         console.warn('Server storage fallback to Data URL:', uploadErr);
       }
 
-      setRegulationPdfUrl(targetUrl);
-      setRegulationPdfName(targetName);
+      const updatedBrand: Partial<BrandConfig> = {};
+      if (docType === 'legal_terms') {
+        setLegalTermsPdfUrl(targetUrl);
+        setLegalTermsPdfName(targetName);
+        setRegulationPdfUrl(targetUrl);
+        setRegulationPdfName(targetName);
+        updatedBrand.legalTermsPdfUrl = targetUrl;
+        updatedBrand.legalTermsPdfName = targetName;
+        updatedBrand.regulationPdfUrl = targetUrl;
+        updatedBrand.regulationPdfName = targetName;
+      } else if (docType === 'hcp_privacy') {
+        setHcpPrivacyPdfUrl(targetUrl);
+        setHcpPrivacyPdfName(targetName);
+        updatedBrand.hcpPrivacyPdfUrl = targetUrl;
+        updatedBrand.hcpPrivacyPdfName = targetName;
+      } else if (docType === 'raffle_privacy') {
+        setRafflePrivacyPdfUrl(targetUrl);
+        setRafflePrivacyPdfName(targetName);
+        updatedBrand.rafflePrivacyPdfUrl = targetUrl;
+        updatedBrand.rafflePrivacyPdfName = targetName;
+      }
 
       const updated: BrandConfig = {
         ...brand,
-        regulationPdfUrl: targetUrl,
-        regulationPdfName: targetName,
+        ...updatedBrand,
       };
 
       onUpdateBrand(updated);
@@ -334,24 +428,48 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       setPdfUploadError('Erro ao carregar o PDF: ' + (err.message || 'Falha ao processar ficheiro.'));
     } finally {
       setIsUploadingPdf(false);
+      setUploadingDocType(null);
       try {
         e.target.value = '';
       } catch {}
     }
   };
 
-  const handleRemovePdf = () => {
-    setRegulationPdfUrl('');
-    setRegulationPdfName('');
+  const handleRemoveSpecificPdf = (docType: 'legal_terms' | 'hcp_privacy' | 'raffle_privacy') => {
+    const updatedBrand: Partial<BrandConfig> = {};
+    if (docType === 'legal_terms') {
+      setLegalTermsPdfUrl('');
+      setLegalTermsPdfName('');
+      setRegulationPdfUrl('');
+      setRegulationPdfName('');
+      updatedBrand.legalTermsPdfUrl = '';
+      updatedBrand.legalTermsPdfName = '';
+      updatedBrand.regulationPdfUrl = '';
+      updatedBrand.regulationPdfName = '';
+    } else if (docType === 'hcp_privacy') {
+      setHcpPrivacyPdfUrl('');
+      setHcpPrivacyPdfName('');
+      updatedBrand.hcpPrivacyPdfUrl = '';
+      updatedBrand.hcpPrivacyPdfName = '';
+    } else if (docType === 'raffle_privacy') {
+      setRafflePrivacyPdfUrl('');
+      setRafflePrivacyPdfName('');
+      updatedBrand.rafflePrivacyPdfUrl = '';
+      updatedBrand.rafflePrivacyPdfName = '';
+    }
+
     const updated: BrandConfig = {
       ...brand,
-      regulationPdfUrl: '',
-      regulationPdfName: '',
+      ...updatedBrand,
     };
     onUpdateBrand(updated);
-    setSavedSuccessMessage('PDF personalizado removido. O sistema voltará a gerar o PDF oficial automaticamente.');
+    setSavedSuccessMessage('PDF removido. O sistema voltará a utilizar o modelo oficial gerado automaticamente.');
     setTimeout(() => setSavedSuccessMessage(null), 3500);
   };
+
+  // Legacy wrappers for backwards compatibility
+  const handlePdfFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => handleSpecificPdfUpload('legal_terms', e);
+  const handleRemovePdf = () => handleRemoveSpecificPdf('legal_terms');
 
   const handleApplyPreset = (theme: { 
     name: string; 
@@ -1067,143 +1185,631 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             />
           </div>
 
-          {/* Card Especial de Carregamento do Documento PDF do Regulamento */}
-          <div className="p-4 rounded-2xl bg-slate-950 border-2 border-red-500/40 space-y-4 shadow-lg">
-            <div className="flex items-start justify-between">
+          {/* Secção de Gestão dos 3 Documentos Oficiais em PDF */}
+          <div className="p-5 rounded-2xl bg-slate-950 border-2 border-red-500/50 space-y-5 shadow-xl">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-800 pb-3">
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#E30613]" />
-                  <span>Documento PDF do Regulamento & Política de Privacidade</span>
+                  <span>Documentos Oficiais em PDF (Consulta & Upload)</span>
                 </h4>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Carregue aqui o ficheiro PDF oficial do regulamento. É exatamente este documento que abre quando o participante clica na ligação assinalada no formulário: <strong className="text-white">"Consulte o regulamento completo do sorteio e a política de privacidade [PDF]"</strong>.
+                <p className="text-xs text-slate-400 mt-1">
+                  Carregue os ficheiros PDF oficiais para cada um dos 3 documentos legais exigidos. Os participantes poderão consultá-los diretamente no formulário de inscrição através dos botões e links dedicados.
                 </p>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 uppercase shrink-0">
-                PDF Oficial
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 uppercase shrink-0">
+                3 Documentos Oficiais
               </span>
             </div>
 
-            {/* Status do PDF Ativo */}
-            {regulationPdfUrl ? (
-              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                        <span>Ficheiro PDF Personalizado Ativo</span>
-                      </p>
-                      <p className="text-[11px] text-slate-300 font-mono truncate" title={regulationPdfName || regulationPdfUrl}>
-                        {regulationPdfName || regulationPdfUrl}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => openPdfDocument(regulationPdfUrl, regulationPdfName || 'Regulamento_Oficial.pdf')}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <span>Abrir / Testar</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemovePdf}
-                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
-                      title="Remover ficheiro e voltar ao gerador padrão"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-                <span>Nenhum PDF carregado. A aplicação gera atualmente o PDF oficial de modo automático.</span>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">Modo Padrão</span>
-              </div>
-            )}
-
             {pdfUploadError && (
-              <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/50 text-red-300 text-xs flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/50 text-red-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                 <span>{pdfUploadError}</span>
               </div>
             )}
 
-            {/* Ações de Upload */}
-            <div className="space-y-3 pt-1">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  1. Carregar Ficheiro PDF do seu Computador (.pdf)
-                </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label 
-                    htmlFor="pdf-upload-file-input"
-                    className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                    isUploadingPdf 
-                      ? 'bg-slate-800 text-slate-400 cursor-not-allowed' 
-                      : 'bg-[#E30613] hover:bg-[#C80510] text-white shadow-md shadow-red-500/20 active:scale-95'
-                  }`}>
-                    {isUploadingPdf ? (
-                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    ) : (
-                      <Upload className="w-4 h-4" />
-                    )}
-                    <span>{isUploadingPdf ? 'A processar e gravar PDF...' : 'Escolher Ficheiro PDF...'}</span>
-                  </label>
-                  <input
-                    id="pdf-upload-file-input"
-                    type="file"
-                    accept=".pdf,application/pdf,application/x-pdf,*/*"
-                    disabled={isUploadingPdf}
-                    onClick={(e) => {
-                      (e.target as HTMLInputElement).value = '';
-                    }}
-                    onChange={handlePdfFileUpload}
-                    className="hidden"
-                  />
-                  <span className="text-[11px] text-slate-400">
-                    Formatos aceites: .pdf (máx. 25MB)
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-900">
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  2. Ou Inserir Link / URL Direto de um PDF Externo
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={regulationPdfUrl}
-                    onChange={(e) => setRegulationPdfUrl(e.target.value)}
-                    onBlur={() => {
-                      if (regulationPdfUrl !== brand.regulationPdfUrl) {
-                        syncAndSave({ regulationPdfUrl: regulationPdfUrl.trim() }, true);
-                      }
-                    }}
-                    placeholder="https://exemplo.pt/documentos/regulamento_lacer.pdf"
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
-                  />
-                  {regulationPdfUrl && (
-                    <button
-                      type="button"
-                      onClick={() => syncAndSave({ regulationPdfUrl: regulationPdfUrl.trim() }, true)}
-                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Guardar Link
-                    </button>
+            {/* Selector de Abas dos 3 PDFs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setActivePdfDocType('legal_terms')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                  activePdfDocType === 'legal_terms'
+                    ? 'bg-red-500/15 border-red-500/60 shadow-md ring-1 ring-red-500/40'
+                    : 'bg-slate-900 border-slate-800 hover:bg-slate-850 opacity-80'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Documento 1</span>
+                  {legalTermsPdfUrl ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  ) : (
+                    <span className="text-[9px] text-slate-500 font-mono">Padrão</span>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Pode usar um link direto para o PDF alojado no Google Drive, OneDrive, Dropbox ou site institucional.
+                <p className="text-xs font-bold text-white mt-1">Termos Legais do Sorteio</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                  {legalTermsPdfName || (legalTermsPdfUrl ? 'PDF carregado' : 'Gerador Oficial jsPDF')}
                 </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePdfDocType('hcp_privacy')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                  activePdfDocType === 'hcp_privacy'
+                    ? 'bg-red-500/15 border-red-500/60 shadow-md ring-1 ring-red-500/40'
+                    : 'bg-slate-900 border-slate-800 hover:bg-slate-850 opacity-80'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Documento 2</span>
+                  {hcpPrivacyPdfUrl ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  ) : (
+                    <span className="text-[9px] text-slate-500 font-mono">Padrão</span>
+                  )}
+                </div>
+                <p className="text-xs font-bold text-white mt-1">Privacidade Prof. Saúde</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                  {hcpPrivacyPdfName || (hcpPrivacyPdfUrl ? 'PDF carregado' : 'Gerador Oficial jsPDF')}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePdfDocType('raffle_privacy')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                  activePdfDocType === 'raffle_privacy'
+                    ? 'bg-red-500/15 border-red-500/60 shadow-md ring-1 ring-red-500/40'
+                    : 'bg-slate-900 border-slate-800 hover:bg-slate-850 opacity-80'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Documento 3</span>
+                  {rafflePrivacyPdfUrl ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  ) : (
+                    <span className="text-[9px] text-slate-500 font-mono">Padrão</span>
+                  )}
+                </div>
+                <p className="text-xs font-bold text-white mt-1">Privacidade do Sorteio</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                  {rafflePrivacyPdfName || (rafflePrivacyPdfUrl ? 'PDF carregado' : 'Gerador Oficial jsPDF')}
+                </p>
+              </button>
+            </div>
+
+            {/* Painel do Documento Selecionado */}
+            {activePdfDocType === 'legal_terms' && (
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                  <div>
+                    <h5 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-red-400" />
+                      <span>1. Termos Legais do Sorteio</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Regulamento geral, regras de elegibilidade, prémios e apuramento dos vencedores.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">
+                    Identificador: termos-legais.pdf
+                  </span>
+                </div>
+
+                {/* Status do Arquivo */}
+                {legalTermsPdfUrl ? (
+                  <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-emerald-300">Ficheiro PDF Personalizado Ativo</p>
+                          <p className="text-[11px] text-slate-300 font-mono truncate max-w-sm" title={legalTermsPdfName || legalTermsPdfUrl}>
+                            {legalTermsPdfName || legalTermsPdfUrl}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openPdfDocument(legalTermsPdfUrl, legalTermsPdfName || 'Termos_Legais_Sorteio.pdf')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <span>Abrir / Testar</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSpecificPdf('legal_terms')}
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+                          title="Remover ficheiro e voltar ao gerador padrão"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+                    <span>Nenhum PDF carregado. A aplicação gera e descarrega automaticamente o documento oficial formatado.</span>
+                    <button
+                      type="button"
+                      onClick={() => exportLegalTermsPDF(brand)}
+                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Pré-visualizar Padrão</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload & Link */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Carregar Ficheiro (.pdf)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label 
+                        htmlFor="upload-legal-terms-pdf"
+                        className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                          isUploadingPdf && uploadingDocType === 'legal_terms'
+                            ? 'bg-slate-800 text-slate-400 cursor-not-allowed' 
+                            : 'bg-[#E30613] hover:bg-[#C80510] text-white shadow-md active:scale-95'
+                        }`}
+                      >
+                        {isUploadingPdf && uploadingDocType === 'legal_terms' ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        <span>{isUploadingPdf && uploadingDocType === 'legal_terms' ? 'A carregar...' : 'Escolher Ficheiro...'}</span>
+                      </label>
+                      <input
+                        id="upload-legal-terms-pdf"
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        disabled={isUploadingPdf}
+                        onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                        onChange={(e) => handleSpecificPdfUpload('legal_terms', e)}
+                        className="hidden"
+                      />
+                      <span className="text-[10px] text-slate-500">Máx. 25MB</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Ou Inserir URL Direto
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="url"
+                        value={legalTermsPdfUrl}
+                        onChange={(e) => {
+                          setLegalTermsPdfUrl(e.target.value);
+                          setRegulationPdfUrl(e.target.value);
+                        }}
+                        onBlur={() => {
+                          if (legalTermsPdfUrl !== brand.legalTermsPdfUrl) {
+                            syncAndSave({ 
+                              legalTermsPdfUrl: legalTermsPdfUrl.trim(),
+                              regulationPdfUrl: legalTermsPdfUrl.trim() 
+                            }, true);
+                          }
+                        }}
+                        placeholder="https://exemplo.pt/termos-legais.pdf"
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
+                      />
+                      {legalTermsPdfUrl && (
+                        <button
+                          type="button"
+                          onClick={() => syncAndSave({ 
+                            legalTermsPdfUrl: legalTermsPdfUrl.trim(),
+                            regulationPdfUrl: legalTermsPdfUrl.trim() 
+                          }, true)}
+                          className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Salvar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePdfDocType === 'hcp_privacy' && (
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                  <div>
+                    <h5 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-red-400" />
+                      <span>2. Política de Privacidade para Profissionais de Saúde</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Tratamento de dados em conformidade com o RGPD, interações científicas, visitas à clínica e perfilamento.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">
+                    Identificador: privacidade-profissionais.pdf
+                  </span>
+                </div>
+
+                {/* Status do Arquivo */}
+                {hcpPrivacyPdfUrl ? (
+                  <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-emerald-300">Ficheiro PDF Personalizado Ativo</p>
+                          <p className="text-[11px] text-slate-300 font-mono truncate max-w-sm" title={hcpPrivacyPdfName || hcpPrivacyPdfUrl}>
+                            {hcpPrivacyPdfName || hcpPrivacyPdfUrl}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openPdfDocument(hcpPrivacyPdfUrl, hcpPrivacyPdfName || 'Politica_Privacidade_Profissionais_Saude.pdf')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <span>Abrir / Testar</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSpecificPdf('hcp_privacy')}
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+                          title="Remover ficheiro e voltar ao gerador padrão"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+                    <span>Nenhum PDF carregado. A aplicação gera e descarrega automaticamente o documento oficial formatado.</span>
+                    <button
+                      type="button"
+                      onClick={() => exportHcpPrivacyPDF(brand)}
+                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Pré-visualizar Padrão</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload & Link */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Carregar Ficheiro (.pdf)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label 
+                        htmlFor="upload-hcp-privacy-pdf"
+                        className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                          isUploadingPdf && uploadingDocType === 'hcp_privacy'
+                            ? 'bg-slate-800 text-slate-400 cursor-not-allowed' 
+                            : 'bg-[#E30613] hover:bg-[#C80510] text-white shadow-md active:scale-95'
+                        }`}
+                      >
+                        {isUploadingPdf && uploadingDocType === 'hcp_privacy' ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        <span>{isUploadingPdf && uploadingDocType === 'hcp_privacy' ? 'A carregar...' : 'Escolher Ficheiro...'}</span>
+                      </label>
+                      <input
+                        id="upload-hcp-privacy-pdf"
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        disabled={isUploadingPdf}
+                        onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                        onChange={(e) => handleSpecificPdfUpload('hcp_privacy', e)}
+                        className="hidden"
+                      />
+                      <span className="text-[10px] text-slate-500">Máx. 25MB</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Ou Inserir URL Direto
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="url"
+                        value={hcpPrivacyPdfUrl}
+                        onChange={(e) => setHcpPrivacyPdfUrl(e.target.value)}
+                        onBlur={() => {
+                          if (hcpPrivacyPdfUrl !== brand.hcpPrivacyPdfUrl) {
+                            syncAndSave({ hcpPrivacyPdfUrl: hcpPrivacyPdfUrl.trim() }, true);
+                          }
+                        }}
+                        placeholder="https://exemplo.pt/privacidade-profissionais.pdf"
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
+                      />
+                      {hcpPrivacyPdfUrl && (
+                        <button
+                          type="button"
+                          onClick={() => syncAndSave({ hcpPrivacyPdfUrl: hcpPrivacyPdfUrl.trim() }, true)}
+                          className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Salvar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePdfDocType === 'raffle_privacy' && (
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                  <div>
+                    <h5 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-red-400" />
+                      <span>3. Política de Privacidade do Sorteio</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Tratamento de dados estritamente para gestão do sorteio, apuramento e entrega do prémio.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">
+                    Identificador: privacidade-sorteio.pdf
+                  </span>
+                </div>
+
+                {/* Status do Arquivo */}
+                {rafflePrivacyPdfUrl ? (
+                  <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-emerald-300">Ficheiro PDF Personalizado Ativo</p>
+                          <p className="text-[11px] text-slate-300 font-mono truncate max-w-sm" title={rafflePrivacyPdfName || rafflePrivacyPdfUrl}>
+                            {rafflePrivacyPdfName || rafflePrivacyPdfUrl}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openPdfDocument(rafflePrivacyPdfUrl, rafflePrivacyPdfName || 'Politica_Privacidade_Sorteio.pdf')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <span>Abrir / Testar</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSpecificPdf('raffle_privacy')}
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+                          title="Remover ficheiro e voltar ao gerador padrão"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+                    <span>Nenhum PDF carregado. A aplicação gera e descarrega automaticamente o documento oficial formatado.</span>
+                    <button
+                      type="button"
+                      onClick={() => exportRafflePrivacyPDF(brand)}
+                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Pré-visualizar Padrão</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload & Link */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Carregar Ficheiro (.pdf)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label 
+                        htmlFor="upload-raffle-privacy-pdf"
+                        className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                          isUploadingPdf && uploadingDocType === 'raffle_privacy'
+                            ? 'bg-slate-800 text-slate-400 cursor-not-allowed' 
+                            : 'bg-[#E30613] hover:bg-[#C80510] text-white shadow-md active:scale-95'
+                        }`}
+                      >
+                        {isUploadingPdf && uploadingDocType === 'raffle_privacy' ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        <span>{isUploadingPdf && uploadingDocType === 'raffle_privacy' ? 'A carregar...' : 'Escolher Ficheiro...'}</span>
+                      </label>
+                      <input
+                        id="upload-raffle-privacy-pdf"
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        disabled={isUploadingPdf}
+                        onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                        onChange={(e) => handleSpecificPdfUpload('raffle_privacy', e)}
+                        className="hidden"
+                      />
+                      <span className="text-[10px] text-slate-500">Máx. 25MB</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Ou Inserir URL Direto
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="url"
+                        value={rafflePrivacyPdfUrl}
+                        onChange={(e) => setRafflePrivacyPdfUrl(e.target.value)}
+                        onBlur={() => {
+                          if (rafflePrivacyPdfUrl !== brand.rafflePrivacyPdfUrl) {
+                            syncAndSave({ rafflePrivacyPdfUrl: rafflePrivacyPdfUrl.trim() }, true);
+                          }
+                        }}
+                        placeholder="https://exemplo.pt/privacidade-sorteio.pdf"
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
+                      />
+                      {rafflePrivacyPdfUrl && (
+                        <button
+                          type="button"
+                          onClick={() => syncAndSave({ rafflePrivacyPdfUrl: rafflePrivacyPdfUrl.trim() }, true)}
+                          className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Salvar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card Especial de Textos Oficiais de Consentimento RGPD & Visitas LACER */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 shadow-lg">
+            <div className="flex items-start justify-between border-b border-slate-900 pb-3">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#E30613]" />
+                  <span>Textos de Consentimento RGPD & Visita da LACER</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Textos apresentados na secção de consentimentos e proteção de dados no formulário público.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const defaults = {
+                    consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+                    consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
+                    consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
+                    consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
+                    consentLegalNoticeP1: 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.',
+                    consentLegalNoticeP2: 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.',
+                    consentLegalNoticeP3: 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
+                    consentTermsDeclaration: 'Declaro que li e aceito os Termos Legais do Sorteio e que fui informado(a) sobre o processamento dos meus dados pessoais através da Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
+                  };
+                  setConsentVisitTitle(defaults.consentVisitTitle);
+                  setConsentHcpDatabaseText(defaults.consentHcpDatabaseText);
+                  setConsentCommunicationsText(defaults.consentCommunicationsText);
+                  setConsentProfilingText(defaults.consentProfilingText);
+                  setConsentLegalNoticeP1(defaults.consentLegalNoticeP1);
+                  setConsentLegalNoticeP2(defaults.consentLegalNoticeP2);
+                  setConsentLegalNoticeP3(defaults.consentLegalNoticeP3);
+                  setConsentTermsDeclaration(defaults.consentTermsDeclaration);
+                  syncAndSave(defaults, true);
+                }}
+                className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 cursor-pointer transition-colors"
+                title="Repor redação oficial padrão da LACER"
+              >
+                Restaurar Padrão Oficial
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  1. Pergunta de Visita da LACER à Clínica
+                </label>
+                <input
+                  type="text"
+                  value={consentVisitTitle}
+                  onChange={(e) => setConsentVisitTitle(e.target.value)}
+                  onBlur={() => syncAndSave()}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  2. Consentimento: Base de Dados de Profissionais de Saúde
+                </label>
+                <textarea
+                  rows={2}
+                  value={consentHcpDatabaseText}
+                  onChange={(e) => setConsentHcpDatabaseText(e.target.value)}
+                  onBlur={() => syncAndSave()}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  3. Consentimento: Comunicações Científicas e Educacionais
+                </label>
+                <textarea
+                  rows={2}
+                  value={consentCommunicationsText}
+                  onChange={(e) => setConsentCommunicationsText(e.target.value)}
+                  onBlur={() => syncAndSave()}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  4. Consentimento: Perfil Profissional (Perfilado)
+                </label>
+                <textarea
+                  rows={2}
+                  value={consentProfilingText}
+                  onChange={(e) => setConsentProfilingText(e.target.value)}
+                  onBlur={() => syncAndSave()}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  5. Texto Informativo: Finalidade e Tratamento de Dados (LACER, S.A.)
+                </label>
+                <textarea
+                  rows={3}
+                  value={consentLegalNoticeP1}
+                  onChange={(e) => setConsentLegalNoticeP1(e.target.value)}
+                  onBlur={() => syncAndSave()}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  6. Declaração Obrigatória de Aceitação dos Termos do Sorteio
+                </label>
+                <textarea
+                  rows={2}
+                  value={consentTermsDeclaration}
+                  onChange={(e) => setConsentTermsDeclaration(e.target.value)}
+                  onBlur={() => syncAndSave()}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
               </div>
             </div>
           </div>

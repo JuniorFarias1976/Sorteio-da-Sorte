@@ -24,7 +24,13 @@ import confetti from 'canvas-confetti';
 import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor } from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
-import { exportRegulationPDF, openPdfDocument } from '../utils/export';
+import { 
+  exportRegulationPDF, 
+  openPdfDocument, 
+  exportLegalTermsPDF, 
+  exportHcpPrivacyPDF, 
+  exportRafflePrivacyPDF 
+} from '../utils/export';
 
 interface PublicRaffleViewProps {
   brand: BrandConfig;
@@ -107,6 +113,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [specialtyOther, setSpecialtyOther] = useState('');
   const [wantsLacerVisit, setWantsLacerVisit] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [profilingConsent, setProfilingConsent] = useState(false);
   const [document, setDocument] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -250,6 +257,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         specialtyOther: specialtyOther.trim(),
         wantsLacerVisit,
         marketingConsent,
+        profilingConsent,
         termsAccepted: acceptedTerms,
       });
 
@@ -287,6 +295,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           specialtyOther: specialtyOther.trim(),
           wantsLacerVisit,
           marketingConsent,
+          profilingConsent,
           termsAccepted: acceptedTerms,
           ticketNumber: ticket,
           createdAt: new Date().toISOString(),
@@ -307,6 +316,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         setSpecialtyOther('');
         setWantsLacerVisit(false);
         setMarketingConsent(false);
+        setProfilingConsent(false);
         setDocument('');
         setAcceptedTerms(false);
         return;
@@ -323,6 +333,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         specialtyOther: baseParticipant.specialtyOther || specialtyOther.trim(),
         wantsLacerVisit: baseParticipant.wantsLacerVisit !== undefined ? Boolean(baseParticipant.wantsLacerVisit) : Boolean(wantsLacerVisit),
         marketingConsent: baseParticipant.marketingConsent !== undefined ? Boolean(baseParticipant.marketingConsent) : Boolean(marketingConsent),
+        profilingConsent: baseParticipant.profilingConsent !== undefined ? Boolean(baseParticipant.profilingConsent) : Boolean(profilingConsent),
         termsAccepted: baseParticipant.termsAccepted !== undefined ? Boolean(baseParticipant.termsAccepted) : Boolean(acceptedTerms),
       };
 
@@ -341,6 +352,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setSpecialtyOther('');
       setWantsLacerVisit(false);
       setMarketingConsent(false);
+      setProfilingConsent(false);
       setDocument('');
       setAcceptedTerms(false);
     } catch {
@@ -363,6 +375,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         specialtyOther: specialtyOther.trim(),
         wantsLacerVisit,
         marketingConsent,
+        profilingConsent,
         termsAccepted: acceptedTerms,
         ticketNumber: ticket,
         createdAt: new Date().toISOString(),
@@ -383,6 +396,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setSpecialtyOther('');
       setWantsLacerVisit(false);
       setMarketingConsent(false);
+      setProfilingConsent(false);
       setDocument('');
       setAcceptedTerms(false);
     } finally {
@@ -988,32 +1002,203 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 )}
               </div>
 
-              {/* SEÇÃO 3: Visita do representante Lacer */}
-              <div className={`pt-4 border-t space-y-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                <h4 className={`text-xs font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-                  Gostaria que um representante da Lacer visitasse a sua clínica para apresentar os nossos produtos?
+              {/* SEÇÃO 3: Informação Legal, Visita LACER & Consentimentos RGPD */}
+              <div className={`pt-4 border-t space-y-3.5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+                {/* Pergunta de Visita Lacer */}
+                <h4 className={`text-xs sm:text-sm font-bold leading-snug ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  {brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'}
                 </h4>
-                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
+
+                {/* Checkbox 1: Base de dados de profissionais de saúde / interações científicas */}
+                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
                   isLight 
-                    ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-red-300 hover:bg-red-50/20' 
-                    : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                    ? wantsLacerVisit 
+                      ? 'bg-red-50/60 border-red-300 text-slate-900' 
+                      : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
+                    : wantsLacerVisit 
+                      ? 'bg-red-950/30 border-red-500/50 text-white' 
+                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
                 }`}>
                   <input
                     type="checkbox"
                     checked={wantsLacerVisit}
                     onChange={(e) => setWantsLacerVisit(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
                   />
-                  <span>Sim, gostaria de agendar uma visita.</span>
+                  <span className="leading-relaxed">
+                    {brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.'}
+                  </span>
                 </label>
-              </div>
 
-              {/* SEÇÃO 4: Consentimentos e Regulamento */}
-              <div className={`pt-4 border-t space-y-3.5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                {/* Consentimento Obrigatório */}
-                <div className="space-y-1.5">
+                {/* Checkbox 2: Comunicações científicas e educacionais */}
+                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
+                  isLight 
+                    ? marketingConsent 
+                      ? 'bg-red-50/60 border-red-300 text-slate-900' 
+                      : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
+                    : marketingConsent 
+                      ? 'bg-red-950/30 border-red-500/50 text-white' 
+                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                  />
+                  <span className="leading-relaxed">
+                    {brand.consentCommunicationsText || 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.'}
+                  </span>
+                </label>
+
+                {/* Checkbox 3: Perfil profissional (perfilado) */}
+                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
+                  isLight 
+                    ? profilingConsent 
+                      ? 'bg-red-50/60 border-red-300 text-slate-900' 
+                      : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
+                    : profilingConsent 
+                      ? 'bg-red-950/30 border-red-500/50 text-white' 
+                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={profilingConsent}
+                    onChange={(e) => setProfilingConsent(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                  />
+                  <span className="leading-relaxed">
+                    {brand.consentProfilingText || 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).'}
+                  </span>
+                </label>
+
+                {/* Bloco Informativo de Tratamento de Dados & Política de Privacidade */}
+                <div className={`p-3.5 sm:p-4 rounded-2xl border text-[11px] sm:text-xs leading-relaxed space-y-2.5 ${
+                  isLight 
+                    ? 'bg-slate-50 border-slate-200 text-slate-700' 
+                    : 'bg-slate-950/80 border-slate-800 text-slate-300'
+                }`}>
+                  <p>
+                    {brand.consentLegalNoticeP1 || 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.'}
+                  </p>
+                  <p>
+                    {brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.'}
+                  </p>
+                  <p>
+                    {brand.consentLegalNoticeP3 ? (
+                      brand.consentLegalNoticeP3
+                    ) : (
+                      <>
+                        Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa{' '}
+                        <button
+                          type="button"
+                          onClick={() => exportRafflePrivacyPDF(brand)}
+                          className="text-[#E30613] hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <span>Política de Privacidade do Sorteio</span>
+                          <span className="text-[9px] font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 py-0.2 rounded">PDF</span>
+                        </button>
+                        {' '}e a nossa{' '}
+                        <button
+                          type="button"
+                          onClick={() => exportHcpPrivacyPDF(brand)}
+                          className="text-[#E30613] hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <span>Política de Privacidade para Profissionais de Saúde</span>
+                          <span className="text-[9px] font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 py-0.2 rounded">PDF</span>
+                        </button>.
+                      </>
+                    )}
+                  </p>
+
+                  {/* Consulta dos 3 Documentos Oficiais em Formato PDF */}
+                  <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">
+                      Consultar Documentos em PDF:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {/* 1. Termos Legais do Sorteio */}
+                      <button
+                        type="button"
+                        onClick={() => exportLegalTermsPDF(brand)}
+                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2 shadow-xs cursor-pointer ${
+                          isLight 
+                            ? 'bg-white hover:bg-red-50/70 border-slate-200 hover:border-red-300' 
+                            : 'bg-slate-900/90 hover:bg-red-950/40 border-slate-800 hover:border-red-700/60'
+                        }`}
+                        title="Abrir Termos Legais do Sorteio em formato PDF"
+                      >
+                        <FileText className="w-4 h-4 text-[#E30613] group-hover:scale-110 transition-transform shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
+                            isLight ? 'text-slate-800' : 'text-slate-200'
+                          }`}>
+                            Termos Legais do Sorteio
+                          </p>
+                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                            <span className="font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 rounded text-[9px]">PDF</span>
+                            <span>Consultar ↗</span>
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* 2. Política de Privacidade para Profissionais de Saúde */}
+                      <button
+                        type="button"
+                        onClick={() => exportHcpPrivacyPDF(brand)}
+                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2 shadow-xs cursor-pointer ${
+                          isLight 
+                            ? 'bg-white hover:bg-red-50/70 border-slate-200 hover:border-red-300' 
+                            : 'bg-slate-900/90 hover:bg-red-950/40 border-slate-800 hover:border-red-700/60'
+                        }`}
+                        title="Abrir Política de Privacidade para Profissionais de Saúde em formato PDF"
+                      >
+                        <FileText className="w-4 h-4 text-[#E30613] group-hover:scale-110 transition-transform shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
+                            isLight ? 'text-slate-800' : 'text-slate-200'
+                          }`}>
+                            Privacidade Profissionais
+                          </p>
+                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                            <span className="font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 rounded text-[9px]">PDF</span>
+                            <span>Consultar ↗</span>
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* 3. Política de Privacidade do Sorteio */}
+                      <button
+                        type="button"
+                        onClick={() => exportRafflePrivacyPDF(brand)}
+                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2 shadow-xs cursor-pointer ${
+                          isLight 
+                            ? 'bg-white hover:bg-red-50/70 border-slate-200 hover:border-red-300' 
+                            : 'bg-slate-900/90 hover:bg-red-950/40 border-slate-800 hover:border-red-700/60'
+                        }`}
+                        title="Abrir Política de Privacidade do Sorteio em formato PDF"
+                      >
+                        <FileText className="w-4 h-4 text-[#E30613] group-hover:scale-110 transition-transform shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
+                            isLight ? 'text-slate-800' : 'text-slate-200'
+                          }`}>
+                            Privacidade do Sorteio
+                          </p>
+                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                            <span className="font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 rounded text-[9px]">PDF</span>
+                            <span>Consultar ↗</span>
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkbox 4: Declaração Obrigatória dos Termos Legais do Sorteio */}
+                <div className="pt-1">
                   <label className={`flex items-start gap-3 cursor-pointer text-xs ${
-                    isLight ? 'text-slate-700' : 'text-slate-300'
+                    isLight ? 'text-slate-800' : 'text-slate-200'
                   }`}>
                     <input
                       type="checkbox"
@@ -1023,46 +1208,49 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
                     />
                     <span className="leading-relaxed">
-                      Declaro que li e aceito o regulamento do sorteio e a política de privacidade da Lacer, e autorizo o tratamento dos meus dados pessoais para a gestão da minha participação no sorteio, nos termos da legislação aplicável de proteção de dados. <span className="text-[#E30613] font-bold">*</span>
+                      {brand.consentTermsDeclaration ? (
+                        brand.consentTermsDeclaration
+                      ) : (
+                        <>
+                          Declaro que li e aceito os{' '}
+                          <button
+                            type="button"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              exportLegalTermsPDF(brand);
+                            }}
+                            className="text-[#E30613] underline font-semibold hover:text-[#C80510]"
+                          >
+                            Termos Legais do Sorteio
+                          </button>
+                          {' '}e que fui informado(a) sobre o processamento dos meus dados pessoais através da{' '}
+                          <button
+                            type="button"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              exportRafflePrivacyPDF(brand);
+                            }}
+                            className="text-[#E30613] underline font-semibold hover:text-[#C80510]"
+                          >
+                            Política de Privacidade do Sorteio
+                          </button>
+                          {' '}e a nossa{' '}
+                          <button
+                            type="button"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              exportHcpPrivacyPDF(brand);
+                            }}
+                            className="text-[#E30613] underline font-semibold hover:text-[#C80510]"
+                          >
+                            Política de Privacidade para Profissionais de Saúde
+                          </button>.
+                        </>
+                      )}{' '}
+                      <span className="text-[#E30613] font-bold">*</span>
                     </span>
                   </label>
-                  <div className="pl-7 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (brand.regulationPdfUrl && brand.regulationPdfUrl.trim()) {
-                          openPdfDocument(brand.regulationPdfUrl, brand.regulationPdfName || 'Regulamento_Oficial.pdf');
-                        } else {
-                          exportRegulationPDF(brand);
-                        }
-                      }}
-                      className="text-[#E30613] hover:underline text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer group transition-all text-left"
-                      title={brand.regulationPdfName ? `Abrir ${brand.regulationPdfName}` : 'Abrir e descarregar documento oficial em formato PDF'}
-                    >
-                      <FileText className="w-3.5 h-3.5 text-[#E30613] group-hover:scale-110 transition-transform shrink-0" />
-                      <span>Consulte o regulamento completo do sorteio e a política de privacidade</span>
-                      <span className="inline-flex items-center text-[10px] font-mono font-bold bg-red-50 text-[#E30613] border border-red-200 px-1 py-0.2 rounded no-underline">
-                        PDF
-                      </span>
-                      <ExternalLink className="w-3 h-3 text-[#E30613] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-                    </button>
-                  </div>
                 </div>
-
-                {/* Consentimento Opcional Marketing */}
-                <label className={`flex items-start gap-3 cursor-pointer text-xs pt-1 ${
-                  isLight ? 'text-slate-600 hover:text-slate-800' : 'text-slate-400 hover:text-slate-300'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={marketingConsent}
-                    onChange={(e) => setMarketingConsent(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
-                  />
-                  <span className="leading-relaxed">
-                    Autorizo a Lacer a contactar-me para receber informação sobre produtos, novidades, eventos e visitas comerciais.
-                  </span>
-                </label>
               </div>
 
               {/* Destaque do Prémio: Irrigador Oral Lacer e Botão de Boa Sorte */}

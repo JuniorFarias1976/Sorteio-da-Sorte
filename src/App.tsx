@@ -100,6 +100,7 @@ export default function App() {
             specialty: (serverP.specialty?.trim() && serverP.specialty !== 'Não especificada') ? serverP.specialty : (local?.specialty || ''),
             wantsLacerVisit: serverP.wantsLacerVisit !== undefined ? serverP.wantsLacerVisit : local?.wantsLacerVisit,
             marketingConsent: serverP.marketingConsent !== undefined ? serverP.marketingConsent : local?.marketingConsent,
+            profilingConsent: serverP.profilingConsent !== undefined ? serverP.profilingConsent : local?.profilingConsent,
             termsAccepted: serverP.termsAccepted !== undefined ? serverP.termsAccepted : local?.termsAccepted,
           });
         }
@@ -240,6 +241,7 @@ export default function App() {
               specialty: (remote.specialty?.trim() && remote.specialty !== 'Não especificada') ? remote.specialty : (local?.specialty || ''),
               wantsLacerVisit: remote.wantsLacerVisit !== undefined ? remote.wantsLacerVisit : local?.wantsLacerVisit,
               marketingConsent: remote.marketingConsent !== undefined ? remote.marketingConsent : local?.marketingConsent,
+              profilingConsent: remote.profilingConsent !== undefined ? remote.profilingConsent : local?.profilingConsent,
               termsAccepted: remote.termsAccepted !== undefined ? remote.termsAccepted : local?.termsAccepted,
             });
           }

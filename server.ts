@@ -200,6 +200,20 @@ const INITIAL_DATABASE = {
     ticketModalSubtitle: 'O Seu Bilhete Oficial Lacer',
     regulationPdfUrl: '',
     regulationPdfName: '',
+    legalTermsPdfUrl: '',
+    legalTermsPdfName: '',
+    hcpPrivacyPdfUrl: '',
+    hcpPrivacyPdfName: '',
+    rafflePrivacyPdfUrl: '',
+    rafflePrivacyPdfName: '',
+    consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+    consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
+    consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
+    consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
+    consentLegalNoticeP1: 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.',
+    consentLegalNoticeP2: 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.',
+    consentLegalNoticeP3: 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
+    consentTermsDeclaration: 'Declaro que li e aceito os Termos Legais do Sorteio e que fui informado(a) sobre o processamento dos meus dados pessoais através da Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
   },
   formFields: {
     name: { id: 'name', label: 'Nome Completo', placeholder: '', enabled: true, required: true },
@@ -458,6 +472,7 @@ async function startServer() {
       specialtyOther, 
       wantsLacerVisit, 
       marketingConsent, 
+      profilingConsent,
       termsAccepted 
     } = req.body;
 
@@ -503,6 +518,7 @@ async function startServer() {
       specialtyOther: (specialtyOther || '').trim(),
       wantsLacerVisit: Boolean(wantsLacerVisit),
       marketingConsent: Boolean(marketingConsent),
+      profilingConsent: Boolean(profilingConsent),
       termsAccepted: Boolean(termsAccepted),
       ticketNumber,
       createdAt: new Date().toISOString(),
@@ -523,38 +539,67 @@ async function startServer() {
   }
   app.use('/uploads', express.static(UPLOADS_DIR));
 
-  // Regulation & Privacy Policy PDF endpoint
-  const serveRegulationPDF = (_req: Request, res: Response) => {
-    db = loadDB();
-    if (db.brand?.regulationPdfUrl && db.brand.regulationPdfUrl.startsWith('/uploads/')) {
-      const customPath = path.join(__dirname, 'public', db.brand.regulationPdfUrl);
+  // Helper to serve a stored PDF or return fallback
+  const sendPdfResponse = (res: Response, pdfRelUrl?: string, pdfName?: string, defaultFileName = 'documento.pdf') => {
+    if (pdfRelUrl && pdfRelUrl.startsWith('/uploads/')) {
+      const customPath = path.join(__dirname, 'public', pdfRelUrl);
       if (fs.existsSync(customPath)) {
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${db.brand.regulationPdfName || 'Regulamento_Oficial.pdf'}"`);
+        res.setHeader('Content-Disposition', `inline; filename="${pdfName || defaultFileName}"`);
         return res.sendFile(customPath);
       }
     }
-    const pdfPath = path.join(__dirname, 'public', 'regulamento.pdf');
-    if (fs.existsSync(pdfPath)) {
+    const fallbackPath = path.join(__dirname, 'public', 'regulamento.pdf');
+    if (fs.existsSync(fallbackPath)) {
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'inline; filename="Regulamento_Oficial_Sorteio_Lacer_OMD_2026.pdf"');
-      return res.sendFile(pdfPath);
+      res.setHeader('Content-Disposition', `inline; filename="${pdfName || defaultFileName}"`);
+      return res.sendFile(fallbackPath);
     }
-    res.status(404).send('Documento do Regulamento em PDF não encontrado.');
+    res.status(404).send('Documento em PDF não encontrado.');
   };
 
-  app.get('/regulamento.pdf', serveRegulationPDF);
-  app.get('/api/regulamento.pdf', serveRegulationPDF);
+  // 1. Termos Legais do Sorteio
+  app.get(['/termos-legais.pdf', '/api/termos-legais.pdf', '/regulamento.pdf', '/api/regulamento.pdf'], (_req: Request, res: Response) => {
+    db = loadDB();
+    const url = db.brand?.legalTermsPdfUrl || db.brand?.regulationPdfUrl;
+    const name = db.brand?.legalTermsPdfName || db.brand?.regulationPdfName || 'Termos_Legais_Sorteio_Lacer.pdf';
+    return sendPdfResponse(res, url, name, 'Termos_Legais_Sorteio_Lacer.pdf');
+  });
 
-  // Upload custom Regulation PDF endpoint (from Admin Dashboard)
+  // 2. Política de Privacidade para Profissionais de Saúde
+  app.get(['/privacidade-profissionais.pdf', '/api/privacidade-profissionais.pdf'], (_req: Request, res: Response) => {
+    db = loadDB();
+    const url = db.brand?.hcpPrivacyPdfUrl;
+    const name = db.brand?.hcpPrivacyPdfName || 'Politica_Privacidade_Profissionais_Saude_Lacer.pdf';
+    return sendPdfResponse(res, url, name, 'Politica_Privacidade_Profissionais_Saude_Lacer.pdf');
+  });
+
+  // 3. Política de Privacidade do Sorteio
+  app.get(['/privacidade-sorteio.pdf', '/api/privacidade-sorteio.pdf'], (_req: Request, res: Response) => {
+    db = loadDB();
+    const url = db.brand?.rafflePrivacyPdfUrl;
+    const name = db.brand?.rafflePrivacyPdfName || 'Politica_Privacidade_Sorteio_Lacer.pdf';
+    return sendPdfResponse(res, url, name, 'Politica_Privacidade_Sorteio_Lacer.pdf');
+  });
+
+  // Upload custom PDF endpoint supporting 3 document types:
+  // - 'legal_terms' (Termos Legais do Sorteio)
+  // - 'hcp_privacy' (Política de Privacidade para Profissionais de Saúde)
+  // - 'raffle_privacy' (Política de Privacidade do Sorteio)
   app.post('/api/upload-pdf', (req, res) => {
     try {
-      const { fileData, fileName } = req.body;
+      const { fileData, fileName, docType } = req.body;
       if (!fileData) {
         return res.status(400).json({ error: 'Nenhum ficheiro fornecido' });
       }
 
-      const cleanName = (fileName || 'regulamento.pdf').replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const defaultName = docType === 'hcp_privacy'
+        ? 'Politica_Privacidade_Profissionais.pdf'
+        : docType === 'raffle_privacy'
+        ? 'Politica_Privacidade_Sorteio.pdf'
+        : 'Termos_Legais_Sorteio.pdf';
+
+      const cleanName = (fileName || defaultName).replace(/[^a-zA-Z0-9_.-]/g, '_');
       const targetFileName = `${Date.now()}-${cleanName}`;
       const filePath = path.join(UPLOADS_DIR, targetFileName);
 
@@ -562,25 +607,42 @@ async function startServer() {
       const buffer = Buffer.from(base64Content, 'base64');
       fs.writeFileSync(filePath, buffer);
 
-      // Also sync to public/regulamento.pdf
-      const defaultPath = path.join(__dirname, 'public', 'regulamento.pdf');
-      fs.writeFileSync(defaultPath, buffer);
-
       const fileUrl = `/uploads/${targetFileName}`;
-
       db = loadDB();
-      db.brand = {
-        ...db.brand,
-        regulationPdfUrl: fileUrl,
-        regulationPdfName: fileName || cleanName,
-      };
+
+      if (docType === 'hcp_privacy') {
+        db.brand = {
+          ...db.brand,
+          hcpPrivacyPdfUrl: fileUrl,
+          hcpPrivacyPdfName: fileName || cleanName,
+        };
+      } else if (docType === 'raffle_privacy') {
+        db.brand = {
+          ...db.brand,
+          rafflePrivacyPdfUrl: fileUrl,
+          rafflePrivacyPdfName: fileName || cleanName,
+        };
+      } else {
+        // default / legal_terms
+        db.brand = {
+          ...db.brand,
+          legalTermsPdfUrl: fileUrl,
+          legalTermsPdfName: fileName || cleanName,
+          regulationPdfUrl: fileUrl,
+          regulationPdfName: fileName || cleanName,
+        };
+        // Also sync fallback public/regulamento.pdf
+        const defaultPath = path.join(__dirname, 'public', 'regulamento.pdf');
+        try { fs.writeFileSync(defaultPath, buffer); } catch {}
+      }
+
       saveDB(db);
       broadcastSSE('DATA_UPDATED', db);
 
-      console.log(`[PDF-UPLOAD] Successfully saved regulation PDF: ${fileUrl} (${buffer.length} bytes)`);
-      res.json({ success: true, url: fileUrl, fileName: fileName || cleanName });
+      console.log(`[PDF-UPLOAD] Successfully saved ${docType || 'legal_terms'} PDF: ${fileUrl} (${buffer.length} bytes)`);
+      res.json({ success: true, url: fileUrl, fileName: fileName || cleanName, docType });
     } catch (err: any) {
-      console.error('Error uploading regulation PDF:', err);
+      console.error('Error uploading PDF:', err);
       res.status(500).json({ error: 'Erro ao carregar o ficheiro PDF: ' + err.message });
     }
   });
