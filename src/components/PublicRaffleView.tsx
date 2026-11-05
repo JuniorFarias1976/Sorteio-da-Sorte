@@ -1498,78 +1498,80 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             </div>
           )}
 
-          {/* Card: Consultar Meus Bilhetes */}
-          <div className={`border rounded-3xl p-6 shadow-lg transition-colors ${
-            isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-slate-900/60 border-slate-800/80 text-slate-100'
-          }`}>
-            <h3 className={`text-lg font-bold mb-2 flex items-center gap-2 ${
-              isLight ? 'text-slate-950' : 'text-white'
+          {/* Card: Consultar Meus Bilhetes (Controlado no Painel de Controlo) */}
+          {brand.showSearchSection !== false && (
+            <div className={`border rounded-3xl p-6 shadow-lg transition-colors ${
+              isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-slate-900/60 border-slate-800/80 text-slate-100'
             }`}>
-              <Search className="w-4 h-4 text-[#E30613]" />
-              <span>{brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes'}</span>
-            </h3>
-            <p className={`text-xs mb-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-              {brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados'}
-            </p>
+              <h3 className={`text-lg font-bold mb-2 flex items-center gap-2 ${
+                isLight ? 'text-slate-950' : 'text-white'
+              }`}>
+                <Search className="w-4 h-4 text-[#E30613]" />
+                <span>{brand.searchSectionTitle || 'Já se inscreveu? Consulte os seus Bilhetes'}</span>
+              </h3>
+              <p className={`text-xs mb-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                {brand.searchSectionSubtitle || 'Insira o seu NIF, telemóvel, e-mail ou bilhete para verificar os seus números registados'}
+              </p>
 
-            <form onSubmit={handleSearchTickets} className="flex gap-2" autoComplete="off">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Insira NIF, telemóvel, e-mail ou número de bilhete..."
-                className={`flex-1 rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[#E30613] ${
-                  isLight 
-                    ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#E30613]' 
-                    : 'bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:border-red-500'
-                }`}
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-red-600/20"
-              >
-                <Search className="w-4 h-4" />
-                <span>Pesquisar</span>
-              </button>
-            </form>
+              <form onSubmit={handleSearchTickets} className="flex gap-2" autoComplete="off">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Insira NIF, telemóvel, e-mail ou número de bilhete..."
+                  className={`flex-1 rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[#E30613] ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#E30613]' 
+                      : 'bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:border-red-500'
+                  }`}
+                />
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-red-600/20"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Pesquisar</span>
+                </button>
+              </form>
 
-            {/* Results display */}
-            {hasSearched && (
-              <div className={`mt-4 pt-4 border-t space-y-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                {searchResults && searchResults.length > 0 ? (
-                  searchResults.map((p: Participant) => (
-                    <div
-                      key={p.id}
-                      className={`border rounded-xl p-3 flex items-center justify-between text-xs ${
-                        isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
-                      }`}
-                    >
-                      <div>
-                        <p className={`font-bold ${isLight ? 'text-slate-950' : 'text-white'}`}>{p.name}</p>
-                        <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{p.phone} · {p.city}</p>
+              {/* Results display */}
+              {hasSearched && (
+                <div className={`mt-4 pt-4 border-t space-y-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+                  {searchResults && searchResults.length > 0 ? (
+                    searchResults.map((p: Participant) => (
+                      <div
+                        key={p.id}
+                        className={`border rounded-xl p-3 flex items-center justify-between text-xs ${
+                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+                        }`}
+                      >
+                        <div>
+                          <p className={`font-bold ${isLight ? 'text-slate-950' : 'text-white'}`}>{p.name}</p>
+                          <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{p.phone} · {p.city}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`font-mono font-bold text-sm px-2 py-1 rounded border ${
+                            isLight 
+                              ? 'text-[#E30613] bg-red-50 border-red-200' 
+                              : 'text-red-400 bg-red-500/10 border-red-500/20'
+                          }`}>
+                            #{p.ticketNumber}
+                          </span>
+                          <p className={`text-[10px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
+                            {p.status === 'winner' ? '🏆 CONTEMPLADO' : p.status === 'banned' ? '❌ Restrito' : '✓ A Concorrer'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className={`font-mono font-bold text-sm px-2 py-1 rounded border ${
-                          isLight 
-                            ? 'text-[#E30613] bg-red-50 border-red-200' 
-                            : 'text-red-400 bg-red-500/10 border-red-500/20'
-                        }`}>
-                          #{p.ticketNumber}
-                        </span>
-                        <p className={`text-[10px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                          {p.status === 'winner' ? '🏆 CONTEMPLADO' : p.status === 'banned' ? '❌ Restrito' : '✓ A Concorrer'}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className={`text-xs text-center py-2 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                    Nenhum bilhete encontrado para esta pesquisa. Verifique os dados inseridos.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+                    ))
+                  ) : (
+                    <p className={`text-xs text-center py-2 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
+                      Nenhum bilhete encontrado para esta pesquisa. Verifique os dados inseridos.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right: Prizes Showcase (5 cols) - Controlado no Painel de Controlo */}

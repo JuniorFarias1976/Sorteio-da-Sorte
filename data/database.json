@@ -263,6 +263,7 @@
     "showNavbarBrandText": false,
     "showNavbarParticipateButton": false,
     "showPrizesSection": false,
+    "showSearchSection": true,
     "formTitle": "Garanta o seu Bilhete da Sorte",
     "formSubtitle": "Preencha os seus dados reais para receber a confirmação e o seu número",
     "formButtonText": "Participar do sorteio",

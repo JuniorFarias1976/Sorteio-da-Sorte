@@ -63,6 +63,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [showNavbarBrandText, setShowNavbarBrandText] = useState(brand.showNavbarBrandText === true);
   const [showNavbarParticipateButton, setShowNavbarParticipateButton] = useState(brand.showNavbarParticipateButton === true);
   const [showPrizesSection, setShowPrizesSection] = useState(brand.showPrizesSection === true);
+  const [showSearchSection, setShowSearchSection] = useState(brand.showSearchSection !== false);
 
   // App-wide customizable texts
   const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
@@ -178,6 +179,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setShowNavbarBrandText(brand.showNavbarBrandText === true);
     setShowNavbarParticipateButton(brand.showNavbarParticipateButton === true);
     setShowPrizesSection(brand.showPrizesSection === true);
+    setShowSearchSection(brand.showSearchSection !== false);
   }, [brand]);
 
   // Initial check of server database status
@@ -299,6 +301,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       showNavbarBrandText: overrides.showNavbarBrandText !== undefined ? overrides.showNavbarBrandText : showNavbarBrandText,
       showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
       showPrizesSection: overrides.showPrizesSection !== undefined ? overrides.showPrizesSection : showPrizesSection,
+      showSearchSection: overrides.showSearchSection !== undefined ? overrides.showSearchSection : showSearchSection,
       legalTermsPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || '').trim(),
       legalTermsPdfName: overrides.legalTermsPdfName !== undefined ? overrides.legalTermsPdfName : (legalTermsPdfName || '').trim(),
       regulationPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || overrides.regulationPdfUrl || regulationPdfUrl || '').trim(),
@@ -930,6 +933,28 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   </span>
                   <span className="text-[11px] text-slate-400">
                     Desmarque para <strong>remover o bloco lateral de prémios</strong> assinalado na página pública. A página fica com o formulário de inscrição centralizado e visualmente mais limpo.
+                  </span>
+                </div>
+              </label>
+
+              {/* Bloco Consulta de Bilhetes Registados (Mostrar/Ocultar) */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showSearchSection}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setShowSearchSection(val);
+                    syncAndSave({ showSearchSection: val }, true);
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-[#E30613] focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block">
+                    Exibir Bloco "Já se inscreveu? Consulte os seus Bilhetes"
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para <strong>ocultar a barra de consulta/pesquisa de bilhetes</strong> na parte inferior da página pública.
                   </span>
                 </div>
               </label>
