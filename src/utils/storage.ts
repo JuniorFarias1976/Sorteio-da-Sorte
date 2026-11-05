@@ -82,6 +82,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   hcpPrivacyPdfName: '',
   rafflePrivacyPdfUrl: '',
   rafflePrivacyPdfName: '',
+  goodLuckBadgeUrl: '/assets/boa_sorte_badge.jpg',
   consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
   consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
   consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',

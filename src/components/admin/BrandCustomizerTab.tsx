@@ -307,6 +307,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       hcpPrivacyPdfName: overrides.hcpPrivacyPdfName !== undefined ? overrides.hcpPrivacyPdfName : (hcpPrivacyPdfName || '').trim(),
       rafflePrivacyPdfUrl: overrides.rafflePrivacyPdfUrl !== undefined ? overrides.rafflePrivacyPdfUrl : (rafflePrivacyPdfUrl || '').trim(),
       rafflePrivacyPdfName: overrides.rafflePrivacyPdfName !== undefined ? overrides.rafflePrivacyPdfName : (rafflePrivacyPdfName || '').trim(),
+      goodLuckBadgeUrl: overrides.goodLuckBadgeUrl !== undefined ? overrides.goodLuckBadgeUrl : (brand.goodLuckBadgeUrl || '/assets/boa_sorte_badge.jpg'),
       consentVisitTitle: (overrides.consentVisitTitle !== undefined ? overrides.consentVisitTitle : consentVisitTitle).trim(),
       consentHcpDatabaseText: (overrides.consentHcpDatabaseText !== undefined ? overrides.consentHcpDatabaseText : consentHcpDatabaseText).trim(),
       consentCommunicationsText: (overrides.consentCommunicationsText !== undefined ? overrides.consentCommunicationsText : consentCommunicationsText).trim(),

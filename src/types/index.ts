@@ -122,6 +122,7 @@ export interface BrandConfig {
   hcpPrivacyPdfName?: string;
   rafflePrivacyPdfUrl?: string; // Política de Privacidade do Sorteio (PDF)
   rafflePrivacyPdfName?: string;
+  goodLuckBadgeUrl?: string; // URL da imagem ou emblema de Boa Sorte
   forceResetLogo?: boolean;
   adminPassword?: string;
   raffleUrl?: string;

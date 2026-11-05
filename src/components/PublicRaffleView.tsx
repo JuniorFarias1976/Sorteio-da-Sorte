@@ -1085,30 +1085,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     {brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.'}
                   </p>
                   <p>
-                    {brand.consentLegalNoticeP3 ? (
-                      brand.consentLegalNoticeP3
-                    ) : (
-                      <>
-                        Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa{' '}
-                        <button
-                          type="button"
-                          onClick={() => exportRafflePrivacyPDF(brand)}
-                          className="text-[#E30613] hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <span>Política de Privacidade do Sorteio</span>
-                          <span className="text-[9px] font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 py-0.2 rounded">PDF</span>
-                        </button>
-                        {' '}e a nossa{' '}
-                        <button
-                          type="button"
-                          onClick={() => exportHcpPrivacyPDF(brand)}
-                          className="text-[#E30613] hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <span>Política de Privacidade para Profissionais de Saúde</span>
-                          <span className="text-[9px] font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 py-0.2 rounded">PDF</span>
-                        </button>.
-                      </>
-                    )}
+                    {brand.consentLegalNoticeP3 || 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.'}
                   </p>
 
                   {/* Consulta dos 3 Documentos Oficiais em Formato PDF */}
@@ -1121,23 +1098,28 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       <button
                         type="button"
                         onClick={() => exportLegalTermsPDF(brand)}
-                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2 shadow-xs cursor-pointer ${
+                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2.5 shadow-xs cursor-pointer ${
                           isLight 
-                            ? 'bg-white hover:bg-red-50/70 border-slate-200 hover:border-red-300' 
-                            : 'bg-slate-900/90 hover:bg-red-950/40 border-slate-800 hover:border-red-700/60'
+                            ? 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300' 
+                            : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-800 hover:border-slate-700'
                         }`}
                         title="Abrir Termos Legais do Sorteio em formato PDF"
                       >
-                        <FileText className="w-4 h-4 text-[#E30613] group-hover:scale-110 transition-transform shrink-0 mt-0.5" />
+                        <FileText className="w-4 h-4 text-slate-500 group-hover:text-[#E30613] transition-colors shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
                             isLight ? 'text-slate-800' : 'text-slate-200'
                           }`}>
                             Termos Legais do Sorteio
                           </p>
-                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <span className="font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 rounded text-[9px]">PDF</span>
-                            <span>Consultar ↗</span>
+                          <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                              PDF
+                            </span>
+                            <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex items-center gap-0.5">
+                              <span>Consultar</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </span>
                           </p>
                         </div>
                       </button>
@@ -1146,23 +1128,28 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       <button
                         type="button"
                         onClick={() => exportHcpPrivacyPDF(brand)}
-                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2 shadow-xs cursor-pointer ${
+                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2.5 shadow-xs cursor-pointer ${
                           isLight 
-                            ? 'bg-white hover:bg-red-50/70 border-slate-200 hover:border-red-300' 
-                            : 'bg-slate-900/90 hover:bg-red-950/40 border-slate-800 hover:border-red-700/60'
+                            ? 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300' 
+                            : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-800 hover:border-slate-700'
                         }`}
                         title="Abrir Política de Privacidade para Profissionais de Saúde em formato PDF"
                       >
-                        <FileText className="w-4 h-4 text-[#E30613] group-hover:scale-110 transition-transform shrink-0 mt-0.5" />
+                        <FileText className="w-4 h-4 text-slate-500 group-hover:text-[#E30613] transition-colors shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
                             isLight ? 'text-slate-800' : 'text-slate-200'
                           }`}>
                             Privacidade Profissionais
                           </p>
-                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <span className="font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 rounded text-[9px]">PDF</span>
-                            <span>Consultar ↗</span>
+                          <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                              PDF
+                            </span>
+                            <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex items-center gap-0.5">
+                              <span>Consultar</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </span>
                           </p>
                         </div>
                       </button>
@@ -1171,23 +1158,28 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       <button
                         type="button"
                         onClick={() => exportRafflePrivacyPDF(brand)}
-                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2 shadow-xs cursor-pointer ${
+                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2.5 shadow-xs cursor-pointer ${
                           isLight 
-                            ? 'bg-white hover:bg-red-50/70 border-slate-200 hover:border-red-300' 
-                            : 'bg-slate-900/90 hover:bg-red-950/40 border-slate-800 hover:border-red-700/60'
+                            ? 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300' 
+                            : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-800 hover:border-slate-700'
                         }`}
                         title="Abrir Política de Privacidade do Sorteio em formato PDF"
                       >
-                        <FileText className="w-4 h-4 text-[#E30613] group-hover:scale-110 transition-transform shrink-0 mt-0.5" />
+                        <FileText className="w-4 h-4 text-slate-500 group-hover:text-[#E30613] transition-colors shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
                             isLight ? 'text-slate-800' : 'text-slate-200'
                           }`}>
                             Privacidade do Sorteio
                           </p>
-                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <span className="font-mono font-bold bg-red-100 dark:bg-red-950 text-[#E30613] px-1 rounded text-[9px]">PDF</span>
-                            <span>Consultar ↗</span>
+                          <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                              PDF
+                            </span>
+                            <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex items-center gap-0.5">
+                              <span>Consultar</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </span>
                           </p>
                         </div>
                       </button>
@@ -1284,13 +1276,18 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   </div>
                 </div>
 
-                {/* Botão Novo Boa Sorte (Fundo Vermelho Oficial Vibrante com texto branco e ícone dourado, sem fundo cinza) */}
+                {/* Imagem de Boa Sorte (Emblema Ilustrado Oficial de Celebração) */}
                 <div 
-                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-red-600/30 border border-red-500/80 shrink-0 select-none hover:scale-105 transition-all cursor-default"
+                  className="shrink-0 flex items-center justify-center select-none"
                   title="Desejamos-lhe muita sorte no sorteio oficial Lacer!"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse shrink-0" />
-                  <span className="drop-shadow-sm">Boa sorte!</span>
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-0.5 bg-gradient-to-tr from-amber-400/40 via-red-500/20 to-amber-200/40 border border-amber-200/60 dark:border-red-900/40 shadow-sm flex items-center justify-center hover:scale-105 transition-transform overflow-hidden">
+                    <img
+                      src={brand.goodLuckBadgeUrl || '/assets/boa_sorte_badge.jpg'}
+                      alt="Boa Sorte - Sorteio Lacer"
+                      className="w-full h-full object-contain rounded-xl"
+                    />
+                  </div>
                 </div>
               </div>
 
