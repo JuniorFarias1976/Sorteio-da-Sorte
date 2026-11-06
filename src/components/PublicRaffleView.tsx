@@ -1079,32 +1079,20 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     : 'bg-slate-950/80 border-slate-800 text-slate-300'
                 }`}>
                   <p>
-                    <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>A LACER, S.A.</strong> processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.
+                    <strong className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>A LACER, S.A.</strong> processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.
                   </p>
                   <p>
                     {brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.'}
                   </p>
                   <p>
                     Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa{' '}
-                    <button
-                      type="button"
-                      onClick={() => exportRafflePrivacyPDF(brand)}
-                      className={`font-bold underline ${
-                        isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
-                      } transition-colors cursor-pointer inline text-left`}
-                    >
+                    <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       Política de Privacidade do Sorteio
-                    </button>
+                    </strong>
                     {' '}e a nossa{' '}
-                    <button
-                      type="button"
-                      onClick={() => exportHcpPrivacyPDF(brand)}
-                      className={`font-bold underline ${
-                        isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
-                      } transition-colors cursor-pointer inline text-left`}
-                    >
+                    <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       Política de Privacidade para Profissionais de Saúde
-                    </button>.
+                    </strong>.
                   </p>
 
                   {/* Consulta dos 3 Documentos Oficiais em Formato PDF */}
