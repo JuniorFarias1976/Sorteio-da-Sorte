@@ -1223,10 +1223,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     />
                   </div>
                   <div className="min-w-0 flex-1 text-left">
-                    <p className="text-[11px] font-bold text-[#E30613] uppercase tracking-wider flex items-center gap-1">
-                      <Gift className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
-                      <span>Prémio em Sorteio</span>
-                    </p>
                     <p className={`text-xs sm:text-sm font-extrabold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       {activePrize.title || 'LACER HIDRO - Irrigador bucal portátil'}
                     </p>
