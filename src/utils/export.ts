@@ -18,6 +18,31 @@ export const hexToRgb = (hex?: string): [number, number, number] => {
   return [r, g, b];
 };
 
+// Calculate perceived luminance of an RGB tuple
+export const getRgbLuminance = (rgb: [number, number, number]): number => {
+  return (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+};
+
+// Returns high-contrast safe primary & secondary colors for official PDF exports.
+// If brand.primaryColor is too light (luminance > 160) or white, it uses official Lacer Red (#E30613).
+// This guarantees that white text on header banners and table headers is ALWAYS 100% readable.
+export const getSafePdfThemeColors = (brand?: BrandConfig) => {
+  const officialRed: [number, number, number] = [227, 6, 19]; // Lacer Red #E30613
+  const officialDarkRed: [number, number, number] = [185, 28, 28]; // Dark Red #B91C1C
+
+  const primaryRgb = hexToRgb(brand?.primaryColor || '#E30613');
+  const secondaryRgb = hexToRgb(brand?.secondaryColor || '#B91C1C');
+
+  const primaryLum = getRgbLuminance(primaryRgb);
+  const safePrimary = primaryLum > 160 ? officialRed : primaryRgb;
+  const safeSecondary = primaryLum > 160 ? officialDarkRed : secondaryRgb;
+
+  return {
+    primary: safePrimary,
+    secondary: safeSecondary,
+  };
+};
+
 export interface LogoImageResult {
   dataUrl: string;
   width: number;
@@ -215,54 +240,57 @@ export const exportParticipantsToExcel = (participants: Participant[], filename 
 
 // Export participants to PDF (Themed with Active App Colors & Company Logo)
 export const exportParticipantsToPDF = async (participants: Participant[], brand: BrandConfig) => {
-  const doc = new jsPDF({ orientation: 'landscape' });
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const now = new Date();
-  const primary = hexToRgb(brand.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+  const { primary, secondary } = getSafePdfThemeColors(brand);
 
   // Convert company logo
   const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
 
-  // Header Banner - Active App Primary Color (#E30613 Lacer Red)
+  // Header Banner - High-contrast Official Lacer Red (#E30613)
   doc.setFillColor(primary[0], primary[1], primary[2]);
-  doc.rect(0, 0, 297, 28, 'F');
+  doc.rect(0, 0, 297, 26, 'F');
 
-  // Accent Line - Active App Secondary Color
+  // Accent Line - Darker Red
   doc.setFillColor(secondary[0], secondary[1], secondary[2]);
-  doc.rect(0, 27, 297, 1.8, 'F');
+  doc.rect(0, 25.5, 297, 1.5, 'F');
 
   // Render Company Logo on top left (compact rounded square, never stretched)
-  renderLogoInDoc(doc, brand, logoData, 12, 4, 22, 20);
+  renderLogoInDoc(doc, brand, logoData, 10, 3.5, 24, 19);
 
-  // Header Text
+  // Header Text (Crisp White typography with 100% legibility)
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(15);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(brand.companyName || 'Lacer - Sorteio OMD 2026', 39, 13.5);
+  doc.text(brand.companyName || 'Lacer - Sorteio OMD 2026', 38, 12);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
+  doc.setTextColor(255, 245, 245);
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Relatório Oficial de Participantes & Contactos Profissionais', 39, 21.5);
+  doc.text('Relatório Oficial de Participantes & Contactos Profissionais', 38, 19);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8.5);
-  doc.text(`Total de inscritos: ${participants.length}`, 283, 14, { align: 'right' });
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total de inscritos: ${participants.length}`, 287, 12, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(255, 245, 245);
   doc.text(
     `Gerado em: ${now.toLocaleDateString('pt-PT')} às ${now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}`,
-    283,
-    22,
+    287,
+    19,
     { align: 'right' }
   );
 
   const tableData = participants.map((p, index) => [
     index + 1,
     `#${p.ticketNumber}`,
-    p.name,
-    p.email,
-    p.phone,
+    p.name || '-',
+    p.email || '-',
+    p.phone || '-',
     p.clinic || '-',
-    p.city,
+    p.city || '-',
     p.specialty || '-',
     p.wantsLacerVisit ? 'Sim' : 'Não',
     p.marketingConsent ? 'Sim' : 'Não',
@@ -271,7 +299,7 @@ export const exportParticipantsToPDF = async (participants: Participant[], brand
   ]);
 
   autoTable(doc, {
-    startY: 34,
+    startY: 30,
     head: [[
       '#',
       'Bilhete',
@@ -281,43 +309,67 @@ export const exportParticipantsToPDF = async (participants: Participant[], brand
       'Clínica / Consultório',
       'Cidade',
       'Especialidade',
-      'Visita Lacer',
-      'Comunicações',
-      'Perfilado',
-      'RGPD / Termos',
+      'Visita',
+      'Comun.',
+      'Perfil',
+      'RGPD',
     ]],
     body: tableData,
-    theme: 'striped',
+    theme: 'grid',
+    showHead: 'everyPage',
     headStyles: {
-      fillColor: primary, // Active App Color
+      fillColor: primary, // Safe high-contrast red
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
-      cellPadding: 3,
+      fontSize: 7.5,
+      halign: 'left',
+      valign: 'middle',
+      cellPadding: { top: 2.5, bottom: 2.5, left: 1.5, right: 1.5 },
+      lineColor: [200, 16, 26],
+      lineWidth: 0.2,
     },
     bodyStyles: {
-      fontSize: 7.5,
-      cellPadding: 2.5,
-      textColor: [30, 41, 59],
+      fontSize: 7,
+      cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
+      textColor: [15, 23, 42],
+      valign: 'middle',
+      lineColor: [226, 232, 240],
+      lineWidth: 0.15,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
     columnStyles: {
-      0: { cellWidth: 8 },
-      1: { cellWidth: 18, fontStyle: 'bold', textColor: primary },
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 18, halign: 'center', fontStyle: 'bold', textColor: primary },
       2: { cellWidth: 38, fontStyle: 'bold' },
-      3: { cellWidth: 42 },
-      4: { cellWidth: 24 },
-      5: { cellWidth: 34 },
-      6: { cellWidth: 22 },
+      3: { cellWidth: 44 },
+      4: { cellWidth: 25, halign: 'center' },
+      5: { cellWidth: 36 },
+      6: { cellWidth: 22, halign: 'center' },
       7: { cellWidth: 34 },
-      8: { cellWidth: 16, halign: 'center' },
-      9: { cellWidth: 16, halign: 'center' },
-      10: { cellWidth: 18, halign: 'center' },
+      8: { cellWidth: 13, halign: 'center' },
+      9: { cellWidth: 13, halign: 'center' },
+      10: { cellWidth: 13, halign: 'center' },
+      11: { cellWidth: 13, halign: 'center', fontStyle: 'bold', textColor: [16, 120, 70] },
     },
-    margin: { left: 10, right: 10 },
+    margin: { left: 10, right: 10, top: 30, bottom: 14 },
   });
+
+  // Footer with Page Numbers on all pages
+  const totalPages = (doc as any).getNumberOfPages ? (doc as any).getNumberOfPages() : 1;
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(10, 201, 287, 201);
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text('Documento Oficial Lacer • Gestão e Auditoria de Participantes Sorteio OMD 2026 • Confidencial', 10, 205.5);
+    doc.text(`Página ${i} de ${totalPages}`, 287, 205.5, { align: 'right' });
+  }
 
   doc.save(`participantes_lacer_${now.toISOString().slice(0, 10)}.pdf`);
 };
@@ -328,10 +380,9 @@ export const exportWinnersReportPDF = async (
   brand: BrandConfig,
   config?: ReportPdfConfig
 ) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const now = new Date();
-  const primary = hexToRgb(brand.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+  const { primary, secondary } = getSafePdfThemeColors(brand);
 
   // Convert company logo
   const logoData = await getLogoImageForPdf(brand.logoUrl || '/favicon.svg');
@@ -356,48 +407,48 @@ export const exportWinnersReportPDF = async (
     includeDate: true,
   };
 
-  // Header Banner - Active App Primary Color (#E30613)
+  // Header Banner - High-contrast Official Lacer Red (#E30613)
   doc.setFillColor(primary[0], primary[1], primary[2]);
-  doc.rect(0, 0, 210, 32, 'F');
+  doc.rect(0, 0, 210, 28, 'F');
 
   // Accent Line - Active App Secondary Color
   doc.setFillColor(secondary[0], secondary[1], secondary[2]);
-  doc.rect(0, 31, 210, 1.8, 'F');
+  doc.rect(0, 27, 210, 1.5, 'F');
 
   // Render Company Logo (compact rounded card, never stretched)
-  renderLogoInDoc(doc, brand, logoData, 12, 5, 24, 20);
+  renderLogoInDoc(doc, brand, logoData, 10, 4, 22, 19);
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text(brand.companyName || 'Sorteio Lacer OMD 2026', 40, 14);
+  doc.text(brand.companyName || 'Sorteio Lacer OMD 2026', 36, 12);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
+  doc.setTextColor(255, 245, 245);
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
-  doc.text(cfg.title || 'ATA E AUDITORIA OFICIAL DE SORTEIO', 45, 22);
+  doc.text(cfg.title || 'ATA E AUDITORIA OFICIAL DE SORTEIO', 36, 19);
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.text(
     `Protocolo: ${cfg.protocolPrefix || 'LACER-'}${now.getTime().toString().slice(-8)}`,
-    196,
-    14,
+    198,
+    12,
     { align: 'right' }
   );
   doc.text(
     `Data: ${now.toLocaleDateString('pt-PT')} ${now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}`,
-    196,
-    22,
+    198,
+    19,
     { align: 'right' }
   );
 
   // Body Information
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`1. ${cfg.subtitle || 'VENCEDORES HOMOLOGADOS'} (${winners.length} REGISTOS)`, 14, 42);
+  doc.text(`1. ${cfg.subtitle || 'VENCEDORES HOMOLOGADOS'} (${winners.length} REGISTOS)`, 12, 36);
 
   // Dynamic table headers based on config
   const headers: string[] = ['#'];
@@ -431,26 +482,29 @@ export const exportWinnersReportPDF = async (
   });
 
   autoTable(doc, {
-    startY: 46,
+    startY: 40,
     head: [headers],
     body: tableData,
     theme: 'grid',
+    showHead: 'everyPage',
     headStyles: {
-      fillColor: primary, // Active App Color
+      fillColor: primary, // Safe high-contrast red
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
-      cellPadding: 3,
-    },
-    bodyStyles: {
       fontSize: 7.5,
       cellPadding: 2.5,
+    },
+    bodyStyles: {
+      fontSize: 7,
+      cellPadding: 2,
       textColor: [30, 41, 59],
+      lineColor: [226, 232, 240],
+      lineWidth: 0.15,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
-    margin: { left: 14, right: 14 },
+    margin: { left: 12, right: 12, top: 32, bottom: 20 },
   });
 
   const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
@@ -489,8 +543,7 @@ export const exportWinnersReportPDF = async (
 // Export Individual Award Certificate to PDF (Themed with Active App Colors & Company Logo)
 export const exportCertificatePDF = async (winner: DrawWinner, brand: BrandConfig) => {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const primary = hexToRgb(brand?.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand?.secondaryColor || '#B91C1C');
+  const { primary, secondary } = getSafePdfThemeColors(brand);
 
   // Convert company logo
   const logoData = await getLogoImageForPdf(brand?.logoUrl || '/favicon.svg');
@@ -639,8 +692,7 @@ export const exportCertificatePDF = async (winner: DrawWinner, brand: BrandConfi
 export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: LogoImageResult | string | null): jsPDF => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const company = brand.companyName || 'Sorteio Lacer OMD 2026';
-  const primary = hexToRgb(brand.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+  const { primary, secondary } = getSafePdfThemeColors(brand);
 
   // --- HEADER BANNER: Active App Primary Color (#E30613) ---
   doc.setFillColor(primary[0], primary[1], primary[2]);
@@ -744,8 +796,7 @@ export const generateRegulationPDFDoc = (brand: BrandConfig, logoData?: LogoImag
 export const generateHcpPrivacyPDFDoc = (brand: BrandConfig, logoData?: LogoImageResult | string | null): jsPDF => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const company = brand.companyName || 'LACER, S.A.';
-  const primary = hexToRgb(brand.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+  const { primary, secondary } = getSafePdfThemeColors(brand);
 
   // Header Banner
   doc.setFillColor(primary[0], primary[1], primary[2]);
@@ -828,8 +879,7 @@ export const generateHcpPrivacyPDFDoc = (brand: BrandConfig, logoData?: LogoImag
 export const generateRafflePrivacyPDFDoc = (brand: BrandConfig, logoData?: LogoImageResult | string | null): jsPDF => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const company = brand.companyName || 'LACER, S.A.';
-  const primary = hexToRgb(brand.primaryColor || '#E30613');
-  const secondary = hexToRgb(brand.secondaryColor || '#B91C1C');
+  const { primary, secondary } = getSafePdfThemeColors(brand);
 
   // Header Banner
   doc.setFillColor(primary[0], primary[1], primary[2]);
