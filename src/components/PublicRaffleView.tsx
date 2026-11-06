@@ -1079,7 +1079,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     : 'bg-slate-950/80 border-slate-800 text-slate-300'
                 }`}>
                   <p>
-                    <strong className="font-bold underline text-slate-900 dark:text-white">A LACER, S.A.</strong> processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.
+                    <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>A LACER, S.A.</strong> processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.
                   </p>
                   <p>
                     {brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.'}
@@ -1089,7 +1089,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     <button
                       type="button"
                       onClick={() => exportRafflePrivacyPDF(brand)}
-                      className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline text-left"
+                      className={`font-bold underline ${
+                        isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
+                      } transition-colors cursor-pointer inline text-left`}
                     >
                       Política de Privacidade do Sorteio
                     </button>
@@ -1097,15 +1099,17 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     <button
                       type="button"
                       onClick={() => exportHcpPrivacyPDF(brand)}
-                      className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline text-left"
+                      className={`font-bold underline ${
+                        isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
+                      } transition-colors cursor-pointer inline text-left`}
                     >
                       Política de Privacidade para Profissionais de Saúde
                     </button>.
                   </p>
 
                   {/* Consulta dos 3 Documentos Oficiais em Formato PDF */}
-                  <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">
+                  <div className={`pt-2 border-t ${isLight ? 'border-slate-200/80' : 'border-slate-800/80'} space-y-2`}>
+                    <span className={`text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-slate-600' : 'text-slate-400'} block`}>
                       Consultar Documentos em PDF:
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1198,7 +1202,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           ev.stopPropagation();
                           exportLegalTermsPDF(brand);
                         }}
-                        className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline"
+                        className={`font-bold underline ${
+                          isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
+                        } transition-colors cursor-pointer inline`}
                       >
                         Termos Legais do Sorteio
                       </button>
@@ -1209,7 +1215,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           ev.stopPropagation();
                           exportRafflePrivacyPDF(brand);
                         }}
-                        className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline"
+                        className={`font-bold underline ${
+                          isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
+                        } transition-colors cursor-pointer inline`}
                       >
                         Política de Privacidade do Sorteio
                       </button>
@@ -1220,7 +1228,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           ev.stopPropagation();
                           exportHcpPrivacyPDF(brand);
                         }}
-                        className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline"
+                        className={`font-bold underline ${
+                          isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
+                        } transition-colors cursor-pointer inline`}
                       >
                         Política de Privacidade para Profissionais de Saúde
                       </button>.{' '}
