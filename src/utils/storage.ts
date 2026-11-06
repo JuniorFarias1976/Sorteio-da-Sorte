@@ -67,7 +67,8 @@ export const DEFAULT_BRAND: BrandConfig = {
   showNavbarParticipateButton: false, // Remove o botão de participar da barra superior
   showPrizesSection: false, // Ocultar bloco lateral de prémios por padrão conforme solicitado
   showSearchSection: true, // Controla a exibição da barra 'Já se inscreveu? Consulte os seus Bilhetes'
-  formTitle: 'Garanta o seu Bilhete da Sorte',
+  formTitle: 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER',
+  formContactSectionTitle: 'INFORMAÇÕES DE CONTATO',
   formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
   formButtonText: 'Participar do sorteio',
   prizesSectionTitle: 'Prémios Desta Edição',

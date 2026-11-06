@@ -70,7 +70,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [roundsBannerTitle, setRoundsBannerTitle] = useState(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
   const [roundsBannerSubtitle, setRoundsBannerSubtitle] = useState(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
   const [showRoundsBanner, setShowRoundsBanner] = useState(brand.showRoundsBanner !== false);
-  const [formTitle, setFormTitle] = useState(brand.formTitle || 'Garanta o seu Bilhete da Sorte');
+  const [formTitle, setFormTitle] = useState(brand.formTitle || 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER');
+  const [formContactSectionTitle, setFormContactSectionTitle] = useState(brand.formContactSectionTitle || 'INFORMAÇÕES DE CONTATO');
   const [formSubtitle, setFormSubtitle] = useState(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
   const [formButtonText, setFormButtonText] = useState(brand.formButtonText || 'Registar Inscrição e Obter Bilhete');
   const [prizesSectionTitle, setPrizesSectionTitle] = useState(brand.prizesSectionTitle || 'Prémios Desta Edição');
@@ -155,7 +156,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setRoundsBannerTitle(brand.roundsBannerTitle || '2 Sorteios Oficiais por Dia');
     setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
     setShowRoundsBanner(brand.showRoundsBanner !== false);
-    setFormTitle(brand.formTitle || 'Garanta o seu Bilhete da Sorte');
+    setFormTitle(brand.formTitle || 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER');
+    setFormContactSectionTitle(brand.formContactSectionTitle || 'INFORMAÇÕES DE CONTATO');
     setFormSubtitle(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
     setFormButtonText(brand.formButtonText || 'Registar Inscrição e Obter Bilhete');
     setPrizesSectionTitle(brand.prizesSectionTitle || 'Prémios Desta Edição');
@@ -286,6 +288,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       roundsBannerSubtitle: (overrides.roundsBannerSubtitle !== undefined ? overrides.roundsBannerSubtitle : roundsBannerSubtitle).trim(),
       showRoundsBanner: overrides.showRoundsBanner !== undefined ? overrides.showRoundsBanner : showRoundsBanner,
       formTitle: (overrides.formTitle !== undefined ? overrides.formTitle : formTitle).trim(),
+      formContactSectionTitle: (overrides.formContactSectionTitle !== undefined ? overrides.formContactSectionTitle : formContactSectionTitle).trim(),
       formSubtitle: (overrides.formSubtitle !== undefined ? overrides.formSubtitle : formSubtitle).trim(),
       formButtonText: (overrides.formButtonText !== undefined ? overrides.formButtonText : formButtonText).trim(),
       prizesSectionTitle: (overrides.prizesSectionTitle !== undefined ? overrides.prizesSectionTitle : prizesSectionTitle).trim(),
@@ -1051,7 +1054,21 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 onBlur={() => syncAndSave()}
-                placeholder="Garanta o seu Bilhete da Sorte"
+                placeholder="PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
+                Título da Secção 1 (Informações de Contato):
+              </label>
+              <input
+                type="text"
+                value={formContactSectionTitle}
+                onChange={(e) => setFormContactSectionTitle(e.target.value)}
+                onBlur={() => syncAndSave()}
+                placeholder="INFORMAÇÕES DE CONTATO"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
             </div>
@@ -2171,7 +2188,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               <div className="pt-2 border-t border-current/15 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold leading-tight" style={{ color: textColor }}>
-                    {formTitle || 'Garanta o seu Bilhete'}
+                    {formTitle || 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER'}
                   </p>
                   <p className="text-[10px] opacity-70 truncate" style={{ color: textColor }}>
                     Fundo selecionado: <span className="font-mono font-bold">{backgroundColor}</span> • Texto: <span className="font-mono font-bold">{textColor}</span>

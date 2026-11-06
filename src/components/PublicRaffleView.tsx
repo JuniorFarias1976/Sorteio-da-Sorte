@@ -700,7 +700,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
               </div>
               <div>
                 <h2 className={`text-xl sm:text-2xl font-bold ${isLight ? 'text-slate-950' : 'text-white'}`}>
-                  {brand.formTitle || 'Garanta o seu Bilhete da Sorte'}
+                  {brand.formTitle || 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER'}
                 </h2>
                 <p className={`text-xs sm:text-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                   {brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número'}
@@ -768,7 +768,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
               )}
 
-              {/* SEÇÃO 1: Dados de contacto */}
+              {/* SEÇÃO 1: Informações de Contato */}
               <div className="space-y-4">
                 <div className={`border-b pb-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
                   <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
@@ -777,7 +777,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${
                       isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 text-red-400'
                     }`}>1</span>
-                    <span>Dados de contacto</span>
+                    <span>{brand.formContactSectionTitle || 'INFORMAÇÕES DE CONTATO'}</span>
                   </h4>
                 </div>
 
@@ -1079,13 +1079,28 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     : 'bg-slate-950/80 border-slate-800 text-slate-300'
                 }`}>
                   <p>
-                    {brand.consentLegalNoticeP1 || 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.'}
+                    <strong className="font-bold underline text-slate-900 dark:text-white">A LACER, S.A.</strong> processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.
                   </p>
                   <p>
                     {brand.consentLegalNoticeP2 || 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.'}
                   </p>
                   <p>
-                    {brand.consentLegalNoticeP3 || 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.'}
+                    Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa{' '}
+                    <button
+                      type="button"
+                      onClick={() => exportRafflePrivacyPDF(brand)}
+                      className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline text-left"
+                    >
+                      Política de Privacidade do Sorteio
+                    </button>
+                    {' '}e a nossa{' '}
+                    <button
+                      type="button"
+                      onClick={() => exportHcpPrivacyPDF(brand)}
+                      className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline text-left"
+                    >
+                      Política de Privacidade para Profissionais de Saúde
+                    </button>.
                   </p>
 
                   {/* Consulta dos 3 Documentos Oficiais em Formato PDF */}
@@ -1098,90 +1113,66 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       <button
                         type="button"
                         onClick={() => exportLegalTermsPDF(brand)}
-                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2.5 shadow-xs cursor-pointer ${
+                        className={`p-3 rounded-xl border text-left transition-all group shadow-xs cursor-pointer ${
                           isLight 
                             ? 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300' 
                             : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-800 hover:border-slate-700'
                         }`}
                         title="Abrir Termos Legais do Sorteio em formato PDF"
                       >
-                        <FileText className="w-4 h-4 text-slate-500 group-hover:text-[#E30613] transition-colors shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
-                            isLight ? 'text-slate-800' : 'text-slate-200'
-                          }`}>
-                            Termos Legais do Sorteio
-                          </p>
-                          <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-                              PDF
-                            </span>
-                            <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex items-center gap-0.5">
-                              <span>Consultar</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </span>
-                          </p>
-                        </div>
+                        <p className={`text-xs font-bold underline transition-colors ${
+                          isLight ? 'text-slate-900 group-hover:text-[#E30613]' : 'text-white group-hover:text-red-400'
+                        }`}>
+                          Termos Legais do Sorteio
+                        </p>
+                        <p className="text-[10px] text-slate-400 group-hover:text-[#E30613] flex items-center gap-1 mt-1 transition-colors">
+                          <span>Consultar documento</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </p>
                       </button>
 
                       {/* 2. Política de Privacidade para Profissionais de Saúde */}
                       <button
                         type="button"
                         onClick={() => exportHcpPrivacyPDF(brand)}
-                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2.5 shadow-xs cursor-pointer ${
+                        className={`p-3 rounded-xl border text-left transition-all group shadow-xs cursor-pointer ${
                           isLight 
                             ? 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300' 
                             : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-800 hover:border-slate-700'
                         }`}
                         title="Abrir Política de Privacidade para Profissionais de Saúde em formato PDF"
                       >
-                        <FileText className="w-4 h-4 text-slate-500 group-hover:text-[#E30613] transition-colors shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
-                            isLight ? 'text-slate-800' : 'text-slate-200'
-                          }`}>
-                            Privacidade Profissionais
-                          </p>
-                          <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-                              PDF
-                            </span>
-                            <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex items-center gap-0.5">
-                              <span>Consultar</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </span>
-                          </p>
-                        </div>
+                        <p className={`text-xs font-bold underline transition-colors ${
+                          isLight ? 'text-slate-900 group-hover:text-[#E30613]' : 'text-white group-hover:text-red-400'
+                        }`}>
+                          Privacidade Profissionais
+                        </p>
+                        <p className="text-[10px] text-slate-400 group-hover:text-[#E30613] flex items-center gap-1 mt-1 transition-colors">
+                          <span>Consultar documento</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </p>
                       </button>
 
                       {/* 3. Política de Privacidade do Sorteio */}
                       <button
                         type="button"
                         onClick={() => exportRafflePrivacyPDF(brand)}
-                        className={`p-2.5 rounded-xl border text-left transition-all group flex items-start gap-2.5 shadow-xs cursor-pointer ${
+                        className={`p-3 rounded-xl border text-left transition-all group shadow-xs cursor-pointer ${
                           isLight 
                             ? 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300' 
                             : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-800 hover:border-slate-700'
                         }`}
                         title="Abrir Política de Privacidade do Sorteio em formato PDF"
                       >
-                        <FileText className="w-4 h-4 text-slate-500 group-hover:text-[#E30613] transition-colors shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-xs font-bold truncate group-hover:text-[#E30613] transition-colors ${
-                            isLight ? 'text-slate-800' : 'text-slate-200'
-                          }`}>
-                            Privacidade do Sorteio
-                          </p>
-                          <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-                              PDF
-                            </span>
-                            <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex items-center gap-0.5">
-                              <span>Consultar</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </span>
-                          </p>
-                        </div>
+                        <p className={`text-xs font-bold underline transition-colors ${
+                          isLight ? 'text-slate-900 group-hover:text-[#E30613]' : 'text-white group-hover:text-red-400'
+                        }`}>
+                          Privacidade do Sorteio
+                        </p>
+                        <p className="text-[10px] text-slate-400 group-hover:text-[#E30613] flex items-center gap-1 mt-1 transition-colors">
+                          <span>Consultar documento</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </p>
                       </button>
                     </div>
                   </div>
@@ -1200,45 +1191,39 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
                     />
                     <span className="leading-relaxed">
-                      {brand.consentTermsDeclaration ? (
-                        brand.consentTermsDeclaration
-                      ) : (
-                        <>
-                          Declaro que li e aceito os{' '}
-                          <button
-                            type="button"
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              exportLegalTermsPDF(brand);
-                            }}
-                            className="text-[#E30613] underline font-semibold hover:text-[#C80510]"
-                          >
-                            Termos Legais do Sorteio
-                          </button>
-                          {' '}e que fui informado(a) sobre o processamento dos meus dados pessoais através da{' '}
-                          <button
-                            type="button"
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              exportRafflePrivacyPDF(brand);
-                            }}
-                            className="text-[#E30613] underline font-semibold hover:text-[#C80510]"
-                          >
-                            Política de Privacidade do Sorteio
-                          </button>
-                          {' '}e a nossa{' '}
-                          <button
-                            type="button"
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              exportHcpPrivacyPDF(brand);
-                            }}
-                            className="text-[#E30613] underline font-semibold hover:text-[#C80510]"
-                          >
-                            Política de Privacidade para Profissionais de Saúde
-                          </button>.
-                        </>
-                      )}{' '}
+                      Declaro que li e aceito os{' '}
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          exportLegalTermsPDF(brand);
+                        }}
+                        className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline"
+                      >
+                        Termos Legais do Sorteio
+                      </button>
+                      {' '}e que fui informado(a) sobre o processamento dos meus dados pessoais através da{' '}
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          exportRafflePrivacyPDF(brand);
+                        }}
+                        className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline"
+                      >
+                        Política de Privacidade do Sorteio
+                      </button>
+                      {' '}e a nossa{' '}
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          exportHcpPrivacyPDF(brand);
+                        }}
+                        className="font-bold underline text-slate-900 dark:text-white hover:text-[#E30613] transition-colors cursor-pointer inline"
+                      >
+                        Política de Privacidade para Profissionais de Saúde
+                      </button>.{' '}
                       <span className="text-[#E30613] font-bold">*</span>
                     </span>
                   </label>
