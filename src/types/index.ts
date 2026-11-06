@@ -143,6 +143,7 @@ export interface BrandConfig {
   showRoundsBanner?: boolean;
   formTitle?: string;
   formSubtitle?: string;
+  showFormContactSectionTitle?: boolean; // Controla exibição do título da Secção 1
   formContactSectionTitle?: string; // Título da Secção 1: 'INFORMAÇÕES DE CONTATO'
   formButtonText?: string;
   prizesSectionTitle?: string;

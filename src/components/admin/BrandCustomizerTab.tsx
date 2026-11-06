@@ -71,7 +71,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [roundsBannerSubtitle, setRoundsBannerSubtitle] = useState(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
   const [showRoundsBanner, setShowRoundsBanner] = useState(brand.showRoundsBanner !== false);
   const [formTitle, setFormTitle] = useState(brand.formTitle || 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER');
-  const [formContactSectionTitle, setFormContactSectionTitle] = useState(brand.formContactSectionTitle || 'INFORMAÇÕES DE CONTATO');
+  const [showFormContactSectionTitle, setShowFormContactSectionTitle] = useState(brand.showFormContactSectionTitle === true);
+  const [formContactSectionTitle, setFormContactSectionTitle] = useState(brand.formContactSectionTitle || '');
   const [formSubtitle, setFormSubtitle] = useState(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
   const [formButtonText, setFormButtonText] = useState(brand.formButtonText || 'Registar Inscrição e Obter Bilhete');
   const [prizesSectionTitle, setPrizesSectionTitle] = useState(brand.prizesSectionTitle || 'Prémios Desta Edição');
@@ -157,7 +158,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setRoundsBannerSubtitle(brand.roundsBannerSubtitle || 'O seu bilhete concorre automaticamente em todas as rondas e datas programadas!');
     setShowRoundsBanner(brand.showRoundsBanner !== false);
     setFormTitle(brand.formTitle || 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER');
-    setFormContactSectionTitle(brand.formContactSectionTitle || 'INFORMAÇÕES DE CONTATO');
+    setShowFormContactSectionTitle(brand.showFormContactSectionTitle === true);
+    setFormContactSectionTitle(brand.formContactSectionTitle || '');
     setFormSubtitle(brand.formSubtitle || 'Preencha os seus dados reais para receber a confirmação e o seu número');
     setFormButtonText(brand.formButtonText || 'Registar Inscrição e Obter Bilhete');
     setPrizesSectionTitle(brand.prizesSectionTitle || 'Prémios Desta Edição');
@@ -288,6 +290,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       roundsBannerSubtitle: (overrides.roundsBannerSubtitle !== undefined ? overrides.roundsBannerSubtitle : roundsBannerSubtitle).trim(),
       showRoundsBanner: overrides.showRoundsBanner !== undefined ? overrides.showRoundsBanner : showRoundsBanner,
       formTitle: (overrides.formTitle !== undefined ? overrides.formTitle : formTitle).trim(),
+      showFormContactSectionTitle: overrides.showFormContactSectionTitle !== undefined ? overrides.showFormContactSectionTitle : showFormContactSectionTitle,
       formContactSectionTitle: (overrides.formContactSectionTitle !== undefined ? overrides.formContactSectionTitle : formContactSectionTitle).trim(),
       formSubtitle: (overrides.formSubtitle !== undefined ? overrides.formSubtitle : formSubtitle).trim(),
       formButtonText: (overrides.formButtonText !== undefined ? overrides.formButtonText : formButtonText).trim(),
@@ -1060,16 +1063,31 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-[11px] text-slate-400 uppercase font-semibold mb-1">
-                Título da Secção 1 (Informações de Contato):
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] text-slate-400 uppercase font-semibold">
+                  Título da Secção 1 (Informações de Contato):
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-400 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={showFormContactSectionTitle}
+                    onChange={(e) => {
+                      setShowFormContactSectionTitle(e.target.checked);
+                      syncAndSave({ showFormContactSectionTitle: e.target.checked });
+                    }}
+                    className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0"
+                  />
+                  <span>Exibir no formulário</span>
+                </label>
+              </div>
               <input
                 type="text"
                 value={formContactSectionTitle}
+                disabled={!showFormContactSectionTitle}
                 onChange={(e) => setFormContactSectionTitle(e.target.value)}
                 onBlur={() => syncAndSave()}
-                placeholder="INFORMAÇÕES DE CONTATO"
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                placeholder="INFORMAÇÕES DE CONTATO (Opcional)"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-40"
               />
             </div>
 

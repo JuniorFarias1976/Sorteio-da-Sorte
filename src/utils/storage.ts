@@ -68,7 +68,8 @@ export const DEFAULT_BRAND: BrandConfig = {
   showPrizesSection: false, // Ocultar bloco lateral de prémios por padrão conforme solicitado
   showSearchSection: true, // Controla a exibição da barra 'Já se inscreveu? Consulte os seus Bilhetes'
   formTitle: 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER',
-  formContactSectionTitle: 'INFORMAÇÕES DE CONTATO',
+  showFormContactSectionTitle: false,
+  formContactSectionTitle: '',
   formSubtitle: 'Preencha os seus dados reais para receber a confirmação e o seu número',
   formButtonText: 'Participar do sorteio',
   prizesSectionTitle: 'Prémios Desta Edição',

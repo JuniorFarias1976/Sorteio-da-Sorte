@@ -768,18 +768,20 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
               )}
 
-              {/* SEÇÃO 1: Informações de Contato */}
+              {/* SEÇÃO 1: Informações de Contato (Opcional - oculto por padrão a pedido do utilizador) */}
               <div className="space-y-4">
-                <div className={`border-b pb-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                  <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-                    isLight ? 'text-[#E30613]' : 'text-red-400'
-                  }`}>
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${
-                      isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 text-red-400'
-                    }`}>1</span>
-                    <span>{brand.formContactSectionTitle || 'INFORMAÇÕES DE CONTATO'}</span>
-                  </h4>
-                </div>
+                {brand.showFormContactSectionTitle && brand.formContactSectionTitle && (
+                  <div className={`border-b pb-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+                    <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+                      isLight ? 'text-[#E30613]' : 'text-red-400'
+                    }`}>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${
+                        isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 text-red-400'
+                      }`}>1</span>
+                      <span>{brand.formContactSectionTitle}</span>
+                    </h4>
+                  </div>
+                )}
 
                 {/* Nome completo */}
                 <div>
@@ -935,9 +937,11 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
                     isLight ? 'text-[#E30613]' : 'text-red-400'
                   }`}>
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${
-                      isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 text-red-400'
-                    }`}>2</span>
+                    {brand.showFormContactSectionTitle && (
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${
+                        isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 text-red-400'
+                      }`}>2</span>
+                    )}
                     <span>Especialidade(s)</span>
                     <span className="text-[#E30613]">*</span>
                   </h4>
