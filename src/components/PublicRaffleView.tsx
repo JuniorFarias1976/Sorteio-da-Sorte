@@ -1196,44 +1196,17 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                     />
                     <span className="leading-relaxed">
                       Declaro que li e aceito os{' '}
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          exportLegalTermsPDF(brand);
-                        }}
-                        className={`font-bold underline ${
-                          isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
-                        } transition-colors cursor-pointer inline`}
-                      >
+                      <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         Termos Legais do Sorteio
-                      </button>
+                      </strong>
                       {' '}e que fui informado(a) sobre o processamento dos meus dados pessoais através da{' '}
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          exportRafflePrivacyPDF(brand);
-                        }}
-                        className={`font-bold underline ${
-                          isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
-                        } transition-colors cursor-pointer inline`}
-                      >
+                      <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         Política de Privacidade do Sorteio
-                      </button>
+                      </strong>
                       {' '}e a nossa{' '}
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          exportHcpPrivacyPDF(brand);
-                        }}
-                        className={`font-bold underline ${
-                          isLight ? 'text-slate-900 hover:text-[#E30613]' : 'text-slate-100 hover:text-red-400'
-                        } transition-colors cursor-pointer inline`}
-                      >
+                      <strong className={`font-bold underline ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         Política de Privacidade para Profissionais de Saúde
-                      </button>.{' '}
+                      </strong>.{' '}
                       <span className="text-[#E30613] font-bold">*</span>
                     </span>
                   </label>
