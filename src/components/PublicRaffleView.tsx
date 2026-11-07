@@ -3,7 +3,6 @@ import { Participant, Prize, DrawSchedule, BrandConfig, FormFieldsConfig, DENTAL
 import { 
   Ticket, 
   Search, 
-  CheckCircle2, 
   Calendar, 
   Clock, 
   Gift, 
@@ -1268,13 +1267,17 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <X className="w-5 h-5" />
                 </button>
 
-                {/* Ícone de Sucesso */}
-                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 flex items-center justify-center mx-auto mb-5 shadow-xl animate-bounce ${
-                  isLight 
-                    ? 'bg-red-50 border-[#E30613] text-[#E30613] shadow-red-500/20' 
-                    : 'bg-red-500/20 border-red-500 text-red-500 shadow-red-500/30'
-                }`}>
-                  <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
+                {/* Logótipo da Empresa no Topo */}
+                <div className="flex justify-center mb-5">
+                  <div className={`p-3.5 rounded-2xl border shadow-md inline-flex items-center justify-center max-h-24 min-h-[64px] min-w-[140px] ${
+                    isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+                  }`}>
+                    <img
+                      src={brand.logoUrl || DEFAULT_BRAND_LOGO}
+                      alt={brand.companyName || 'Logo da Empresa'}
+                      className="max-h-14 max-w-[200px] object-contain rounded-lg"
+                    />
+                  </div>
                 </div>
 
                 {/* Bloco de Mensagens Obrigatórias */}
@@ -1299,15 +1302,9 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                           }}
                           className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-2xl bg-white p-2 border-2 border-red-200 shadow-md"
                         />
-                        <span className="absolute -top-2 -right-2 bg-[#E30613] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full shadow-md">
-                          Prémio
-                        </span>
                       </div>
                       
                       <div className="text-center sm:text-left space-y-1 flex-1 min-w-0">
-                        <span className="inline-block text-[10px] uppercase font-extrabold tracking-wider bg-red-100 text-[#E30613] px-2.5 py-0.5 rounded-md">
-                          Em Sorteio Oficial
-                        </span>
                         <h3 className={`text-lg sm:text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
                           {activePrize.title || 'LACER HIDRO'}
                         </h3>
@@ -1338,11 +1335,10 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <div className={`p-3.5 sm:p-4 rounded-2xl border text-center max-w-lg mx-auto shadow-inner ${
                     isLight ? 'bg-red-50/80 border-red-200' : 'bg-red-950/30 border-red-500/40'
                   }`}>
-                    <p className={`text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 ${
+                    <p className={`text-xs sm:text-sm font-semibold text-center ${
                       isLight ? 'text-[#E30613]' : 'text-red-100'
                     }`}>
-                      <span className="text-[#E30613]">📍</span>
-                      <span>Visite a nossa equipa no stand e descubra as novidades Lacer.</span>
+                      Visite a nossa equipa no stand e descubra as novidades Lacer.
                     </p>
                   </div>
                 </div>
@@ -1364,24 +1360,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   }`}>
                     {newlyCreatedTicket.name}
                   </p>
-                  {newlyCreatedTicket.clinic && (
-                    <p className={`text-xs font-medium mt-0.5 ${
-                      isLight ? 'text-[#E30613]' : 'text-red-300'
-                    }`}>
-                      🏥 {newlyCreatedTicket.clinic}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs mt-2">
-                    {newlyCreatedTicket.specialty && (
-                      <span className={`px-2 py-0.5 rounded-lg border ${
-                        isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-900 border-slate-800 text-slate-300'
-                      }`}>
-                        🩺 {newlyCreatedTicket.specialty}
-                      </span>
-                    )}
-                    <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>📍 {newlyCreatedTicket.city}</span>
-                    <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>📱 {newlyCreatedTicket.phone}</span>
-                  </div>
 
                   <div className={`mt-4 pt-3 border-t flex flex-wrap items-center justify-center gap-2 ${
                     isLight ? 'border-slate-200' : 'border-slate-800'
@@ -1411,29 +1389,6 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                       <Ticket className="w-4 h-4" />
                       <span>Imprimir Comprovativo</span>
                     </button>
-                  </div>
-                </div>
-
-                {/* Seção: Logótipo da Empresa (Definido pelo Administrador no Painel de Controlo) */}
-                <div className={`pt-4 border-t text-center space-y-2.5 ${
-                  isLight ? 'border-slate-200' : 'border-slate-800/80'
-                }`}>
-                  <span className={`text-[11px] font-bold uppercase tracking-wider block ${
-                    isLight ? 'text-slate-500' : 'text-slate-400'
-                  }`}>
-                    Logótipo da Empresa
-                  </span>
-
-                  <div className="flex flex-col items-center justify-center">
-                    <div className={`p-3.5 rounded-2xl border shadow-lg inline-flex items-center justify-center max-h-24 min-h-[70px] min-w-[150px] ${
-                      isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-slate-700/80'
-                    }`}>
-                      <img
-                        src={brand.logoUrl || DEFAULT_BRAND_LOGO}
-                        alt={brand.companyName || 'Logo da Empresa'}
-                        className="max-h-16 max-w-[220px] object-contain rounded-lg"
-                      />
-                    </div>
                   </div>
                 </div>
 
