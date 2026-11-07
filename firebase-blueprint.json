@@ -15,6 +15,8 @@
         "raffleUrl": { "type": "string" },
         "contactEmail": { "type": "string" },
         "termsAndConditions": { "type": "string" },
+        "logoAnimationEffect": { "type": "string", "enum": ["pulse", "heartbeat", "glow", "bounce", "float", "none"] },
+        "modalLogoSize": { "type": "string", "enum": ["normal", "large", "xlarge", "2xlarge"] },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["companyName", "primaryColor"]

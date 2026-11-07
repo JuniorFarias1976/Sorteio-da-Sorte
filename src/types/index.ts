@@ -101,6 +101,9 @@ export interface NotificationSettings {
   messageTemplate: string;
 }
 
+export type LogoAnimationEffect = 'pulse' | 'heartbeat' | 'glow' | 'bounce' | 'float' | 'none';
+export type ModalLogoSize = 'normal' | 'large' | 'xlarge' | '2xlarge';
+
 export interface BrandConfig {
   companyName: string;
   companySlogan: string;
@@ -126,6 +129,10 @@ export interface BrandConfig {
   forceResetLogo?: boolean;
   adminPassword?: string;
   raffleUrl?: string;
+
+  // Logo Animation & Modal Display
+  logoAnimationEffect?: LogoAnimationEffect;
+  modalLogoSize?: ModalLogoSize;
 
   // Header & Navbar Display Toggles
   showNavbar?: boolean;

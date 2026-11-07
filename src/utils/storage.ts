@@ -42,6 +42,39 @@ export function isLightColor(hex?: string): boolean {
   return luminance > 150;
 }
 
+export function getLogoAnimationClass(effect?: string): string {
+  switch (effect) {
+    case 'pulse':
+      return 'animate-logo-pulse';
+    case 'heartbeat':
+      return 'animate-logo-heartbeat';
+    case 'glow':
+      return 'animate-logo-glow';
+    case 'bounce':
+      return 'animate-bounce';
+    case 'float':
+      return 'animate-logo-float';
+    case 'none':
+      return '';
+    default:
+      return 'animate-logo-pulse';
+  }
+}
+
+export function getModalLogoSizeClass(size?: string): string {
+  switch (size) {
+    case 'normal':
+      return 'max-h-16 sm:max-h-20 max-w-[220px]';
+    case 'large':
+      return 'max-h-20 sm:max-h-24 max-w-[280px]';
+    case '2xlarge':
+      return 'max-h-28 sm:max-h-36 max-w-[400px]';
+    case 'xlarge':
+    default:
+      return 'max-h-24 sm:max-h-28 max-w-[340px]';
+  }
+}
+
 export const DEFAULT_BRAND: BrandConfig = {
   companyName: 'Lacer - Sorteio OMD 2026',
   companySlogan: 'Higiene e Saúde Oral • Stand Lacer',
@@ -62,6 +95,8 @@ export const DEFAULT_BRAND: BrandConfig = {
   showRoundsBanner: true,
   showNavbar: false, // Ocultar a barra de navegação superior por padrão (solicitado pelo utilizador)
   heroLogoSize: 'large', // Logótipo oficial central com tamanho maior
+  logoAnimationEffect: 'pulse', // Efeito de animação do logo (pulsar por padrão)
+  modalLogoSize: 'xlarge', // Tamanho extra grande do logótipo no modal sem moldura
   showHeroTitle: false, // Mantém apenas o logótipo no cabeçalho como solicitado
   showNavbarBrandText: false, // Mantém apenas o logótipo na barra de navegação
   showNavbarParticipateButton: false, // Remove o botão de participar da barra superior

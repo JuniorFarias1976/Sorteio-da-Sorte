@@ -265,3 +265,70 @@ body.light-theme button.bg-amber-500,
 body.light-theme button.bg-amber-500 * {
   color: #FFFFFF !important;
 }
+
+/* ==========================================================================
+   Logo Animation Effects (Pulse, Heartbeat, Glow, Float, Bounce)
+   ========================================================================== */
+@keyframes logo-pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.94;
+  }
+}
+
+@keyframes logo-heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.12);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+@keyframes logo-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(227, 6, 19, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(227, 6, 19, 0.75));
+  }
+}
+
+@keyframes logo-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-logo-pulse {
+  animation: logo-pulse-scale 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-logo-heartbeat {
+  animation: logo-heartbeat 1.6s ease-in-out infinite;
+}
+
+.animate-logo-glow {
+  animation: logo-glow 2s ease-in-out infinite;
+}
+
+.animate-logo-float {
+  animation: logo-float 2.8s ease-in-out infinite;
+}
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrandConfig } from '../../types';
+import { BrandConfig, LogoAnimationEffect, ModalLogoSize } from '../../types';
 import { 
   Palette, 
   Upload, 
@@ -22,7 +22,7 @@ import {
   Trash2,
   ShieldCheck
 } from 'lucide-react';
-import { DEFAULT_BRAND_LOGO, isLightColor } from '../../utils/storage';
+import { DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
 import { compressImageFile } from '../../utils/imageCompressor';
 import { 
@@ -59,6 +59,13 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [heroLogoSize, setHeroLogoSize] = useState<'normal' | 'medium' | 'large' | 'xlarge' | '2xlarge'>(
     (brand.heroLogoSize as any) || 'large'
   );
+  const [logoAnimationEffect, setLogoAnimationEffect] = useState<LogoAnimationEffect>(
+    brand.logoAnimationEffect || 'pulse'
+  );
+  const [modalLogoSize, setModalLogoSize] = useState<ModalLogoSize>(
+    brand.modalLogoSize || 'xlarge'
+  );
+  const [previewThemeMode, setPreviewThemeMode] = useState<'light' | 'dark'>('light');
   const [showHeroTitle, setShowHeroTitle] = useState(brand.showHeroTitle === true);
   const [showNavbarBrandText, setShowNavbarBrandText] = useState(brand.showNavbarBrandText === true);
   const [showNavbarParticipateButton, setShowNavbarParticipateButton] = useState(brand.showNavbarParticipateButton === true);
@@ -179,6 +186,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setAdminPassword(brand.adminPassword || 'admin');
     setShowNavbar(brand.showNavbar !== false);
     setHeroLogoSize((brand.heroLogoSize as any) || 'large');
+    setLogoAnimationEffect(brand.logoAnimationEffect || 'pulse');
+    setModalLogoSize(brand.modalLogoSize || 'xlarge');
     setShowHeroTitle(brand.showHeroTitle === true);
     setShowNavbarBrandText(brand.showNavbarBrandText === true);
     setShowNavbarParticipateButton(brand.showNavbarParticipateButton === true);
@@ -303,6 +312,8 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       ticketModalSubtitle: (overrides.ticketModalSubtitle !== undefined ? overrides.ticketModalSubtitle : ticketModalSubtitle).trim(),
       showNavbar: overrides.showNavbar !== undefined ? overrides.showNavbar : showNavbar,
       heroLogoSize: overrides.heroLogoSize !== undefined ? overrides.heroLogoSize : heroLogoSize,
+      logoAnimationEffect: overrides.logoAnimationEffect !== undefined ? overrides.logoAnimationEffect : logoAnimationEffect,
+      modalLogoSize: overrides.modalLogoSize !== undefined ? overrides.modalLogoSize : modalLogoSize,
       showHeroTitle: overrides.showHeroTitle !== undefined ? overrides.showHeroTitle : showHeroTitle,
       showNavbarBrandText: overrides.showNavbarBrandText !== undefined ? overrides.showNavbarBrandText : showNavbarBrandText,
       showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
@@ -825,6 +836,170 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
               <p className="text-[11px] text-slate-400">
                 O logótipo oficial é ampliado mantendo proporção nítida e alta definição com cantos arredondados e sombra premium.
               </p>
+            </div>
+
+            {/* Configuração de Efeitos e Animação do Logótipo (Modal de Confirmação & Destaques) */}
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-inner">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                <div>
+                  <h5 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Efeito de Animação do Logótipo</span>
+                  </h5>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Personalize o efeito animado do logótipo no ecrã de confirmação e nos pontos de destaque.
+                  </p>
+                </div>
+                <span className="text-[10px] bg-red-500/20 text-red-300 font-bold px-2 py-0.5 rounded-full border border-red-500/30 uppercase self-start sm:self-auto">
+                  {logoAnimationEffect === 'pulse' && '💓 Pulsar Suave (Ativo)'}
+                  {logoAnimationEffect === 'heartbeat' && '🩺 Batimento Cardíaco (Ativo)'}
+                  {logoAnimationEffect === 'glow' && '✨ Brilho / Glow (Ativo)'}
+                  {logoAnimationEffect === 'bounce' && '🦘 Salto Suave (Ativo)'}
+                  {logoAnimationEffect === 'float' && '☁️ Flutuação (Ativo)'}
+                  {logoAnimationEffect === 'none' && '⏸️ Estático (Sem Animação)'}
+                </span>
+              </div>
+
+              {/* Botões dos Efeitos de Animação */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-slate-300 uppercase block">
+                  Escolha o Efeito Animado:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: 'pulse', label: 'Pulsar Suave', icon: '💓', desc: 'Respiração e escala sutil (Padrão)' },
+                    { id: 'heartbeat', label: 'Batimento', icon: '🩺', desc: 'Duplo pulsar rítmico dinâmico' },
+                    { id: 'glow', label: 'Brilho Glow', icon: '✨', desc: 'Aura suave e luminosa vermelha' },
+                    { id: 'bounce', label: 'Salto Bounce', icon: '🦘', desc: 'Movimento vertical saltitante' },
+                    { id: 'float', label: 'Flutuação', icon: '☁️', desc: 'Levitação contínua suave' },
+                    { id: 'none', label: 'Estático', icon: '⏸️', desc: 'Fixo e sem animação' },
+                  ].map((item) => {
+                    const isSelected = logoAnimationEffect === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          const newEffect = item.id as LogoAnimationEffect;
+                          setLogoAnimationEffect(newEffect);
+                          syncAndSave({ logoAnimationEffect: newEffect }, true);
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-[#E30613] text-white border-red-500 font-bold shadow-md shadow-red-500/25 ring-1 ring-red-400'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-base">{item.icon}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold leading-tight">{item.label}</span>
+                        <span className={`text-[10px] mt-0.5 leading-snug ${isSelected ? 'text-red-100' : 'text-slate-400'}`}>
+                          {item.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Seletor de Tamanho no Ecrã de Confirmação (Sem Moldura) */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-semibold text-slate-300 uppercase block">
+                    Tamanho no Ecrã de Confirmação (Sem Moldura):
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    {modalLogoSize === 'normal' && 'Médio (70px)'}
+                    {modalLogoSize === 'large' && 'Grande (90px)'}
+                    {modalLogoSize === 'xlarge' && 'Extra Grande (110px ★ Recomendado)'}
+                    {modalLogoSize === '2xlarge' && 'Máximo (135px)'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {[
+                    { id: 'normal', label: 'Médio', desc: '70px' },
+                    { id: 'large', label: 'Grande', desc: '90px' },
+                    { id: 'xlarge', label: 'X-Grande ★', desc: '110px' },
+                    { id: '2xlarge', label: 'Máximo', desc: '135px' },
+                  ].map((item) => {
+                    const isSelected = modalLogoSize === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          const newSize = item.id as ModalLogoSize;
+                          setModalLogoSize(newSize);
+                          syncAndSave({ modalLogoSize: newSize }, true);
+                        }}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#E30613] text-white border-red-500 font-bold shadow-sm'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-xs block">{item.label}</span>
+                        <span className={`text-[10px] ${isSelected ? 'text-red-100' : 'text-slate-400'}`}>
+                          {item.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Pré-visualização em Tempo Real do Logo Sem Moldura */}
+              <div className="pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-slate-300 uppercase flex items-center gap-1.5">
+                    <span>Pré-Visualização em Tempo Real (Sem Moldura)</span>
+                  </span>
+                  <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewThemeMode('light')}
+                      className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                        previewThemeMode === 'light'
+                          ? 'bg-white text-slate-900 font-bold shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Fundo Claro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewThemeMode('dark')}
+                      className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                        previewThemeMode === 'dark'
+                          ? 'bg-slate-800 text-white font-bold shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Fundo Escuro
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-2xl flex flex-col items-center justify-center transition-colors min-h-[140px] relative overflow-hidden ${
+                  previewThemeMode === 'light' ? 'bg-slate-100 border border-slate-300' : 'bg-slate-950 border border-slate-800'
+                }`}>
+                  {/* Logo sem qualquer moldura externa, em tamanho grande e com animação ativa */}
+                  <img
+                    src={logoUrl || DEFAULT_BRAND_LOGO}
+                    alt="Pré-visualização do Logótipo"
+                    className={`object-contain select-none transition-all duration-300 ${getLogoAnimationClass(logoAnimationEffect)} ${getModalLogoSizeClass(modalLogoSize)}`}
+                  />
+                  <span className={`mt-3 text-[10px] font-medium px-2.5 py-0.5 rounded-full ${
+                    previewThemeMode === 'light'
+                      ? 'bg-slate-200 text-slate-700'
+                      : 'bg-slate-900 text-slate-400 border border-slate-800'
+                  }`}>
+                    Sem moldura • Efeito: <strong>{logoAnimationEffect}</strong> • Tamanho: <strong>{modalLogoSize}</strong>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3 pt-1">

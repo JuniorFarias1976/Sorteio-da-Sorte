@@ -20,7 +20,7 @@ import {
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor } from '../utils/storage';
+import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass } from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
 import { 
@@ -1267,17 +1267,13 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                   <X className="w-5 h-5" />
                 </button>
 
-                {/* Logótipo da Empresa no Topo */}
-                <div className="flex justify-center mb-5">
-                  <div className={`p-3.5 rounded-2xl border shadow-md inline-flex items-center justify-center max-h-24 min-h-[64px] min-w-[140px] ${
-                    isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
-                  }`}>
-                    <img
-                      src={brand.logoUrl || DEFAULT_BRAND_LOGO}
-                      alt={brand.companyName || 'Logo da Empresa'}
-                      className="max-h-14 max-w-[200px] object-contain rounded-lg"
-                    />
-                  </div>
+                {/* Logótipo da Empresa no Topo (Sem moldura, tamanho maior com efeito animado) */}
+                <div className="flex justify-center mb-6">
+                  <img
+                    src={brand.logoUrl || DEFAULT_BRAND_LOGO}
+                    alt={brand.companyName || 'Logo da Empresa'}
+                    className={`object-contain select-none transition-all duration-300 ${getLogoAnimationClass(brand.logoAnimationEffect)} ${getModalLogoSizeClass(brand.modalLogoSize)}`}
+                  />
                 </div>
 
                 {/* Bloco de Mensagens Obrigatórias */}
