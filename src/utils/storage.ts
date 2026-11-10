@@ -103,6 +103,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   showPrizesSection: false, // Ocultar bloco lateral de prémios por padrão conforme solicitado
   showSearchSection: true, // Controla a exibição da barra 'Já se inscreveu? Consulte os seus Bilhetes'
   showFormPrizeHighlight: true, // Controla a exibição do cartão de destaque do prémio no formulário acima do botão
+  showConsentVisitSection: true, // Controla a exibição da pergunta de visita da LACER e base de dados de saúde
   formTitle: 'PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER',
   showFormContactSectionTitle: false,
   formContactSectionTitle: '',

@@ -18,6 +18,7 @@
         "logoAnimationEffect": { "type": "string", "enum": ["pulse", "heartbeat", "glow", "bounce", "float", "none"] },
         "modalLogoSize": { "type": "string", "enum": ["normal", "large", "xlarge", "2xlarge"] },
         "showFormPrizeHighlight": { "type": "boolean" },
+        "showConsentVisitSection": { "type": "boolean" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["companyName", "primaryColor"]
@@ -32,7 +33,13 @@
         "email": { "type": "string" },
         "phone": { "type": "string" },
         "document": { "type": "string" },
+        "clinic": { "type": "string" },
         "city": { "type": "string" },
+        "specialty": { "type": "string" },
+        "wantsLacerVisit": { "type": "boolean" },
+        "marketingConsent": { "type": "boolean" },
+        "profilingConsent": { "type": "boolean" },
+        "termsAccepted": { "type": "boolean" },
         "ticketNumber": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["active", "winner", "disqualified"] }

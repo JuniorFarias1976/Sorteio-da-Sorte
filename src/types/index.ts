@@ -143,6 +143,7 @@ export interface BrandConfig {
   showPrizesSection?: boolean; // Controla a exibição do bloco lateral 'Prémios Desta Edição'
   showSearchSection?: boolean; // Controla a exibição do bloco 'Já se inscreveu? Consulte os seus Bilhetes'
   showFormPrizeHighlight?: boolean; // Controla a exibição do cartão de destaque do prémio acima do botão de submissão do formulário
+  showConsentVisitSection?: boolean; // Controla a exibição da pergunta de visita da LACER e consentimento da base de dados de profissionais de saúde
 
   // Total application texts control
   heroBadgeText?: string;

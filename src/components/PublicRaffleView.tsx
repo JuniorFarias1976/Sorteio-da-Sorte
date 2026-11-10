@@ -1007,31 +1007,36 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
               {/* SEÇÃO 3: Informação Legal, Visita LACER & Consentimentos RGPD */}
               <div className={`pt-4 border-t space-y-3.5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                {/* Pergunta de Visita Lacer */}
-                <h4 className={`text-xs sm:text-sm font-bold leading-snug ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                  {brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'}
-                </h4>
+                {/* Pergunta de Visita Lacer e Base de Dados de Saúde (Controlado no Painel de Controlo) */}
+                {brand.showConsentVisitSection !== false && (
+                  <div className="space-y-3">
+                    {/* Pergunta de Visita Lacer */}
+                    <h4 className={`text-xs sm:text-sm font-bold leading-snug ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                      {brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'}
+                    </h4>
 
-                {/* Checkbox 1: Base de dados de profissionais de saúde / interações científicas */}
-                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
-                  isLight 
-                    ? wantsLacerVisit 
-                      ? 'bg-red-50/60 border-red-300 text-slate-900' 
-                      : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
-                    : wantsLacerVisit 
-                      ? 'bg-red-950/30 border-red-500/50 text-white' 
-                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={wantsLacerVisit}
-                    onChange={(e) => setWantsLacerVisit(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
-                  />
-                  <span className="leading-relaxed">
-                    {brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.'}
-                  </span>
-                </label>
+                    {/* Checkbox 1: Base de dados de profissionais de saúde / interações científicas */}
+                    <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
+                      isLight 
+                        ? wantsLacerVisit 
+                          ? 'bg-red-50/60 border-red-300 text-slate-900' 
+                          : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
+                        : wantsLacerVisit 
+                          ? 'bg-red-950/30 border-red-500/50 text-white' 
+                          : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={wantsLacerVisit}
+                        onChange={(e) => setWantsLacerVisit(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                      />
+                      <span className="leading-relaxed">
+                        {brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.'}
+                      </span>
+                    </label>
+                  </div>
+                )}
 
                 {/* Checkbox 2: Comunicações científicas e educacionais */}
                 <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${

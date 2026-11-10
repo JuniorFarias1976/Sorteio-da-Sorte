@@ -72,6 +72,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [showPrizesSection, setShowPrizesSection] = useState(brand.showPrizesSection === true);
   const [showSearchSection, setShowSearchSection] = useState(brand.showSearchSection !== false);
   const [showFormPrizeHighlight, setShowFormPrizeHighlight] = useState(brand.showFormPrizeHighlight !== false);
+  const [showConsentVisitSection, setShowConsentVisitSection] = useState(brand.showConsentVisitSection !== false);
 
   // App-wide customizable texts
   const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
@@ -195,6 +196,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setShowPrizesSection(brand.showPrizesSection === true);
     setShowSearchSection(brand.showSearchSection !== false);
     setShowFormPrizeHighlight(brand.showFormPrizeHighlight !== false);
+    setShowConsentVisitSection(brand.showConsentVisitSection !== false);
   }, [brand]);
 
   // Initial check of server database status
@@ -322,6 +324,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       showPrizesSection: overrides.showPrizesSection !== undefined ? overrides.showPrizesSection : showPrizesSection,
       showSearchSection: overrides.showSearchSection !== undefined ? overrides.showSearchSection : showSearchSection,
       showFormPrizeHighlight: overrides.showFormPrizeHighlight !== undefined ? overrides.showFormPrizeHighlight : showFormPrizeHighlight,
+      showConsentVisitSection: overrides.showConsentVisitSection !== undefined ? overrides.showConsentVisitSection : showConsentVisitSection,
       legalTermsPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || '').trim(),
       legalTermsPdfName: overrides.legalTermsPdfName !== undefined ? overrides.legalTermsPdfName : (legalTermsPdfName || '').trim(),
       regulationPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || overrides.regulationPdfUrl || regulationPdfUrl || '').trim(),
@@ -1164,6 +1167,31 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   </span>
                   <span className="text-[11px] text-slate-400">
                     Desmarque para <strong>retirar o cartão com foto e descrição do prémio</strong> (LACER HIDRO) que surge logo acima do botão "Participar do sorteio".
+                  </span>
+                </div>
+              </label>
+
+              {/* Pergunta de Visita LACER & Base de Dados HCP (Ativar / Desativar) */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showConsentVisitSection}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setShowConsentVisitSection(val);
+                    syncAndSave({ showConsentVisitSection: val }, true);
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-[#E30613] focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block flex items-center gap-1.5">
+                    <span>Exibir Pergunta de Visita LACER à Clínica & Base de Dados de Saúde</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showConsentVisitSection ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {showConsentVisitSection ? 'Visível' : 'Oculto'}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para <strong>retirar do formulário público</strong> a pergunta <em>"Gostaria que um representante da LACER visitasse a sua clínica..."</em> e a caixa de opção <em>"Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde..."</em>.
                   </span>
                 </div>
               </label>
@@ -2025,6 +2053,32 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
             </div>
 
             <div className="space-y-3 text-xs">
+              {/* Opção Caixa de Opção: Ativar/Desativar no Formulário & Base de Dados */}
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="toggle-consent-visit-hcp"
+                  checked={showConsentVisitSection}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setShowConsentVisitSection(val);
+                    syncAndSave({ showConsentVisitSection: val }, true);
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-[#E30613] focus:ring-red-500 cursor-pointer"
+                />
+                <label htmlFor="toggle-consent-visit-hcp" className="text-xs cursor-pointer flex-1">
+                  <span className="font-bold text-white block flex items-center gap-1.5">
+                    <span>Exibir Pergunta de Visita da LACER e Base de Dados no Formulário</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showConsentVisitSection ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {showConsentVisitSection ? 'Ativo na Página' : 'Oculto na Página'}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-0.5 block leading-relaxed">
+                    Marque para exibir ou desmarque para retirar do formulário a pergunta <em>"{consentVisitTitle}"</em> e a respetiva caixa de consentimento de armazenamento na base de dados de profissionais de saúde.
+                  </span>
+                </label>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                   1. Pergunta de Visita da LACER à Clínica
