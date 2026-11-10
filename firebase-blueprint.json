@@ -17,6 +17,7 @@
         "termsAndConditions": { "type": "string" },
         "logoAnimationEffect": { "type": "string", "enum": ["pulse", "heartbeat", "glow", "bounce", "float", "none"] },
         "modalLogoSize": { "type": "string", "enum": ["normal", "large", "xlarge", "2xlarge"] },
+        "showFormPrizeHighlight": { "type": "boolean" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["companyName", "primaryColor"]

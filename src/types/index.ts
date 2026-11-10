@@ -142,6 +142,7 @@ export interface BrandConfig {
   showNavbarParticipateButton?: boolean;
   showPrizesSection?: boolean; // Controla a exibição do bloco lateral 'Prémios Desta Edição'
   showSearchSection?: boolean; // Controla a exibição do bloco 'Já se inscreveu? Consulte os seus Bilhetes'
+  showFormPrizeHighlight?: boolean; // Controla a exibição do cartão de destaque do prémio acima do botão de submissão do formulário
 
   // Total application texts control
   heroBadgeText?: string;

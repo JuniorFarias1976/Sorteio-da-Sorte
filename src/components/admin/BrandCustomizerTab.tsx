@@ -71,6 +71,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
   const [showNavbarParticipateButton, setShowNavbarParticipateButton] = useState(brand.showNavbarParticipateButton === true);
   const [showPrizesSection, setShowPrizesSection] = useState(brand.showPrizesSection === true);
   const [showSearchSection, setShowSearchSection] = useState(brand.showSearchSection !== false);
+  const [showFormPrizeHighlight, setShowFormPrizeHighlight] = useState(brand.showFormPrizeHighlight !== false);
 
   // App-wide customizable texts
   const [heroBadgeText, setHeroBadgeText] = useState(brand.heroBadgeText || 'Sorteio Oficial 2026 • Auditoria em Tempo Real');
@@ -193,6 +194,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setShowNavbarParticipateButton(brand.showNavbarParticipateButton === true);
     setShowPrizesSection(brand.showPrizesSection === true);
     setShowSearchSection(brand.showSearchSection !== false);
+    setShowFormPrizeHighlight(brand.showFormPrizeHighlight !== false);
   }, [brand]);
 
   // Initial check of server database status
@@ -319,6 +321,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
       showNavbarParticipateButton: overrides.showNavbarParticipateButton !== undefined ? overrides.showNavbarParticipateButton : showNavbarParticipateButton,
       showPrizesSection: overrides.showPrizesSection !== undefined ? overrides.showPrizesSection : showPrizesSection,
       showSearchSection: overrides.showSearchSection !== undefined ? overrides.showSearchSection : showSearchSection,
+      showFormPrizeHighlight: overrides.showFormPrizeHighlight !== undefined ? overrides.showFormPrizeHighlight : showFormPrizeHighlight,
       legalTermsPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || '').trim(),
       legalTermsPdfName: overrides.legalTermsPdfName !== undefined ? overrides.legalTermsPdfName : (legalTermsPdfName || '').trim(),
       regulationPdfUrl: overrides.legalTermsPdfUrl !== undefined ? overrides.legalTermsPdfUrl : (legalTermsPdfUrl || overrides.regulationPdfUrl || regulationPdfUrl || '').trim(),
@@ -1139,6 +1142,31 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                   </span>
                 </div>
               </label>
+
+              {/* Cartão de Destaque do Prémio acima do Botão (LACER HIDRO) */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showFormPrizeHighlight}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setShowFormPrizeHighlight(val);
+                    syncAndSave({ showFormPrizeHighlight: val }, true);
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-[#E30613] focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block flex items-center gap-1.5">
+                    <span>Exibir Cartão de Destaque do Prémio no Formulário</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showFormPrizeHighlight ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {showFormPrizeHighlight ? 'Visível' : 'Oculto'}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Desmarque para <strong>retirar o cartão com foto e descrição do prémio</strong> (LACER HIDRO) que surge logo acima do botão "Participar do sorteio".
+                  </span>
+                </div>
+              </label>
             </div>
           </div>
 
@@ -1306,6 +1334,33 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 placeholder="Validação única: limite de 1 inscrição por e-mail"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
+            </div>
+
+            {/* Destaque do Prémio acima do Botão */}
+            <div className="pt-2 border-t border-slate-800/80">
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:bg-slate-900 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showFormPrizeHighlight}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setShowFormPrizeHighlight(val);
+                    syncAndSave({ showFormPrizeHighlight: val }, true);
+                  }}
+                  className="mt-0.5 rounded bg-slate-950 border-slate-700 text-[#E30613] focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-200 block flex items-center gap-1.5">
+                    <span>Cartão de Destaque do Prémio (Acima do Botão de Inscrição)</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showFormPrizeHighlight ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {showFormPrizeHighlight ? 'Ativo' : 'Removido'}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Marque para exibir ou desmarque para <strong>retirar o cartão com imagem e descrição do prémio</strong> (LACER HIDRO) imediatamente acima do botão de submissão.
+                  </span>
+                </div>
+              </label>
             </div>
           </div>
 

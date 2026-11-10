@@ -1204,33 +1204,35 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 </div>
               </div>
 
-              {/* Destaque do Prémio: Irrigador Oral Lacer e Botão de Boa Sorte */}
-              <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-md transition-all ${
-                isLight 
-                  ? 'bg-gradient-to-r from-red-50/90 via-white to-red-50/30 border-red-200/90 shadow-red-950/5' 
-                  : 'bg-slate-900/90 border-red-500/40 shadow-black/40'
-              }`}>
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-1 border-2 border-red-100 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={activePrize.imageUrl || '/assets/lacer_hidro.jpg'}
-                      alt={activePrize.title || 'LACER HIDRO - Irrigador Bucal'}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/assets/lacer_hidro.jpg';
-                      }}
-                      className="w-full h-full object-contain hover:scale-105 transition-transform"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1 text-left">
-                    <p className={`text-xs sm:text-sm font-extrabold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      {activePrize.title || 'LACER HIDRO - Irrigador bucal portátil'}
-                    </p>
-                    <p className={`text-[11px] truncate hidden sm:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {activePrize.description || 'Limpeza profunda e eficaz com tecnologia Lacer'}
-                    </p>
+              {/* Destaque do Prémio: Irrigador Oral Lacer e Botão de Boa Sorte (Controlado no Painel de Controlo) */}
+              {brand.showFormPrizeHighlight !== false && (
+                <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-md transition-all ${
+                  isLight 
+                    ? 'bg-gradient-to-r from-red-50/90 via-white to-red-50/30 border-red-200/90 shadow-red-950/5' 
+                    : 'bg-slate-900/90 border-red-500/40 shadow-black/40'
+                }`}>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-1 border-2 border-red-100 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={activePrize.imageUrl || '/assets/lacer_hidro.jpg'}
+                        alt={activePrize.title || 'LACER HIDRO - Irrigador Bucal'}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/assets/lacer_hidro.jpg';
+                        }}
+                        className="w-full h-full object-contain hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className={`text-xs sm:text-sm font-extrabold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        {activePrize.title || 'LACER HIDRO - Irrigador bucal portátil'}
+                      </p>
+                      <p className={`text-[11px] truncate hidden sm:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {activePrize.description || 'Limpeza profunda e eficaz com tecnologia Lacer'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
