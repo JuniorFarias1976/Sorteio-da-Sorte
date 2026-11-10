@@ -25,6 +25,7 @@ interface BackupSyncModalProps {
     winners: any[];
     settings: any;
     formFields: any;
+    users?: any[];
   };
   onRestoreFullData: (importedData: any) => void;
 }

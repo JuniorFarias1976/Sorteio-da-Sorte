@@ -14,16 +14,17 @@ import {
   BrandConfig,
   FormFieldsConfig,
   QRCodePosterConfig,
-  ReportPdfConfig
+  ReportPdfConfig,
+  AppUser
 } from './types';
-import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, isLightColor } from './utils/storage';
+import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, DEFAULT_USERS, isLightColor } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
 import { FirestoreService } from './utils/firestoreService';
 import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { Lock, Key, ShieldCheck, CheckCircle2, AlertCircle, X, RefreshCw } from 'lucide-react';
+import { Lock, Key, ShieldCheck, CheckCircle2, AlertCircle, X, RefreshCw, User as UserIcon, Users } from 'lucide-react';
 
 export default function App() {
   // Navigation View State
@@ -35,6 +36,11 @@ export default function App() {
       return sessionStorage.getItem('sorteiolive_admin_authenticated') === 'true';
     }
     return false;
+  });
+
+  // Current authenticated user (Administrator or Standard Operator)
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    return StorageService.getCurrentUser();
   });
 
   // Prompt password modal if URL has ?admin=true or #admin
@@ -52,8 +58,9 @@ export default function App() {
   const [adminToast, setAdminToast] = useState<string | null>(null);
   const [syncToast, setSyncToast] = useState<string | null>(null);
 
-  // In-App Admin Unlock Modal (replacing window.prompt to avoid iframe blocks)
+  // In-App Admin / User Unlock Modal
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [adminUsernameInput, setAdminUsernameInput] = useState<string>('');
   const [adminKeyInput, setAdminKeyInput] = useState<string>('');
   const [adminKeyError, setAdminKeyError] = useState<string | null>(null);
 
@@ -73,6 +80,7 @@ export default function App() {
   const [formFields, setFormFields] = useState<FormFieldsConfig>(() => StorageService.getFormFields());
   const [posterConfig, setPosterConfig] = useState<QRCodePosterConfig>(() => StorageService.getPosterConfig());
   const [reportConfig, setReportConfig] = useState<ReportPdfConfig>(() => StorageService.getReportConfig());
+  const [users, setUsers] = useState<AppUser[]>(() => StorageService.getUsers());
 
   // Next Upcoming Draw
   const nextSchedule = schedules.find((s) => s.status === 'scheduled') || schedules[0];
@@ -164,6 +172,22 @@ export default function App() {
     if (serverData.reportConfig) {
       setReportConfig(serverData.reportConfig);
       try { StorageService.saveReportConfig(serverData.reportConfig); } catch {}
+    }
+    if (Array.isArray(serverData.users) && serverData.users.length > 0) {
+      setUsers((currentUsers) => {
+        const userMap = new Map<string, AppUser>();
+        for (const u of currentUsers) {
+          if (u.id) userMap.set(u.id, u);
+        }
+        for (const serverU of serverData.users!) {
+          if (serverU.id) {
+            userMap.set(serverU.id, { ...(userMap.get(serverU.id) || {}), ...serverU });
+          }
+        }
+        const merged = Array.from(userMap.values());
+        try { StorageService.saveUsers(merged); } catch {}
+        return merged;
+      });
     }
 
     setIsServerConnected(true);
@@ -554,33 +578,81 @@ export default function App() {
     handleUpdatePrizes(updatedPrizes);
   };
 
-  // Toggle Admin Lock
-  const handleToggleAdminLock = () => {
+  // Update users list and synchronize
+  const handleUpdateUsers = (newUsers: AppUser[]) => {
+    setUsers(newUsers);
+    try { StorageService.saveUsers(newUsers); } catch {}
+    ApiService.saveData({ users: newUsers });
+    broadcastCrossTab({ users: newUsers });
+  };
+
+  // Logout handler
+  const handleLogout = () => {
     setIsAdminUnlocked(false);
+    setCurrentUser(null);
+    StorageService.saveCurrentUser(null);
     try {
       sessionStorage.removeItem('sorteiolive_admin_authenticated');
-      localStorage.removeItem('sorteiolive_admin_unlocked');
     } catch {}
     if (currentView === 'admin') {
       setCurrentView('public');
     }
-    setAdminToast('🔒 Painel de Administrador Bloqueado.');
+    setAdminToast('🔒 Sessão terminada com sucesso.');
     setTimeout(() => setAdminToast(null), 3000);
   };
 
-  // In-app Unlock Admin submit (Strict Password Validation)
+  // Toggle Admin Lock
+  const handleToggleAdminLock = () => {
+    handleLogout();
+  };
+
+  // In-app Unlock Admin / User submit (Supports individual credentials & master password)
   const handleAdminModalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAdminKeyError(null);
+    const username = adminUsernameInput.trim().toLowerCase();
     const code = adminKeyInput.trim();
 
     if (!code) {
-      setAdminKeyError('Por favor, introduza a palavra-passe de administrador.');
+      setAdminKeyError('Por favor, introduza a palavra-passe.');
       return;
     }
 
+    // 1. If username is provided, match by username + password
+    if (username) {
+      const foundUser = users.find((u) => u.username.toLowerCase() === username);
+      if (!foundUser) {
+        setAdminKeyError(`Utilizador "${username}" não encontrado.`);
+        return;
+      }
+      if (!foundUser.active) {
+        setAdminKeyError('Esta conta de utilizador está desativada. Contacte o administrador.');
+        return;
+      }
+      if (foundUser.password !== code && code !== brand.adminPassword && code !== 'admin') {
+        setAdminKeyError('Palavra-passe incorreta para este utilizador.');
+        return;
+      }
+
+      // Successful login with user credentials
+      setIsAdminUnlocked(true);
+      setCurrentUser(foundUser);
+      StorageService.saveCurrentUser(foundUser);
+      try {
+        sessionStorage.setItem('sorteiolive_admin_authenticated', 'true');
+      } catch {}
+      setShowAdminModal(false);
+      setAdminUsernameInput('');
+      setAdminKeyInput('');
+      setAdminToast(`🔑 Sessão iniciada como ${foundUser.name} (${foundUser.role === 'admin' ? 'Administrador' : 'Utilizador Padrão'})!`);
+      setTimeout(() => setAdminToast(null), 3500);
+      setCurrentView('admin');
+      return;
+    }
+
+    // 2. If username is empty, check master passwords or match user by password
     const currentConfigPassword = brand.adminPassword?.trim();
-    const validPasswords = [
+    const masterAdminPasswords = [
       currentConfigPassword,
       'admin',
       'lacer2026',
@@ -588,21 +660,47 @@ export default function App() {
       'laceromd',
     ].filter(Boolean) as string[];
 
-    if (validPasswords.includes(code)) {
+    // Check if code matches any user password directly
+    const userWithPassword = users.find((u) => u.password === code && u.active);
+    if (userWithPassword) {
       setIsAdminUnlocked(true);
+      setCurrentUser(userWithPassword);
+      StorageService.saveCurrentUser(userWithPassword);
       try {
         sessionStorage.setItem('sorteiolive_admin_authenticated', 'true');
-        localStorage.removeItem('sorteiolive_admin_unlocked');
       } catch {}
       setShowAdminModal(false);
+      setAdminUsernameInput('');
+      setAdminKeyInput('');
+      setAdminToast(`🔑 Sessão iniciada como ${userWithPassword.name}!`);
+      setTimeout(() => setAdminToast(null), 3500);
+      setCurrentView('admin');
+      return;
+    }
+
+    if (masterAdminPasswords.includes(code)) {
+      const defaultAdmin = users.find((u) => u.role === 'admin' && u.active) || {
+        id: 'usr-admin-1',
+        username: 'admin',
+        name: 'Administrador Geral',
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+        active: true,
+      };
+      setIsAdminUnlocked(true);
+      setCurrentUser(defaultAdmin);
+      StorageService.saveCurrentUser(defaultAdmin);
+      try {
+        sessionStorage.setItem('sorteiolive_admin_authenticated', 'true');
+      } catch {}
+      setShowAdminModal(false);
+      setAdminUsernameInput('');
       setAdminKeyInput('');
       setAdminToast('🔑 Painel de Administrador Desbloqueado com sucesso!');
       setTimeout(() => setAdminToast(null), 3500);
-      if (currentView === 'public') {
-        setCurrentView('admin');
-      }
+      setCurrentView('admin');
     } else {
-      setAdminKeyError('Palavra-passe incorreta. Acesso restrito ao administrador do aplicativo.');
+      setAdminKeyError('Credenciais incorretas. Verifique o utilizador e a palavra-passe.');
     }
   };
 
@@ -759,7 +857,7 @@ export default function App() {
         </div>
       )}
 
-      {/* In-App Admin Access Modal (Mobile & Desktop Secure Login) */}
+      {/* In-App Admin / User Access Modal (Mobile & Desktop Secure Login) */}
       {showAdminModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
           <div className={`border rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative ${
@@ -769,6 +867,7 @@ export default function App() {
               onClick={() => {
                 setShowAdminModal(false);
                 setAdminKeyError(null);
+                setAdminUsernameInput('');
                 setAdminKeyInput('');
               }}
               className={`absolute top-5 right-5 p-1 rounded-xl transition-colors ${
@@ -786,10 +885,10 @@ export default function App() {
               </div>
               <div>
                 <h3 className={`text-lg font-bold ${isLight ? 'text-slate-950' : 'text-white'}`}>
-                  Acesso de Administrador
+                  Autenticação de Utilizador
                 </h3>
                 <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Acesso reservado exclusivamente ao administrador para realizar sorteios
+                  Inicie sessão como Administrador ou Utilizador Padrão
                 </p>
               </div>
             </div>
@@ -797,7 +896,28 @@ export default function App() {
             <form onSubmit={handleAdminModalSubmit} className="space-y-4">
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  Palavra-passe de Administrador:
+                  Nome de Utilizador (Login):
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Ex: admin ou operador (opcional p/ senha mestra)"
+                    value={adminUsernameInput}
+                    onChange={(e) => setAdminUsernameInput(e.target.value)}
+                    autoFocus
+                    className={`w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[#E30613] ${
+                      isLight 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#E30613]' 
+                        : 'bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 focus:border-red-500'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  Palavra-passe: <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -806,7 +926,6 @@ export default function App() {
                     placeholder="Introduza a palavra-passe"
                     value={adminKeyInput}
                     onChange={(e) => setAdminKeyInput(e.target.value)}
-                    autoFocus
                     className={`w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[#E30613] ${
                       isLight 
                         ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#E30613]' 
@@ -820,9 +939,17 @@ export default function App() {
                     <span>{adminKeyError}</span>
                   </p>
                 )}
-                <p className={`text-[11px] mt-2 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                  🔒 Apenas o administrador autenticado com palavra-passe pode aceder e realizar sorteios.
-                </p>
+                
+                {/* Helpful quick accounts info for operators */}
+                <div className={`mt-3 p-2.5 rounded-xl border text-[11px] space-y-1 ${
+                  isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-950/80 border-slate-800 text-slate-400'
+                }`}>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">Perfis Pré-configurados:</p>
+                  <div className="flex flex-col gap-0.5 font-mono text-[10px]">
+                    <span className="text-[#E30613]">🛡️ Administrador: <strong className="font-sans">admin</strong> / senha: <strong className="font-sans">admin</strong></span>
+                    <span className="text-blue-600 dark:text-blue-400">👤 Utilizador Padrão: <strong className="font-sans">operador</strong> / senha: <strong className="font-sans">lacer2026</strong></span>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -841,7 +968,7 @@ export default function App() {
                   type="submit"
                   className="flex-1 py-2.5 px-4 bg-[#E30613] hover:bg-[#C80510] text-white font-bold rounded-xl text-xs transition-colors shadow-lg cursor-pointer"
                 >
-                  Entrar como Administrador
+                  Iniciar Sessão
                 </button>
               </div>
             </form>
@@ -917,6 +1044,10 @@ export default function App() {
             formFields={formFields}
             posterConfig={posterConfig}
             reportConfig={reportConfig}
+            users={users}
+            currentUser={currentUser}
+            onUpdateUsers={handleUpdateUsers}
+            onLogout={handleLogout}
             onUpdateParticipants={handleUpdateParticipants}
             onClearAllParticipants={handleClearAllParticipants}
             onUpdatePrizes={handleUpdatePrizes}

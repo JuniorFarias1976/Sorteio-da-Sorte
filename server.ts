@@ -255,6 +255,26 @@ const INITIAL_DATABASE = {
     includeHash: true,
     includeDate: true,
   },
+  users: [
+    {
+      id: 'usr-admin-1',
+      username: 'admin',
+      name: 'Administrador Geral',
+      password: 'admin',
+      role: 'admin',
+      createdAt: '2026-01-01T00:00:00Z',
+      active: true,
+    },
+    {
+      id: 'usr-operador-1',
+      username: 'operador',
+      name: 'Utilizador Operador',
+      password: 'lacer2026',
+      role: 'standard',
+      createdAt: '2026-01-01T00:00:00Z',
+      active: true,
+    },
+  ] as any[],
 };
 
 // Ensure data folder and file exists
@@ -275,6 +295,7 @@ function loadDB(): typeof INITIAL_DATABASE & { version: number } {
         posterConfig: { ...INITIAL_DATABASE.posterConfig, ...(parsed.posterConfig || {}) },
         reportConfig: { ...INITIAL_DATABASE.reportConfig, ...(parsed.reportConfig || {}) },
         formFields: { ...INITIAL_DATABASE.formFields, ...(parsed.formFields || {}) },
+        users: Array.isArray(parsed.users) && parsed.users.length > 0 ? parsed.users : INITIAL_DATABASE.users,
         version: parsed.version || Date.now(),
       };
     }
@@ -431,6 +452,7 @@ async function startServer() {
       posterConfig: updates.posterConfig ? { ...db.posterConfig, ...updates.posterConfig } : db.posterConfig,
       reportConfig: updates.reportConfig ? { ...db.reportConfig, ...updates.reportConfig } : db.reportConfig,
       formFields: updates.formFields ? { ...db.formFields, ...updates.formFields } : db.formFields,
+      users: Array.isArray(updates.users) ? updates.users : (db.users || []),
       version: Date.now(),
     };
 

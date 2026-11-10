@@ -8,7 +8,8 @@ import {
   BrandConfig,
   FormFieldsConfig,
   QRCodePosterConfig,
-  ReportPdfConfig 
+  ReportPdfConfig,
+  AppUser
 } from '../types';
 
 const STORAGE_KEYS = {
@@ -22,6 +23,8 @@ const STORAGE_KEYS = {
   FORM_FIELDS: 'sorteiolive_form_fields_v1',
   POSTER: 'sorteiolive_poster_v1',
   REPORT: 'sorteiolive_report_v1',
+  USERS: 'sorteiolive_users_v1',
+  CURRENT_USER: 'sorteiolive_current_user_v1',
 };
 
 // Official Lacer Corporate Logo SVG (distinctive Lacer shield and clean bold typography)
@@ -318,6 +321,27 @@ export const DEFAULT_REPORT_CONFIG: ReportPdfConfig = {
   includeDate: true,
 };
 
+export const DEFAULT_USERS: AppUser[] = [
+  {
+    id: 'usr-admin-1',
+    username: 'admin',
+    name: 'Administrador Geral',
+    password: 'admin',
+    role: 'admin',
+    createdAt: '2026-01-01T00:00:00Z',
+    active: true,
+  },
+  {
+    id: 'usr-operador-1',
+    username: 'operador',
+    name: 'Utilizador Operador',
+    password: 'lacer2026',
+    role: 'standard',
+    createdAt: '2026-01-01T00:00:00Z',
+    active: true,
+  },
+];
+
 // Storage Helpers with LocalStorage persistence
 export function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
@@ -372,6 +396,31 @@ export const StorageService = {
   getReportConfig: () => loadFromStorage<ReportPdfConfig>(STORAGE_KEYS.REPORT, DEFAULT_REPORT_CONFIG),
   saveReportConfig: (data: ReportPdfConfig) => saveToStorage(STORAGE_KEYS.REPORT, data),
 
+  getUsers: () => {
+    const loaded = loadFromStorage<AppUser[]>(STORAGE_KEYS.USERS, DEFAULT_USERS);
+    // Ensure default admin exists if list is empty
+    if (!loaded || loaded.length === 0) return DEFAULT_USERS;
+    return loaded;
+  },
+  saveUsers: (data: AppUser[]) => saveToStorage(STORAGE_KEYS.USERS, data),
+
+  getCurrentUser: () => {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (stored) return JSON.parse(stored) as AppUser;
+    } catch {}
+    return null;
+  },
+  saveCurrentUser: (user: AppUser | null) => {
+    try {
+      if (user) {
+        sessionStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      } else {
+        sessionStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      }
+    } catch {}
+  },
+
   resetToDefault: () => {
     localStorage.removeItem(STORAGE_KEYS.PARTICIPANTS);
     localStorage.removeItem(STORAGE_KEYS.PRIZES);
@@ -383,6 +432,8 @@ export const StorageService = {
     localStorage.removeItem(STORAGE_KEYS.FORM_FIELDS);
     localStorage.removeItem(STORAGE_KEYS.POSTER);
     localStorage.removeItem(STORAGE_KEYS.REPORT);
+    localStorage.removeItem(STORAGE_KEYS.USERS);
+    sessionStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
   },
 };
 

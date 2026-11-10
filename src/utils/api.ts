@@ -1,4 +1,4 @@
-import { Participant, Prize, DrawSchedule, DrawWinner, NotificationLog, NotificationSettings, BrandConfig, FormFieldsConfig, QRCodePosterConfig, ReportPdfConfig } from '../types';
+import { Participant, Prize, DrawSchedule, DrawWinner, NotificationLog, NotificationSettings, BrandConfig, FormFieldsConfig, QRCodePosterConfig, ReportPdfConfig, AppUser } from '../types';
 
 export interface AppServerData {
   participants: Participant[];
@@ -11,6 +11,7 @@ export interface AppServerData {
   formFields: FormFieldsConfig;
   posterConfig: QRCodePosterConfig;
   reportConfig: ReportPdfConfig;
+  users?: AppUser[];
   allowParticipantDeletion?: boolean;
   allowWinnerDeletion?: boolean;
   isFactoryReset?: boolean;

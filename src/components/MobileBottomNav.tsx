@@ -88,7 +88,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <span className="text-[10px] mt-0.5 tracking-tight">Participar</span>
         </button>
 
-        {/* 2. Em Direto */}
+        {/* 2. Sorteio */}
         <button
           onClick={() => onViewChange('live')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
@@ -96,12 +96,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               ? 'text-[#E30613] font-bold'
               : isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
           }`}
+          title="Ver ecrã do sorteio"
         >
           <div className={`p-1 rounded-lg relative ${currentView === 'live' ? (isLight ? 'bg-red-50 text-[#E30613]' : 'bg-red-500/20 ring-1 ring-red-500/30') : ''}`}>
             <Tv className="w-5 h-5" />
             <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#E30613] animate-pulse"></span>
           </div>
-          <span className="text-[10px] mt-0.5 tracking-tight">Em Direto</span>
+          <span className="text-[10px] mt-0.5 tracking-tight">Sorteio</span>
         </button>
 
         {/* 3. Instalar no Telemóvel / Partilhar */}

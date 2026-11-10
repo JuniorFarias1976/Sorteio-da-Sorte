@@ -82,6 +82,20 @@
         "validationHash": { "type": "string" }
       },
       "required": ["id", "participantId", "participantName", "participantTicket", "prizeId", "prizeTitle", "wonAt", "validationHash"]
+    },
+    "AppUser": {
+      "title": "AppUser",
+      "description": "User profile with role-based permissions (admin or standard)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "standard"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "username", "name", "role", "active"]
     }
   },
   "firestore": {

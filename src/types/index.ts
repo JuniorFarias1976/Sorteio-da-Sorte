@@ -224,3 +224,16 @@ export interface ReportPdfConfig {
   includeDate: boolean;
 }
 
+export type UserRole = 'admin' | 'standard';
+
+export interface AppUser {
+  id: string;
+  username: string;
+  name: string;
+  password?: string;
+  role: UserRole;
+  createdAt: string;
+  active: boolean;
+  lastLogin?: string;
+}
+

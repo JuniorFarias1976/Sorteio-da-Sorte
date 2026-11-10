@@ -9,7 +9,8 @@ import {
   BrandConfig,
   FormFieldsConfig,
   QRCodePosterConfig,
-  ReportPdfConfig
+  ReportPdfConfig,
+  AppUser
 } from '../../types';
 import { ParticipantsTab } from './ParticipantsTab';
 import { PrizesTab } from './PrizesTab';
@@ -18,6 +19,7 @@ import { FormFieldsTab } from './FormFieldsTab';
 import { QRCodeTab } from './QRCodeTab';
 import { ReportsTab } from './ReportsTab';
 import { BrandCustomizerTab } from './BrandCustomizerTab';
+import { UsersTab } from './UsersTab';
 import { BackupSyncModal } from './BackupSyncModal';
 
 import { 
@@ -32,7 +34,10 @@ import {
   RotateCcw,
   Database,
   Cloud,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck,
+  User as UserIcon,
+  LogOut
 } from 'lucide-react';
 import { isLightColor } from '../../utils/storage';
 
@@ -47,6 +52,10 @@ interface AdminDashboardProps {
   formFields: FormFieldsConfig;
   posterConfig?: QRCodePosterConfig;
   reportConfig?: ReportPdfConfig;
+  users?: AppUser[];
+  currentUser?: AppUser | null;
+  onUpdateUsers?: (users: AppUser[]) => void;
+  onLogout?: () => void;
   onUpdateParticipants: (participants: Participant[], deletedId?: string) => void;
   onUpdatePrizes: (prizes: Prize[], deletedId?: string) => void;
   onResetPrize?: (prizeId: string, clearAssociatedWinners?: boolean) => void;
@@ -73,7 +82,9 @@ export type AdminTab =
   | 'fields' 
   | 'qrcode' 
   | 'reports' 
-  | 'brand';
+  | 'brand'
+  | 'users'
+  | 'live';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   participants,
@@ -86,6 +97,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   formFields,
   posterConfig,
   reportConfig,
+  users = [],
+  currentUser = null,
+  onUpdateUsers,
+  onLogout,
   onUpdateParticipants,
   onUpdatePrizes,
   onResetPrize,
@@ -107,6 +122,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>('participants');
   const [showBackupModal, setShowBackupModal] = useState(false);
 
+  const isStandardUser = currentUser?.role === 'standard';
+
+  // Ensure standard user cannot be in restricted tabs
+  const allowedStandardTabs: AdminTab[] = ['participants', 'prizes', 'calendar', 'reports', 'live'];
+  const effectiveActiveTab = isStandardUser && !allowedStandardTabs.includes(activeTab)
+    ? 'participants'
+    : activeTab;
+
   const handleRestoreFullData = (data: any) => {
     if (data.brand) onUpdateBrand(data.brand);
     if (data.prizes) onUpdatePrizes(data.prizes);
@@ -117,21 +140,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (data.formFields) onUpdateFormFields(data.formFields);
     if (data.posterConfig && onUpdatePosterConfig) onUpdatePosterConfig(data.posterConfig);
     if (data.reportConfig && onUpdateReportConfig) onUpdateReportConfig(data.reportConfig);
+    if (data.users && onUpdateUsers) onUpdateUsers(data.users);
   };
 
   const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
   const appBg = brand.backgroundColor || (isLight ? '#FFFFFF' : '#0B0F19');
   const appTextColor = brand.textColor || (isLight ? '#0F172A' : '#F8FAFC');
 
-  const TABS = [
-    { id: 'participants' as AdminTab, label: 'Participantes & Inscrições', icon: Users, badge: participants.length },
-    { id: 'prizes' as AdminTab, label: 'Prémios & Quantidades', icon: Gift, badge: prizes.length },
-    { id: 'calendar' as AdminTab, label: 'Calendário & Sorteios', icon: CalendarIcon, badge: schedules.length },
-    { id: 'fields' as AdminTab, label: 'Campos do Formulário', icon: SlidersHorizontal },
-    { id: 'qrcode' as AdminTab, label: 'Código QR para Impressão', icon: QrCode },
-    { id: 'reports' as AdminTab, label: 'Relatórios & Auditoria PDF', icon: FileCheck2, badge: winners.length },
-    { id: 'brand' as AdminTab, label: 'Logótipo, Cores & Textos', icon: Palette },
-  ];
+  // Role-based visible tabs configuration:
+  // Standard user only sees: "Participantes Inscritos", "Prêmios e Quantidades", "Calendário do Sorteios", "Relatório & Auditoria PDF", "Sorteio"
+  const TABS = isStandardUser
+    ? [
+        { id: 'participants' as AdminTab, label: 'Participantes Inscritos', icon: Users, badge: participants.length },
+        { id: 'prizes' as AdminTab, label: 'Prêmios e Quantidades', icon: Gift, badge: prizes.length },
+        { id: 'calendar' as AdminTab, label: 'Calendário do Sorteios', icon: CalendarIcon, badge: schedules.length },
+        { id: 'reports' as AdminTab, label: 'Relatório & Auditoria PDF', icon: FileCheck2, badge: winners.length },
+        { id: 'live' as AdminTab, label: 'Sorteio', icon: Tv },
+      ]
+    : [
+        { id: 'participants' as AdminTab, label: 'Participantes Inscritos', icon: Users, badge: participants.length },
+        { id: 'prizes' as AdminTab, label: 'Prêmios e Quantidades', icon: Gift, badge: prizes.length },
+        { id: 'calendar' as AdminTab, label: 'Calendário do Sorteios', icon: CalendarIcon, badge: schedules.length },
+        { id: 'fields' as AdminTab, label: 'Campos do Formulário', icon: SlidersHorizontal },
+        { id: 'qrcode' as AdminTab, label: 'Código QR para Impressão', icon: QrCode },
+        { id: 'reports' as AdminTab, label: 'Relatório & Auditoria PDF', icon: FileCheck2, badge: winners.length },
+        { id: 'brand' as AdminTab, label: 'Logótipo, Cores & Textos', icon: Palette },
+        { id: 'users' as AdminTab, label: 'Utilizadores', icon: Users, badge: users.length },
+        { id: 'live' as AdminTab, label: 'Sorteio', icon: Tv },
+      ];
 
   return (
     <div 
@@ -168,8 +204,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Módulo:</span>
           </label>
           <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value as AdminTab)}
+            value={effectiveActiveTab}
+            onChange={(e) => {
+              const val = e.target.value as AdminTab;
+              if (val === 'live') {
+                onGoToLive();
+              } else {
+                setActiveTab(val);
+              }
+            }}
             className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#E30613] ${
               isLight ? 'bg-slate-50 border border-slate-200 text-slate-900' : 'bg-slate-950 border border-slate-700 text-white'
             }`}
@@ -189,11 +232,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex items-center gap-1 min-w-max">
             {TABS.map((tab) => {
               const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
+              const isActive = effectiveActiveTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    if (tab.id === 'live') {
+                      onGoToLive();
+                    } else {
+                      setActiveTab(tab.id);
+                    }
+                  }}
                   className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#E30613] text-white font-bold shadow-md shadow-red-500/25'
@@ -222,8 +271,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             })}
           </div>
 
-          {/* Quick Actions (Live & Reset & DB Status) */}
+          {/* Quick Actions (User info, Live, DB Status & Reset) */}
           <div className={`flex items-center gap-2 shrink-0 pl-2 border-l ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+            {/* Logged in User Pill */}
+            {currentUser && (
+              <div 
+                className={`hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs shadow-sm ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+                }`}
+                title={`Sessão iniciada como ${currentUser.name} (${currentUser.role === 'admin' ? 'Administrador' : 'Utilizador Padrão'})`}
+              >
+                {currentUser.role === 'admin' ? (
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
+                ) : (
+                  <UserIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                )}
+                <span className="font-bold text-xs truncate max-w-[120px] text-slate-800 dark:text-slate-200">
+                  {currentUser.name || currentUser.username}
+                </span>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                  currentUser.role === 'admin'
+                    ? 'bg-red-100 text-[#E30613]'
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {currentUser.role === 'admin' ? 'Admin' : 'Padrão'}
+                </span>
+                {onLogout && (
+                  <button
+                    onClick={onLogout}
+                    className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer p-0.5 ml-0.5"
+                    title="Terminar Sessão"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {onManualSync ? (
               <button
                 onClick={onManualSync}
@@ -253,18 +337,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            <button
-              onClick={() => setShowBackupModal(true)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all shadow-sm cursor-pointer active:scale-98 ${
-                isLight 
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
-                  : 'bg-slate-850 hover:bg-slate-800 text-amber-400 border-amber-500/30'
-              }`}
-              title="Cópia de segurança e sincronização de dados entre navegadores"
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              <span>Cópia de Segurança</span>
-            </button>
+            {!isStandardUser && (
+              <button
+                onClick={() => setShowBackupModal(true)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all shadow-sm cursor-pointer active:scale-98 ${
+                  isLight 
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
+                    : 'bg-slate-850 hover:bg-slate-800 text-amber-400 border-amber-500/30'
+                }`}
+                title="Cópia de segurança e sincronização de dados entre navegadores"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>Cópia de Segurança</span>
+              </button>
+            )}
 
             {onGoToPublic && (
               <button
@@ -283,27 +369,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={onGoToLive}
               className="px-3.5 py-2 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 cursor-pointer"
-              title="Abrir Ecrã da Transmissão em Direto"
+              title="Abrir Ecrã de Sorteio"
             >
               <Tv className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">Ecrã em Direto</span>
+              <span className="hidden xl:inline">Sorteio</span>
             </button>
 
-            <button
-              onClick={onResetAllData}
-              className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                isLight ? 'text-slate-400 hover:text-[#E30613] hover:bg-slate-100' : 'text-slate-500 hover:text-amber-400 hover:bg-slate-800'
-              }`}
-              title="Repor dados de demonstração predefinidos"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+            {!isStandardUser && (
+              <button
+                onClick={onResetAllData}
+                className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                  isLight ? 'text-slate-400 hover:text-[#E30613] hover:bg-slate-100' : 'text-slate-500 hover:text-amber-400 hover:bg-slate-800'
+                }`}
+                title="Repor dados de demonstração predefinidos"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Tab Body Content */}
         <main className="space-y-6">
-          {activeTab === 'participants' && (
+          {effectiveActiveTab === 'participants' && (
             <ParticipantsTab
               participants={participants}
               brand={brand}
@@ -314,7 +402,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
-          {activeTab === 'prizes' && (
+          {effectiveActiveTab === 'prizes' && (
             <PrizesTab
               prizes={prizes}
               onUpdatePrizes={onUpdatePrizes}
@@ -324,7 +412,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
-          {activeTab === 'calendar' && (
+          {effectiveActiveTab === 'calendar' && (
             <CalendarTab
               schedules={schedules}
               prizes={prizes}
@@ -334,14 +422,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
-          {activeTab === 'fields' && (
+          {effectiveActiveTab === 'fields' && !isStandardUser && (
             <FormFieldsTab
               formFields={formFields}
               onUpdateFormFields={onUpdateFormFields}
             />
           )}
 
-          {activeTab === 'qrcode' && (
+          {effectiveActiveTab === 'qrcode' && !isStandardUser && (
             <QRCodeTab
               brand={brand}
               schedules={schedules}
@@ -351,7 +439,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
-          {activeTab === 'reports' && (
+          {effectiveActiveTab === 'reports' && (
             <ReportsTab
               winners={winners}
               brand={brand}
@@ -361,31 +449,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
-          {activeTab === 'brand' && (
+          {effectiveActiveTab === 'brand' && !isStandardUser && (
             <BrandCustomizerTab
               brand={brand}
               onUpdateBrand={onUpdateBrand}
               onNavigateToCalendar={() => setActiveTab('calendar')}
             />
           )}
+
+          {effectiveActiveTab === 'users' && !isStandardUser && (
+            <UsersTab
+              users={users}
+              brand={brand}
+              currentUser={currentUser}
+              onUpdateUsers={onUpdateUsers || (() => {})}
+            />
+          )}
         </main>
       </div>
 
-      {/* Universal Backup & Synchronization Modal */}
-      <BackupSyncModal
-        isOpen={showBackupModal}
-        onClose={() => setShowBackupModal(false)}
-        fullData={{
-          brand,
-          prizes,
-          participants,
-          schedules,
-          winners,
-          settings: notificationSettings,
-          formFields,
-        }}
-        onRestoreFullData={handleRestoreFullData}
-      />
+      {/* Universal Backup & Synchronization Modal (Admin only) */}
+      {!isStandardUser && (
+        <BackupSyncModal
+          isOpen={showBackupModal}
+          onClose={() => setShowBackupModal(false)}
+          fullData={{
+            brand,
+            prizes,
+            participants,
+            schedules,
+            winners,
+            settings: notificationSettings,
+            formFields,
+            users,
+          }}
+          onRestoreFullData={handleRestoreFullData}
+        />
+      )}
     </div>
   );
 };
