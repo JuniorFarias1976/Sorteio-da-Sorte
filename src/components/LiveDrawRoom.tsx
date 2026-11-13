@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, Prize, DrawSchedule, DrawWinner, BrandConfig } from '../types';
+import { isLightColor } from '../utils/storage';
 import { playTickSound, playSuspenseSound, playWinFanfare, playCountdownBeep } from '../utils/audio';
 import { exportCertificatePDF } from '../utils/export';
 import { 
@@ -59,6 +60,8 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   onGoToPublic,
   onResetPrize,
 }) => {
+  const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
+  const roomBg = brand.backgroundColor || (isLight ? '#FFFFFF' : '#0B0F19');
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>(prizes[0]?.id || '');
   const [showResetConfirmModal, setShowResetConfirmModal] = useState<boolean>(false);
   const [clearWinnersOnReset, setClearWinnersOnReset] = useState<boolean>(true);
@@ -532,12 +535,19 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   return (
     <div 
       ref={roomRef}
-      className={`min-h-[calc(100vh-80px)] bg-radial from-slate-900 via-slate-950 to-black text-white flex flex-col justify-between p-4 sm:p-6 lg:p-8 select-none ${
+      style={isLight ? { backgroundColor: roomBg } : undefined}
+      className={`min-h-[calc(100vh-80px)] flex flex-col justify-between p-4 sm:p-6 lg:p-8 select-none transition-colors duration-200 ${
+        isLight
+          ? 'bg-white text-slate-900'
+          : 'bg-radial from-slate-900 via-slate-950 to-black text-white'
+      } ${
         isFullscreen ? 'fixed inset-0 z-50 overflow-y-auto' : ''
       }`}
     >
       {/* Top Bar / Broadcast Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+      <div className={`flex flex-wrap items-center justify-between gap-4 border-b pb-4 ${
+        isLight ? 'border-slate-200' : 'border-slate-800/80'
+      }`}>
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Navigation Back Buttons */}
           {isAdmin ? (
@@ -549,7 +559,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                 }
                 onGoToAdmin?.();
               }}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs shadow-lg hover:shadow-amber-500/25 transition-all cursor-pointer ring-2 ring-amber-400/50 active:scale-95"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white font-extrabold text-xs shadow-md transition-all cursor-pointer active:scale-95"
               title="Voltar ao Painel de Administrador"
             >
               <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
@@ -565,10 +575,14 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                   }
                   onRequestUnlockAdmin();
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 hover:text-white font-bold text-xs border border-amber-500/40 shadow-md transition-all cursor-pointer"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs border shadow-sm transition-all cursor-pointer ${
+                  isLight
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                    : 'bg-slate-800/90 hover:bg-slate-700 text-amber-300 hover:text-white border-amber-500/40'
+                }`}
                 title="Aceder ao Painel de Administrador com palavra-passe"
               >
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <Lock className={`w-3.5 h-3.5 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
                 <span>Entrar como Admin</span>
               </button>
             )
@@ -583,27 +597,37 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                 }
                 onGoToPublic();
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 transition-colors cursor-pointer"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-xs border transition-colors cursor-pointer ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+              }`}
               title="Voltar à página pública do sorteio"
             >
-              <Home className="w-3.5 h-3.5 text-slate-400" />
+              <Home className={`w-3.5 h-3.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`} />
               <span className="hidden sm:inline">Página Pública</span>
             </button>
           )}
 
           {isAdmin ? (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-300 text-xs font-bold tracking-wider uppercase">
+            <div className={`flex items-center gap-1.5 px-3 py-1 border rounded-full text-xs font-bold tracking-wider uppercase ${
+              isLight ? 'bg-red-50 border-red-200 text-[#E30613]' : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+            }`}>
               👑 MESA DO ADMINISTRADOR
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/40 rounded-full text-red-400 text-xs font-bold tracking-wider uppercase animate-pulse">
+            <div className={`flex items-center gap-2 px-3 py-1 border rounded-full text-xs font-bold tracking-wider uppercase animate-pulse ${
+              isLight ? 'bg-red-50 border-red-200 text-[#E30613]' : 'bg-red-500/20 border-red-500/40 text-red-400'
+            }`}>
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
               TRANSMISSÃO AO VIVO (TELESPECTADOR)
             </div>
           )}
 
           {/* Dynamic Schedules Switcher (Showing Days and Times) */}
-          <div className="flex flex-wrap items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1 max-w-full overflow-x-auto">
+          <div className={`flex flex-wrap items-center border rounded-xl p-1 gap-1 max-w-full overflow-x-auto ${
+            isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-900 border-slate-800'
+          }`}>
             {schedules.length > 0 ? (
               schedules.map((s) => {
                 const isSelected = selectedScheduleId === s.id;
@@ -619,10 +643,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                       isAdmin ? 'cursor-pointer' : 'cursor-default'
                     } ${
                       isSelected
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
+                        ? (isLight ? 'bg-[#E30613] text-white font-bold shadow-sm' : 'bg-amber-500 text-slate-950 font-bold shadow-md')
                         : isAdmin
-                        ? 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                        : 'text-slate-500 opacity-60'
+                        ? (isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/60')
+                        : (isLight ? 'text-slate-500 opacity-70' : 'text-slate-500 opacity-60')
                     }`}
                     title={isAdmin ? `${s.title} • ${formatScheduleFullDate(s.scheduledDate)} às ${s.scheduledTime}` : `Sessão: ${s.title}`}
                   >
@@ -633,12 +657,12 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                 );
               })
             ) : (
-              <span className="text-xs text-slate-400 px-2 py-1">Sem sorteios agendados</span>
+              <span className="text-xs text-slate-500 px-2 py-1">Sem sorteios agendados</span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-300">
-            <Users className="w-3.5 h-3.5 text-amber-400" />
+          <div className={`flex items-center gap-1.5 text-xs ${isLight ? 'text-slate-700 font-medium' : 'text-slate-300'}`}>
+            <Users className={`w-3.5 h-3.5 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
             <span>{eligibleParticipants.length} concorrentes ativos no globo</span>
           </div>
         </div>
@@ -647,13 +671,19 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
         <div className="flex items-center gap-2">
           {isAdmin ? (
             <>
-              <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold">
-                <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+              <span className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${
+                isLight ? 'bg-red-50 border-red-200 text-[#E30613]' : 'bg-red-500/15 border-red-500/30 text-red-300'
+              }`}>
+                <ShieldAlert className={`w-3.5 h-3.5 ${isLight ? 'text-[#E30613]' : 'text-red-400'}`} />
                 <span>Admin Ativo</span>
               </span>
               <button
                 onClick={handleResetScreen}
-                className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 hover:text-white hover:bg-slate-700 transition-all text-xs flex items-center gap-1.5"
+                className={`p-2.5 rounded-xl border transition-all text-xs flex items-center gap-1.5 cursor-pointer ${
+                  isLight
+                    ? 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+                    : 'bg-slate-800 border-slate-700 text-amber-400 hover:text-white hover:bg-slate-700'
+                }`}
                 title="Limpar telão e preparar próximo giro"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -663,20 +693,24 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           ) : (
             <button
               onClick={onRequestUnlockAdmin}
-              className="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  : 'bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+              }`}
               title="Aceder com palavra-passe para desbloquear controlo de sorteio"
             >
-              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <Lock className={`w-3.5 h-3.5 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
               <span>Modo Espetador</span>
             </button>
           )}
 
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-2.5 rounded-xl border transition-all text-xs flex items-center gap-1.5 ${
+            className={`p-2.5 rounded-xl border transition-all text-xs flex items-center gap-1.5 cursor-pointer ${
               soundEnabled
-                ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
-                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-white'
+                ? (isLight ? 'bg-slate-100 border-slate-300 text-[#E30613] hover:bg-slate-200 font-semibold' : 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700')
+                : (isLight ? 'bg-white border-slate-200 text-slate-500 hover:text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-white')
             }`}
             title={soundEnabled ? 'Silenciar Áudio' : 'Ativar Efeitos Sonoros'}
           >
@@ -686,7 +720,11 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
           <button
             onClick={toggleFullscreen}
-            className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition-all text-xs flex items-center gap-1.5"
+            className={`p-2.5 rounded-xl border transition-all text-xs flex items-center gap-1.5 cursor-pointer ${
+              isLight
+                ? 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200 font-semibold'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
+            }`}
             title="Modo Telão Completo"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -831,183 +869,241 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
         {/* Center / Right: The Big Roulette & Digital Drum */}
         <div className="lg:col-span-8 flex flex-col items-center justify-center">
-          {/* Drum Box */}
-          <div className="w-full bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/30 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden text-center glow-amber">
-            {/* Background glowing rings */}
-            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              {/* Drum Box */}
+              <div className={`w-full rounded-3xl p-6 sm:p-10 shadow-xl relative overflow-hidden text-center border-2 ${
+                isLight
+                  ? 'bg-white border-red-200 text-slate-900'
+                  : 'bg-gradient-to-b from-slate-900 to-slate-950 border-amber-500/30 glow-amber text-white'
+              }`}>
+                {/* Background glowing rings */}
+                <div className={`absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl pointer-events-none ${
+                  isLight ? 'bg-red-500/5' : 'bg-amber-500/10'
+                }`}></div>
 
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700/80 text-xs font-semibold text-amber-400 mb-4">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>GLOBO ELETRÔNICO DE SORTEIOS</span>
-              </div>
+                <div className="relative z-10">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold mb-4 ${
+                    isLight
+                      ? 'bg-red-50 border-red-200 text-[#E30613]'
+                      : 'bg-slate-800/90 border-slate-700/80 text-amber-400'
+                  }`}>
+                    <Sparkles className={`w-4 h-4 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
+                    <span>GLOBO ELETRÔNICO DE SORTEIOS</span>
+                  </div>
 
-              {/* Active Scheduled Draw Day & Time Information Banner */}
-              <div className="mb-6 max-w-xl mx-auto p-3.5 rounded-2xl bg-slate-950/90 border border-amber-500/30 shadow-lg text-center">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400/90 mb-1">
-                  Sessão Oficial Programada
-                </div>
-                <div className="text-base sm:text-lg font-black text-white mb-2">
-                  {activeSchedule ? activeSchedule.title : 'Sorteio Oficial'}
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-red-300 font-bold">
-                    <Calendar className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    <span className="text-slate-400 font-normal">Dia:</span>
-                    <span className="text-white capitalize">{formatScheduleFullDate(activeSchedule?.scheduledDate)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-red-300 font-bold">
-                    <Clock className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    <span className="text-slate-400 font-normal">Horário:</span>
-                    <span className="font-mono text-red-400 font-extrabold text-sm">{activeSchedule?.scheduledTime || '10:00'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Countdown overlay if active */}
-              {countdown !== null ? (
-                <div className="py-12 animate-bounce">
-                  <div className="text-8xl font-black font-mono text-red-500 drop-shadow-[0_0_35px_rgba(227,6,19,0.8)]">
-                    {countdown}
-                  </div>
-                  <p className="text-sm font-semibold text-white uppercase tracking-widest mt-4">
-                    Preparando Roleta Lacer...
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Big Lucky Ticket Number Display */}
-                  <div className="my-4">
-                    <p className="text-xs uppercase tracking-widest text-slate-300 font-semibold mb-2">
-                      {latestWinner ? 'BILHETE CONTEMPLADO' : 'NÚMERO DA SORTE'}
-                    </p>
-                    <div className="font-mono text-5xl sm:text-7xl font-extrabold tracking-widest text-white drop-shadow-[0_2px_15px_rgba(227,6,19,0.6)] py-2">
-                      <span className="text-[#E30613]">#</span>{currentDisplayTicket}
+                  {/* Active Scheduled Draw Day & Time Information Banner */}
+                  <div className={`mb-6 max-w-xl mx-auto p-3.5 rounded-2xl border shadow-sm text-center ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-200'
+                      : 'bg-slate-950/90 border-amber-500/30 shadow-lg'
+                  }`}>
+                    <div className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${
+                      isLight ? 'text-[#E30613]' : 'text-amber-400/90'
+                    }`}>
+                      Sessão Oficial Programada
+                    </div>
+                    <div className={`text-base sm:text-lg font-black mb-2 ${
+                      isLight ? 'text-slate-900' : 'text-white'
+                    }`}>
+                      {activeSchedule ? activeSchedule.title : 'Sorteio Oficial'}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border font-bold ${
+                        isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-red-300'
+                      }`}>
+                        <Calendar className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
+                        <span className={`font-normal ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Dia:</span>
+                        <span className={`capitalize ${isLight ? 'text-slate-900' : 'text-white'}`}>{formatScheduleFullDate(activeSchedule?.scheduledDate)}</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border font-bold ${
+                        isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-red-300'
+                      }`}>
+                        <Clock className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
+                        <span className={`font-normal ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Horário:</span>
+                        <span className="font-mono text-[#E30613] font-extrabold text-sm">{activeSchedule?.scheduledTime || '10:00'}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Name and City Display (Never displays Brasil) */}
-                  <div className="py-3 px-6 bg-slate-950/70 border border-slate-800 rounded-2xl max-w-md mx-auto mb-6">
-                    <h4 className="text-xl sm:text-2xl font-bold text-white truncate">
-                      {currentDisplayName}
-                    </h4>
-                    {currentDisplayCity && currentDisplayCity.toUpperCase() !== 'BRASIL' ? (
-                      <p className="text-xs text-red-400 font-medium tracking-wide mt-1 uppercase">
-                        📍 {currentDisplayCity}
+                  {/* Countdown overlay if active */}
+                  {countdown !== null ? (
+                    <div className="py-12 animate-bounce">
+                      <div className="text-8xl font-black font-mono text-[#E30613] drop-shadow-[0_0_25px_rgba(227,6,19,0.45)]">
+                        {countdown}
+                      </div>
+                      <p className={`text-sm font-semibold uppercase tracking-widest mt-4 ${
+                        isLight ? 'text-slate-700' : 'text-white'
+                      }`}>
+                        Preparando Roleta Lacer...
                       </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Big Lucky Ticket Number Display */}
+                      <div className="my-4">
+                        <p className={`text-xs uppercase tracking-widest font-semibold mb-2 ${
+                          isLight ? 'text-slate-500' : 'text-slate-300'
+                        }`}>
+                          {latestWinner ? 'BILHETE CONTEMPLADO' : 'NÚMERO DA SORTE'}
+                        </p>
+                        <div className={`font-mono text-5xl sm:text-7xl font-extrabold tracking-widest py-2 ${
+                          isLight ? 'text-slate-900' : 'text-white drop-shadow-[0_2px_15px_rgba(227,6,19,0.6)]'
+                        }`}>
+                          <span className="text-[#E30613]">#</span>{currentDisplayTicket}
+                        </div>
+                      </div>
+
+                      {/* Name and City Display (Never displays Brasil) */}
+                      <div className={`py-3 px-6 border rounded-2xl max-w-md mx-auto mb-6 ${
+                        isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/70 border-slate-800'
+                      }`}>
+                        <h4 className={`text-xl sm:text-2xl font-bold truncate ${
+                          isLight ? 'text-slate-900' : 'text-white'
+                        }`}>
+                          {currentDisplayName}
+                        </h4>
+                        {currentDisplayCity && currentDisplayCity.toUpperCase() !== 'BRASIL' ? (
+                          <p className={`text-xs font-medium tracking-wide mt-1 uppercase ${
+                            isLight ? 'text-[#E30613]' : 'text-red-400'
+                          }`}>
+                            📍 {currentDisplayCity}
+                          </p>
+                        ) : (
+                          <p className={`text-[11px] font-medium tracking-wide mt-1 ${
+                            isLight ? 'text-slate-500' : 'text-slate-400'
+                          }`}>
+                            {latestWinner ? 'Contemplado Oficial Homologado' : 'Aguardando sorteio oficial'}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {drawErrorNotice && (
+                    <div className="mb-4 max-w-md mx-auto p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-[#E30613]">
+                      {drawErrorNotice}
+                    </div>
+                  )}
+
+                  {/* Draw Action Button (Exclusively for Admin) vs Viewer Status Card */}
+                  <div className="mt-8">
+                    {isAdmin ? (
+                      <div>
+                        <button
+                          onClick={startDrawRoutine}
+                          disabled={isDrawing || countdown !== null || isPrizeExhausted}
+                          className={`w-full max-w-md mx-auto py-5 px-8 rounded-2xl font-black text-lg sm:text-xl tracking-wider uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${
+                            isPrizeExhausted
+                              ? (isLight ? 'bg-red-100 text-red-700 border border-red-300 cursor-not-allowed' : 'bg-red-950/60 text-red-400 border border-red-500/50 cursor-not-allowed opacity-90')
+                              : isDrawing || countdown !== null
+                              ? (isLight ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700')
+                              : 'bg-[#E30613] hover:bg-[#C80510] text-white active:scale-98 shadow-red-600/30 cursor-pointer ring-4 ring-red-500/25'
+                          }`}
+                        >
+                          <Flame className="w-6 h-6 fill-current animate-pulse shrink-0" />
+                          <span>
+                            {isPrizeExhausted
+                              ? 'PRÊMIO TOTALMENTE ESGOTADO'
+                              : isDrawing
+                              ? 'GIRANDO GLOBO...'
+                              : `SORTEAR: ${activeSchedule ? `${activeSchedule.scheduledTime} - ${activeSchedule.title}` : 'SORTEIO OFICIAL'}!`}
+                          </span>
+                        </button>
+                        {isPrizeExhausted && currentPrize && (
+                          <div className="mt-3 flex flex-col items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setClearWinnersOnReset(false);
+                                setShowResetConfirmModal(true);
+                              }}
+                              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg transition-transform hover:scale-105 cursor-pointer active:scale-95"
+                              title="Zerar a contagem de sorteados deste prémio para poder sortear novamente"
+                            >
+                              <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                              <span>Resetar Prémio para Sortear Novamente ({currentPrize.drawnQuantity}/{currentPrize.totalQuantity})</span>
+                            </button>
+                            <span className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                              Reinicia as {currentPrize.totalQuantity} unidades deste prémio para nova rodada de sorteios
+                            </span>
+                          </div>
+                        )}
+                        {activeSchedule && (
+                          <p className={`text-xs font-mono mt-2 text-center ${isLight ? 'text-[#E30613]' : 'text-red-400/90'}`}>
+                            📅 Agendado para {formatScheduleFullDate(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
+                          </p>
+                        )}
+                      </div>
                     ) : (
-                      <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-1">
-                        {latestWinner ? 'Contemplado Oficial Homologado' : 'Aguardando sorteio oficial'}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Draw Action Button (Exclusively for Admin) vs Viewer Status Card */}
-              <div className="mt-8">
-                {isAdmin ? (
-                  <div>
-                    <button
-                      onClick={startDrawRoutine}
-                      disabled={isDrawing || countdown !== null || isPrizeExhausted}
-                      className={`w-full max-w-md mx-auto py-5 px-8 rounded-2xl font-black text-lg sm:text-xl tracking-wider uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${
-                        isPrizeExhausted
-                          ? 'bg-red-950/60 text-red-400 border border-red-500/50 cursor-not-allowed opacity-90'
-                          : isDrawing || countdown !== null
-                          ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                          : 'bg-[#E30613] hover:bg-[#C80510] text-white active:scale-98 shadow-red-600/30 cursor-pointer ring-4 ring-red-500/25'
-                      }`}
-                    >
-                      <Flame className="w-6 h-6 fill-current animate-pulse shrink-0" />
-                      <span>
-                        {isPrizeExhausted
-                          ? 'PRÊMIO TOTALMENTE ESGOTADO'
-                          : isDrawing
-                          ? 'GIRANDO GLOBO...'
-                          : `SORTEAR: ${activeSchedule ? `${activeSchedule.scheduledTime} - ${activeSchedule.title}` : 'SORTEIO OFICIAL'}!`}
-                      </span>
-                    </button>
-                    {isPrizeExhausted && currentPrize && (
-                      <div className="mt-3 flex flex-col items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setClearWinnersOnReset(false);
-                            setShowResetConfirmModal(true);
-                          }}
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg transition-transform hover:scale-105 cursor-pointer active:scale-95"
-                          title="Zerar a contagem de sorteados deste prémio para poder sortear novamente"
-                        >
-                          <RotateCcw className="w-4 h-4 stroke-[2.5]" />
-                          <span>Resetar Prémio para Sortear Novamente ({currentPrize.drawnQuantity}/{currentPrize.totalQuantity})</span>
-                        </button>
-                        <span className="text-[11px] text-slate-400">
-                          Reinicia as {currentPrize.totalQuantity} unidades deste prémio para nova rodada de sorteios
-                        </span>
+                      <div className={`py-5 px-6 rounded-3xl border max-w-lg mx-auto text-center shadow-lg ${
+                        isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/95 border-slate-800 backdrop-blur-md shadow-2xl'
+                      }`}>
+                        <div className="flex items-center justify-center gap-2 text-[#E30613] font-bold text-xs uppercase tracking-wider mb-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#E30613] animate-ping"></span>
+                          <span>Transmissão Oficial ao Vivo • Modo Espetador</span>
+                        </div>
+                        <p className={`text-sm font-medium mb-3 ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
+                          {isDrawing
+                            ? '🎡 O administrador acionou o sorteio! Acompanhe a roleta desacelerando ao vivo...'
+                            : latestWinner
+                            ? '🏆 Rodada concluída pelo administrador! Confira acima o bilhete contemplado.'
+                            : 'Aguardando o administrador realizar o sorteio nesta sessão. Mantenha o seu bilhete em mãos!'}
+                        </p>
+                        <div className={`p-3.5 rounded-2xl border text-xs flex flex-col sm:flex-row items-center justify-between gap-3 ${
+                          isLight ? 'bg-white border-slate-200 text-slate-600' : 'bg-slate-950/90 border-slate-800 text-slate-400'
+                        }`}>
+                          <div className="flex items-center gap-2 text-left">
+                            <ShieldAlert className={`w-4 h-4 shrink-0 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
+                            <span>Somente o administrador pode realizar o sorteio.</span>
+                          </div>
+                          {onRequestUnlockAdmin && (
+                            <button
+                              type="button"
+                              onClick={onRequestUnlockAdmin}
+                              className={`shrink-0 px-3.5 py-2 rounded-xl border font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                isLight
+                                  ? 'bg-red-50 hover:bg-red-100 border-red-200 text-[#E30613]'
+                                  : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-300 hover:text-white'
+                              }`}
+                              title="Apenas o administrador autenticado com palavra-passe pode realizar o sorteio"
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>Entrar com Palavra-passe</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
-                    {activeSchedule && (
-                      <p className="text-xs text-red-400/90 font-mono mt-2 text-center">
-                        📅 Agendado para {formatScheduleFullDate(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
-                      </p>
-                    )}
                   </div>
-                ) : (
-                  <div className="py-5 px-6 rounded-3xl bg-slate-900/95 border border-slate-800 max-w-lg mx-auto text-center shadow-2xl backdrop-blur-md">
-                    <div className="flex items-center justify-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wider mb-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#E30613] animate-ping"></span>
-                      <span>Transmissão Oficial ao Vivo • Modo Espetador</span>
-                    </div>
-                    <p className="text-sm text-slate-200 font-medium mb-3">
-                      {isDrawing
-                        ? '🎡 O administrador acionou o sorteio! Acompanhe a roleta desacelerando ao vivo...'
-                        : latestWinner
-                        ? '🏆 Rodada concluída pelo administrador! Confira acima o bilhete contemplado.'
-                        : 'Aguardando o administrador realizar o sorteio nesta sessão. Mantenha o seu bilhete em mãos!'}
-                    </p>
-                    <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-left">
-                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>Somente o administrador pode realizar o sorteio.</span>
-                      </div>
-                      {onRequestUnlockAdmin && (
-                        <button
-                          type="button"
-                          onClick={onRequestUnlockAdmin}
-                          className="shrink-0 px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-white font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
-                          title="Apenas o administrador autenticado com palavra-passe pode realizar o sorteio"
-                        >
-                          <Lock className="w-3.5 h-3.5" />
-                          <span>Entrar com Palavra-passe</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
 
           {/* Winner Celebration Modal / Card when chosen */}
           {latestWinner && (
-            <div className="w-full mt-6 bg-gradient-to-r from-red-950/40 via-slate-900 to-red-950/40 border-2 border-red-500 rounded-2xl p-6 shadow-2xl backdrop-blur-md animate-fadeIn">
+            <div className={`w-full mt-6 border-2 border-[#E30613] rounded-2xl p-6 shadow-xl animate-fadeIn ${
+              isLight
+                ? 'bg-red-50/70'
+                : 'bg-gradient-to-r from-red-950/40 via-slate-900 to-red-950/40 backdrop-blur-md shadow-2xl'
+            }`}>
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4 text-center sm:text-left">
-                  <div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-500 flex items-center justify-center shrink-0">
-                    <Award className="w-8 h-8 text-red-400" />
+                  <div className={`w-14 h-14 rounded-2xl border border-[#E30613] flex items-center justify-center shrink-0 ${
+                    isLight ? 'bg-red-100' : 'bg-red-500/20'
+                  }`}>
+                    <Award className={`w-8 h-8 ${isLight ? 'text-[#E30613]' : 'text-red-400'}`} />
                   </div>
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${
+                      isLight ? 'text-[#E30613]' : 'text-amber-400'
+                    }`}>
                       Parabéns ao Vencedor(a)!
                     </span>
-                    <h3 className="text-2xl font-black text-white">
+                    <h3 className={`text-2xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       {latestWinner.participantName}
                     </h3>
-                    <p className="text-xs text-slate-300">
-                      Ganhou: <strong className="text-emerald-400">{latestWinner.prizeTitle}</strong> · Bilhete #{latestWinner.participantTicket}
+                    <p className={`text-xs ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                      Ganhou: <strong className={isLight ? 'text-emerald-700' : 'text-emerald-400'}>{latestWinner.prizeTitle}</strong> · Bilhete #{latestWinner.participantTicket}
                     </p>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                    <p className={`text-[11px] font-mono mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                       Hash de Auditoria: {latestWinner.validationHash}
                     </p>
                   </div>
@@ -1023,7 +1119,11 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                         }
                         onGoToAdmin();
                       }}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-bold text-xs border border-amber-500/40 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs border shadow-sm transition-transform hover:scale-105 cursor-pointer ${
+                        isLight
+                          ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                          : 'bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border-amber-500/40'
+                      }`}
                       title="Voltar ao Painel de Administrador"
                     >
                       <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
@@ -1032,7 +1132,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                   )}
                   <button
                     onClick={() => exportCertificatePDF(latestWinner, brand)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg transition-transform hover:scale-105 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white font-bold text-xs shadow-lg transition-transform hover:scale-105 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
                     <span>Baixar Certificado Oficial</span>
@@ -1045,10 +1145,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       </div>
 
       {/* Bottom Winner Feed / Hall of Fame */}
-      <div className="border-t border-slate-800/80 pt-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between mb-3 text-xs text-slate-400">
-          <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-amber-400" />
+      <div className={`border-t pt-4 ${isLight ? 'border-slate-200' : 'border-slate-800/80'}`}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between mb-3 text-xs text-slate-500">
+          <span className={`font-semibold flex items-center gap-1.5 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
+            <Trophy className={`w-4 h-4 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
             Vencedores Homologados Desta Edição ({winners.length})
           </span>
           <span>Atualizado em tempo real</span>
@@ -1058,14 +1158,18 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           {winners.slice(0, 3).map((w) => (
             <div 
               key={w.id}
-              className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs"
+              className={`border rounded-xl p-3 flex items-center justify-between text-xs shadow-sm ${
+                isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/80 border-slate-800'
+              }`}
             >
               <div className="truncate mr-2">
-                <p className="font-bold text-white truncate">{w.participantName}</p>
-                <p className="text-amber-400/90 text-[11px] truncate">{w.prizeTitle}</p>
+                <p className={`font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{w.participantName}</p>
+                <p className={`text-[11px] truncate font-medium ${isLight ? 'text-[#E30613]' : 'text-amber-400/90'}`}>{w.prizeTitle}</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                <span className={`font-mono font-bold px-2 py-0.5 rounded border ${
+                  isLight ? 'text-emerald-800 bg-emerald-100 border-emerald-300' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                }`}>
                   #{w.participantTicket}
                 </span>
               </div>

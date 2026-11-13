@@ -28,10 +28,13 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
+import { isLightColor } from '../../utils/storage';
+
 interface ParticipantsTabProps {
   participants: Participant[];
   brand: BrandConfig;
   formFields: FormFieldsConfig;
+  isStandardUser?: boolean;
   onUpdateParticipants: (updated: Participant[], deletedId?: string) => void;
   onUpdateFormFields: (fields: FormFieldsConfig) => void;
   onClearAllParticipants?: () => void;
@@ -41,10 +44,12 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   participants,
   brand,
   formFields,
+  isStandardUser = false,
   onUpdateParticipants,
   onUpdateFormFields,
   onClearAllParticipants,
 }) => {
+  const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'winner' | 'wants_visit' | 'marketing_yes'>('all');
   const [showClearAllModal, setShowClearAllModal] = useState(false);
@@ -91,6 +96,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [editTermsAccepted, setEditTermsAccepted] = useState(true);
   const [editTicketNumber, setEditTicketNumber] = useState('');
   const [editStatus, setEditStatus] = useState<'active' | 'winner' | 'banned'>('active');
+  const [editError, setEditError] = useState<string | null>(null);
 
   const handleToggleEditSpecialty = (spec: string) => {
     setEditSelectedSpecialties((prev) =>
@@ -139,6 +145,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   });
 
   const handleStartEdit = (p: Participant) => {
+    setEditError(null);
     setEditingParticipant(p);
     setEditName(p.name || '');
     setEditEmail(p.email || '');
@@ -192,9 +199,10 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingParticipant) return;
+    setEditError(null);
 
     if (editSelectedSpecialties.length === 0) {
-      alert('Por favor, selecione pelo menos uma especialidade.');
+      setEditError('Por favor, selecione pelo menos uma especialidade.');
       return;
     }
 
@@ -428,19 +436,21 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
           </p>
         </div>
 
-        {/* Buttons: Export & Add */}
+        {/* Buttons: Export & Admin Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => {
-              setTempFields({ ...formFields });
-              setShowFieldsModal(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-[#E30613] border border-slate-700 text-xs font-semibold shadow transition-colors cursor-pointer"
-            title="Configurar campos obrigatórios, opcionais ou ocultos do cadastro"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Campos do Formulário</span>
-          </button>
+          {!isStandardUser && (
+            <button
+              onClick={() => {
+                setTempFields({ ...formFields });
+                setShowFieldsModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-[#E30613] border border-slate-700 text-xs font-semibold shadow transition-colors cursor-pointer"
+              title="Configurar campos obrigatórios, opcionais ou ocultos do cadastro"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>Campos do Formulário</span>
+            </button>
+          )}
 
           <button
             onClick={() => exportParticipantsToExcel(filteredParticipants)}
@@ -460,33 +470,41 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             <span>Exportar PDF</span>
           </button>
 
-          {participants.length > 0 && (
+          {!isStandardUser && participants.length > 0 && (
             <button
               onClick={() => setShowClearAllModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/70 hover:bg-red-900/90 text-red-300 border border-red-800/80 text-xs font-semibold shadow transition-colors cursor-pointer"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold shadow transition-colors cursor-pointer border ${
+                isLight
+                  ? 'bg-red-100 hover:bg-red-200 text-red-900 border-red-300'
+                  : 'bg-red-950/70 hover:bg-red-900/90 text-red-300 border-red-800/80'
+              }`}
               title="Remover todos os exemplos e participantes para deixar a base e o formulário limpos"
             >
-              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <Trash2 className={`w-3.5 h-3.5 ${isLight ? 'text-red-700' : 'text-red-400'}`} />
               <span>Limpar Exemplos ({participants.length})</span>
             </button>
           )}
 
-          <button
-            onClick={handleGenerateBatch}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
-            title="Gerar 5 participantes automáticos para simulação"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#E30613]" />
-            <span>+5 Simulação</span>
-          </button>
+          {!isStandardUser && (
+            <button
+              onClick={handleGenerateBatch}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
+              title="Gerar 5 participantes automáticos para simulação"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#E30613]" />
+              <span>+5 Simulação</span>
+            </button>
+          )}
 
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Novo Participante</span>
-          </button>
+          {!isStandardUser && (
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow-md shadow-red-600/30 transition-colors cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Novo Participante</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -513,22 +531,30 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+            isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+          }`}>
             <Briefcase className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] text-slate-400 uppercase font-semibold block">Visitas Lacer Solicitadas</span>
-            <span className="text-lg font-bold text-emerald-400 font-mono">{participants.filter((p) => p.wantsLacerVisit).length}</span>
+            <span className={`text-lg font-extrabold font-mono ${isLight ? 'text-emerald-800' : 'text-emerald-400'}`}>
+              {participants.filter((p) => p.wantsLacerVisit).length}
+            </span>
           </div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3 shadow-md">
-          <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+            isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+          }`}>
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] text-slate-400 uppercase font-semibold block">Comercial Autorizado</span>
-            <span className="text-lg font-bold text-purple-300 font-mono">{participants.filter((p) => p.marketingConsent !== false).length}</span>
+            <span className={`text-lg font-extrabold font-mono ${isLight ? 'text-purple-800' : 'text-purple-300'}`}>
+              {participants.filter((p) => p.marketingConsent !== false).length}
+            </span>
           </div>
         </div>
       </div>
@@ -550,40 +576,50 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         <div className="flex flex-wrap items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
-              statusFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
+              statusFilter === 'all'
+                ? 'bg-[#E30613] text-white font-bold'
+                : isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white'
             }`}
           >
             Todos ({participants.length})
           </button>
           <button
             onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
-              statusFilter === 'active' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
+              statusFilter === 'active'
+                ? 'bg-[#E30613] text-white font-bold'
+                : isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white'
             }`}
           >
             Ativos ({participants.filter((p) => p.status === 'active').length})
           </button>
           <button
             onClick={() => setStatusFilter('wants_visit')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
-              statusFilter === 'wants_visit' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-emerald-400'
+            className={`px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
+              statusFilter === 'wants_visit'
+                ? 'bg-emerald-600 text-white font-bold'
+                : isLight ? 'text-emerald-800 hover:bg-emerald-50' : 'text-slate-400 hover:text-emerald-400'
             }`}
           >
             Visita Lacer ({participants.filter((p) => p.wantsLacerVisit).length})
           </button>
           <button
             onClick={() => setStatusFilter('marketing_yes')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
-              statusFilter === 'marketing_yes' ? 'bg-purple-500 text-white font-bold' : 'text-slate-400 hover:text-purple-300'
+            className={`px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
+              statusFilter === 'marketing_yes'
+                ? 'bg-purple-600 text-white font-bold'
+                : isLight ? 'text-purple-800 hover:bg-purple-50' : 'text-slate-400 hover:text-purple-300'
             }`}
           >
             Comercial ({participants.filter((p) => p.marketingConsent !== false).length})
           </button>
           <button
             onClick={() => setStatusFilter('winner')}
-            className={`px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
-              statusFilter === 'winner' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
+              statusFilter === 'winner'
+                ? 'bg-[#E30613] text-white font-bold'
+                : isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white'
             }`}
           >
             Premiados ({participants.filter((p) => p.status === 'winner').length})
@@ -605,21 +641,27 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </span>
                 <div className="flex items-center gap-1.5">
                   {p.wantsLacerVisit && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                      isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                    }`}>
                       ✓ Visita
                     </span>
                   )}
                   {p.marketingConsent && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                      isLight ? 'text-purple-900 bg-purple-100 border-purple-300' : 'text-purple-300 bg-purple-500/15 border-purple-500/30'
+                    }`}>
                       ✓ Comercial
                     </span>
                   )}
                   {p.status === 'winner' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
                       🏆 Premiado
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                      isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                    }`}>
                       Ativo
                     </span>
                   )}
@@ -698,15 +740,17 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
               <p className="text-xs text-slate-400">
                 Nenhum participante registado. Pronto para receber novas inscrições pelo telemóvel ou computador.
               </p>
-              <div className="flex flex-col gap-2 pt-2">
-                <button
-                  onClick={handleOpenAddModal}
-                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Registar Novo Participante</span>
-                </button>
-              </div>
+              {!isStandardUser && (
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={handleOpenAddModal}
+                    className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Registar Novo Participante</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : filteredParticipants.length === 0 ? (
             <div className="p-6 text-center text-xs text-slate-500">
@@ -777,38 +821,46 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                   </td>
                   <td className="py-3 px-3">
                     {p.wantsLacerVisit ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                      }`}>
                         ✓ Sim (Visita)
                       </span>
                     ) : (
-                      <span className="text-slate-500 text-[11px]">Não</span>
+                      <span className="text-slate-500 text-[11px] font-medium">Não</span>
                     )}
                   </td>
                   <td className="py-3 px-3">
                     {p.marketingConsent ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        isLight ? 'text-purple-900 bg-purple-100 border-purple-300' : 'text-purple-300 bg-purple-500/15 border-purple-500/30'
+                      }`}>
                         ✓ Autorizado
                       </span>
                     ) : (
-                      <span className="text-slate-500 text-[11px]">Não</span>
+                      <span className="text-slate-500 text-[11px] font-medium">Não</span>
                     )}
                   </td>
                   <td className="py-3 px-3">
                     {p.termsAccepted !== false ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                      }`}>
                         ✓ Aceite
                       </span>
                     ) : (
-                      <span className="text-amber-400 text-[10px]">Pendente</span>
+                      <span className="text-amber-600 text-[10px] font-semibold">Pendente</span>
                     )}
                   </td>
                   <td className="py-3 px-3">
                     {p.status === 'winner' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
                         🏆 Premiado
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded border ${
+                        isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                      }`}>
                         Ativo
                       </span>
                     )}
@@ -855,22 +907,24 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       <p className="text-xs text-slate-400 leading-relaxed">
                         Nenhum participante registado. O formulário e a base de dados estão 100% limpos e prontos para receber inscrições reais.
                       </p>
-                      <div className="flex items-center justify-center gap-2 pt-2">
-                        <button
-                          onClick={handleOpenAddModal}
-                          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                          <span>Registar Novo Participante</span>
-                        </button>
-                        <button
-                          onClick={handleGenerateBatch}
-                          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                          <span>+5 Simulação (Teste)</span>
-                        </button>
-                      </div>
+                      {!isStandardUser && (
+                        <div className="flex items-center justify-center gap-2 pt-2">
+                          <button
+                            onClick={handleOpenAddModal}
+                            className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>Registar Novo Participante</span>
+                          </button>
+                          <button
+                            onClick={handleGenerateBatch}
+                            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>+5 Simulação (Teste)</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1452,6 +1506,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
             <p className="text-xs text-slate-400 mb-4">
               Atualize as informações recolhidas deste participante na base de dados.
             </p>
+
+            {editError && (
+              <div className="bg-red-500/15 border border-red-500/30 text-red-500 p-3 rounded-xl mb-4 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="flex-1 font-medium">{editError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSaveEdit} className="space-y-4" autoComplete="off">
               <div>

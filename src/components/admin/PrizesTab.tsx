@@ -8,7 +8,7 @@ interface PrizesTabProps {
   onUpdatePrizes: (prizes: Prize[], deletedId?: string) => void;
   onResetPrize?: (prizeId: string, clearAssociatedWinners?: boolean) => void;
   winners?: DrawWinner[];
-  onUpdateWinners?: (winners: DrawWinner[]) => void;
+  onUpdateWinners?: (winners: DrawWinner[], allowDeletion?: boolean) => void;
 }
 
 export const PrizesTab: React.FC<PrizesTabProps> = ({ 
@@ -128,7 +128,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({
       );
       onUpdatePrizes(updated);
       if (clearAssociatedWinners && onUpdateWinners && winners) {
-        onUpdateWinners(winners.filter((w) => w.prizeId !== resettingPrize.id));
+        onUpdateWinners(winners.filter((w) => w.prizeId !== resettingPrize.id), true);
       }
     }
     const prizeTitle = resettingPrize.title;
@@ -143,7 +143,7 @@ export const PrizesTab: React.FC<PrizesTabProps> = ({
       const updated = prizes.map((p) => ({ ...p, drawnQuantity: 0 }));
       onUpdatePrizes(updated);
       if (clearAssociatedWinners && onUpdateWinners) {
-        onUpdateWinners([]);
+        onUpdateWinners([], true);
       }
     }
     setShowResetAllModal(false);

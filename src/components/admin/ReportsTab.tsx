@@ -18,7 +18,7 @@ interface ReportsTabProps {
   winners: DrawWinner[];
   brand: BrandConfig;
   reportConfig?: ReportPdfConfig;
-  onUpdateWinners: (winners: DrawWinner[]) => void;
+  onUpdateWinners: (winners: DrawWinner[], allowDeletion?: boolean) => void;
   onUpdateReportConfig?: (config: ReportPdfConfig) => void;
 }
 
@@ -56,7 +56,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const handleConfirmDeleteWinner = () => {
     if (!deletingWinner) return;
     const targetId = deletingWinner.id;
-    onUpdateWinners(winners.filter((w) => w.id !== targetId));
+    onUpdateWinners(winners.filter((w) => w.id !== targetId), true);
     setDeletingWinner(null);
   };
 

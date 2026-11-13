@@ -263,7 +263,6 @@
     "showNavbarBrandText": false,
     "showNavbarParticipateButton": false,
     "showPrizesSection": false,
-    "showSearchSection": true,
     "formTitle": "PARTICIPE NO SORTEIO E PODE GANHAR UM IRRIGADOR ORAL LACER",
     "showFormContactSectionTitle": false,
     "formContactSectionTitle": "",
@@ -284,7 +283,6 @@
     "hcpPrivacyPdfName": "",
     "rafflePrivacyPdfUrl": "",
     "rafflePrivacyPdfName": "",
-    "goodLuckBadgeUrl": "/assets/boa_sorte_badge.jpg",
     "showFormPrizeHighlight": true,
     "showConsentVisitSection": true,
     "consentVisitTitle": "Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?",
@@ -295,6 +293,8 @@
     "consentLegalNoticeP2": "Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.",
     "consentLegalNoticeP3": "Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.",
     "consentTermsDeclaration": "Declaro que li e aceito os Termos Legais do Sorteio e que fui informado(a) sobre o processamento dos meus dados pessoais através da Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.",
+    "showSearchSection": true,
+    "goodLuckBadgeUrl": "/assets/boa_sorte_badge.jpg",
     "raffleUrl": "",
     "forceResetLogo": true
   },
@@ -380,6 +380,26 @@
     "includeClinic": true,
     "includeSpecialty": true
   },
-  "version": 1793892061740,
+  "users": [
+    {
+      "id": "usr-admin-1",
+      "username": "admin",
+      "name": "Administrador Geral",
+      "password": "admin",
+      "role": "admin",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "active": true
+    },
+    {
+      "id": "usr-operador-1",
+      "username": "operador",
+      "name": "Utilizador Operador",
+      "password": "lacer2026",
+      "role": "standard",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "active": true
+    }
+  ],
+  "version": 1794565625458,
   "test": 123
 }

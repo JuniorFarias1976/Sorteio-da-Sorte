@@ -42,7 +42,7 @@
         "termsAccepted": { "type": "boolean" },
         "ticketNumber": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["active", "winner", "disqualified"] }
+        "status": { "type": "string", "enum": ["active", "winner", "banned"] }
       },
       "required": ["id", "name", "ticketNumber", "status"]
     },
@@ -61,6 +61,21 @@
         "drawOrder": { "type": "number" }
       },
       "required": ["id", "title", "totalQuantity", "drawnQuantity"]
+    },
+    "DrawSchedule": {
+      "title": "DrawSchedule",
+      "description": "Scheduled round for live raffle draws",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "scheduledDate": { "type": "string" },
+        "scheduledTime": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "live", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "scheduledDate", "scheduledTime", "status"]
     },
     "DrawWinner": {
       "title": "DrawWinner",
@@ -83,6 +98,20 @@
       },
       "required": ["id", "participantId", "participantName", "participantTicket", "prizeId", "prizeTitle", "wonAt", "validationHash"]
     },
+    "NotificationLog": {
+      "title": "NotificationLog",
+      "description": "Notification dispatch history log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "channel": { "type": "string" },
+        "recipientCount": { "type": "number" },
+        "sentAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["sent", "pending", "failed"] },
+        "eventTitle": { "type": "string" }
+      },
+      "required": ["id", "channel", "sentAt", "status"]
+    },
     "AppUser": {
       "title": "AppUser",
       "description": "User profile with role-based permissions (admin or standard)",
@@ -91,6 +120,7 @@
         "id": { "type": "string" },
         "username": { "type": "string" },
         "name": { "type": "string" },
+        "password": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "standard"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "active": { "type": "boolean" }
@@ -99,7 +129,7 @@
     }
   },
   "firestore": {
-    "/settings/brand": {
+    "/system/brand": {
       "schema": { "$ref": "RaffleConfig" },
       "description": "Stores the central brand configuration and theme"
     },
@@ -111,9 +141,21 @@
       "schema": { "$ref": "Prize" },
       "description": "Stores available raffle prizes"
     },
+    "/schedules/{scheduleId}": {
+      "schema": { "$ref": "DrawSchedule" },
+      "description": "Stores scheduled raffle draw rounds"
+    },
     "/winners/{winnerId}": {
       "schema": { "$ref": "DrawWinner" },
       "description": "Stores confirmed raffle winners"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "NotificationLog" },
+      "description": "Stores notification dispatch logs"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "AppUser" },
+      "description": "Stores system operators and administrators"
     }
   }
 }

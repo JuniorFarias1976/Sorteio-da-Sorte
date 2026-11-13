@@ -54,14 +54,14 @@ interface AdminDashboardProps {
   reportConfig?: ReportPdfConfig;
   users?: AppUser[];
   currentUser?: AppUser | null;
-  onUpdateUsers?: (users: AppUser[]) => void;
+  onUpdateUsers?: (users: AppUser[], deletedId?: string) => void;
   onLogout?: () => void;
   onUpdateParticipants: (participants: Participant[], deletedId?: string) => void;
   onUpdatePrizes: (prizes: Prize[], deletedId?: string) => void;
   onResetPrize?: (prizeId: string, clearAssociatedWinners?: boolean) => void;
   onClearAllParticipants?: () => void;
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
-  onUpdateWinners: (winners: DrawWinner[]) => void;
+  onUpdateWinners: (winners: DrawWinner[], allowDeletion?: boolean) => void;
   onAddNotificationLog: (log: NotificationLog) => void;
   onUpdateNotificationSettings: (settings: NotificationSettings) => void;
   onUpdateBrand: (brand: BrandConfig) => void;
@@ -177,8 +177,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       style={{ backgroundColor: appBg, color: appTextColor }}
     >
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        {/* Mobile Header: Voltar ao Sorteio */}
-        {onGoToPublic && (
+        {/* Mobile Header: Voltar ao Sorteio (Admins only) */}
+        {!isStandardUser && onGoToPublic && (
           <div className="sm:hidden flex items-center justify-between gap-2">
             <button
               onClick={onGoToPublic}
@@ -271,73 +271,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             })}
           </div>
 
-          {/* Quick Actions (User info, Live, DB Status & Reset) */}
-          <div className={`flex items-center gap-2 shrink-0 pl-2 border-l ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-            {/* Logged in User Pill */}
-            {currentUser && (
-              <div 
-                className={`hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs shadow-sm ${
-                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
-                }`}
-                title={`Sessão iniciada como ${currentUser.name} (${currentUser.role === 'admin' ? 'Administrador' : 'Utilizador Padrão'})`}
-              >
-                {currentUser.role === 'admin' ? (
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
-                ) : (
-                  <UserIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                )}
-                <span className="font-bold text-xs truncate max-w-[120px] text-slate-800 dark:text-slate-200">
-                  {currentUser.name || currentUser.username}
-                </span>
-                <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
-                  currentUser.role === 'admin'
-                    ? 'bg-red-100 text-[#E30613]'
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {currentUser.role === 'admin' ? 'Admin' : 'Padrão'}
-                </span>
-                {onLogout && (
-                  <button
-                    onClick={onLogout}
-                    className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer p-0.5 ml-0.5"
-                    title="Terminar Sessão"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
+          {/* Quick Actions (Admin only - hidden for standard users) */}
+          {!isStandardUser && (
+            <div className={`flex items-center gap-2 shrink-0 pl-2 border-l ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              {/* Logged in User Pill */}
+              {currentUser && (
+                <div 
+                  className={`hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs shadow-sm ${
+                    isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-950 border-slate-800'
+                  }`}
+                  title={`Sessão iniciada como ${currentUser.name} (${currentUser.role === 'admin' ? 'Administrador' : 'Utilizador Padrão'})`}
+                >
+                  {currentUser.role === 'admin' ? (
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#E30613] shrink-0" />
+                  ) : (
+                    <UserIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  )}
+                  <span className={`font-bold text-xs truncate max-w-[140px] ${
+                    isLight ? 'text-slate-900' : 'text-slate-100'
+                  }`}>
+                    {currentUser.name || currentUser.username}
+                  </span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
+                    currentUser.role === 'admin'
+                      ? 'bg-red-100 text-[#E30613] border border-red-200'
+                      : 'bg-blue-100 text-blue-800 border border-blue-200'
+                  }`}>
+                    {currentUser.role === 'admin' ? 'Admin' : 'Padrão'}
+                  </span>
+                  {onLogout && (
+                    <button
+                      onClick={onLogout}
+                      className={`transition-colors cursor-pointer p-0.5 ml-0.5 ${
+                        isLight ? 'text-slate-600 hover:text-[#E30613]' : 'text-slate-400 hover:text-red-400'
+                      }`}
+                      title="Terminar Sessão"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
 
-            {onManualSync ? (
-              <button
-                onClick={onManualSync}
-                disabled={isSyncing}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-mono shadow-sm cursor-pointer transition-all disabled:opacity-50 ${
-                  isLight 
-                    ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800' 
-                    : 'bg-slate-950/80 hover:bg-slate-900 border-emerald-500/40 text-emerald-300'
-                }`}
-                title="Clique para sincronizar os dados em tempo real com a base de dados central (data/database.json)"
-              >
-                <Database className={`w-3.5 h-3.5 text-emerald-600 shrink-0 ${isSyncing ? 'animate-spin text-[#E30613]' : ''}`} />
-                <span className="hidden sm:inline">{isSyncing ? 'A sincronizar...' : 'BD Ativa (Sincronizar)'}</span>
-                <span className="sm:hidden">{isSyncing ? '...' : 'BD'}</span>
-              </button>
-            ) : (
-              <div 
-                className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-mono shadow-sm ${
-                  isLight 
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-                    : 'bg-slate-950/80 border-emerald-500/30 text-emerald-300'
-                }`}
-                title="Base de dados central ativa e sincronizada em data/database.json"
-              >
-                <Database className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>BD Ativa</span>
-              </div>
-            )}
+              {onManualSync ? (
+                <button
+                  onClick={onManualSync}
+                  disabled={isSyncing}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold shadow-sm cursor-pointer transition-all disabled:opacity-50 ${
+                    isLight 
+                      ? 'bg-emerald-100 hover:bg-emerald-200 border-emerald-400 text-emerald-900' 
+                      : 'bg-slate-950/80 hover:bg-slate-900 border-emerald-500/40 text-emerald-300'
+                  }`}
+                  title="Clique para sincronizar os dados em tempo real com a base de dados central"
+                >
+                  <Database className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-700' : 'text-emerald-400'} ${isSyncing ? 'animate-spin text-[#E30613]' : ''}`} />
+                  <span className="hidden sm:inline">{isSyncing ? 'A sincronizar...' : 'BD Ativa (Sincronizar)'}</span>
+                  <span className="sm:hidden">{isSyncing ? '...' : 'BD'}</span>
+                </button>
+              ) : (
+                <div 
+                  className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold shadow-sm ${
+                    isLight 
+                      ? 'bg-emerald-100 border-emerald-400 text-emerald-900' 
+                      : 'bg-slate-950/80 border-emerald-500/30 text-emerald-300'
+                  }`}
+                  title="Base de dados central ativa e sincronizada"
+                >
+                  <Database className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`} />
+                  <span>BD Ativa</span>
+                </div>
+              )}
 
-            {!isStandardUser && (
               <button
                 onClick={() => setShowBackupModal(true)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all shadow-sm cursor-pointer active:scale-98 ${
@@ -350,43 +354,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <Cloud className="w-3.5 h-3.5" />
                 <span>Cópia de Segurança</span>
               </button>
-            )}
 
-            {onGoToPublic && (
+              {onGoToPublic && (
+                <button
+                  onClick={onGoToPublic}
+                  className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                    isLight
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                      : 'bg-slate-800 hover:bg-slate-750 text-slate-200 border-slate-700'
+                  }`}
+                  title="Voltar para a página pública do sorteio"
+                >
+                  <span>← Voltar ao Sorteio</span>
+                </button>
+              )}
+
               <button
-                onClick={onGoToPublic}
-                className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                  isLight
-                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                    : 'bg-slate-800 hover:bg-slate-750 text-slate-200 border-slate-700'
-                }`}
-                title="Voltar para a página pública do sorteio"
+                onClick={onGoToLive}
+                className="px-3.5 py-2 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 cursor-pointer"
+                title="Abrir Ecrã de Sorteio"
               >
-                <span>← Voltar ao Sorteio</span>
+                <Tv className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Sorteio</span>
               </button>
-            )}
 
-            <button
-              onClick={onGoToLive}
-              className="px-3.5 py-2 bg-[#E30613] hover:bg-[#C80510] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 cursor-pointer"
-              title="Abrir Ecrã de Sorteio"
-            >
-              <Tv className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">Sorteio</span>
-            </button>
-
-            {!isStandardUser && (
               <button
                 onClick={onResetAllData}
                 className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                  isLight ? 'text-slate-400 hover:text-[#E30613] hover:bg-slate-100' : 'text-slate-500 hover:text-amber-400 hover:bg-slate-800'
+                  isLight ? 'text-slate-500 hover:text-[#E30613] hover:bg-slate-100' : 'text-slate-500 hover:text-amber-400 hover:bg-slate-800'
                 }`}
                 title="Repor dados de demonstração predefinidos"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Tab Body Content */}
@@ -396,6 +398,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               participants={participants}
               brand={brand}
               formFields={formFields}
+              isStandardUser={isStandardUser}
               onUpdateParticipants={onUpdateParticipants}
               onUpdateFormFields={onUpdateFormFields}
               onClearAllParticipants={onClearAllParticipants}

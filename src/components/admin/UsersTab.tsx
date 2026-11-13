@@ -30,7 +30,7 @@ interface UsersTabProps {
   users: AppUser[];
   brand: BrandConfig;
   currentUser: AppUser | null;
-  onUpdateUsers: (users: AppUser[]) => void;
+  onUpdateUsers: (users: AppUser[], deletedId?: string) => void;
 }
 
 export const UsersTab: React.FC<UsersTabProps> = ({
@@ -65,12 +65,18 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<AppUser | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const isLight = isLightColor(brand.backgroundColor || '#FFFFFF');
 
   const triggerToast = (msg: string) => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(null), 3200);
+  };
+
+  const triggerErrorToast = (msg: string) => {
+    setErrorToast(msg);
+    setTimeout(() => setErrorToast(null), 4000);
   };
 
   const handleOpenCreate = () => {
@@ -170,7 +176,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
 
   const handleToggleStatus = (user: AppUser) => {
     if (user.id === currentUser?.id) {
-      alert('Não é possível desativar a sua própria conta atualmente em sessão.');
+      triggerErrorToast('Não é possível desativar a sua própria conta atualmente em sessão.');
       return;
     }
 
@@ -185,18 +191,20 @@ export const UsersTab: React.FC<UsersTabProps> = ({
 
   const handleDeleteUser = (user: AppUser) => {
     if (user.id === currentUser?.id) {
-      alert('Não é possível eliminar a sua própria conta atualmente em sessão.');
+      setDeleteConfirmUser(null);
+      triggerErrorToast('Não é possível eliminar a sua própria conta atualmente em sessão.');
       return;
     }
 
     const adminCount = users.filter((u) => u.role === 'admin' && u.active).length;
     if (user.role === 'admin' && adminCount <= 1) {
-      alert('Não é possível eliminar o único Administrador ativo do sistema.');
+      setDeleteConfirmUser(null);
+      triggerErrorToast('Não é possível eliminar o único Administrador ativo do sistema.');
       return;
     }
 
     const filtered = users.filter((u) => u.id !== user.id);
-    onUpdateUsers(filtered);
+    onUpdateUsers(filtered, user.id);
     setDeleteConfirmUser(null);
     triggerToast(`Utilizador "${user.name}" eliminado com sucesso.`);
   };
@@ -757,6 +765,14 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border-2 border-emerald-500 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <p className="text-xs font-bold text-emerald-200">{successToast}</p>
+        </div>
+      )}
+
+      {/* Floating Error Toast */}
+      {errorToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-red-950 border-2 border-[#E30613] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          <p className="text-xs font-bold text-red-100">{errorToast}</p>
         </div>
       )}
     </div>

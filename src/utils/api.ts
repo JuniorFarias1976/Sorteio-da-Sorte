@@ -14,6 +14,7 @@ export interface AppServerData {
   users?: AppUser[];
   allowParticipantDeletion?: boolean;
   allowWinnerDeletion?: boolean;
+  allowUserDeletion?: boolean;
   isFactoryReset?: boolean;
 }
 

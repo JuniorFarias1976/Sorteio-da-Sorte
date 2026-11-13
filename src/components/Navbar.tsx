@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrandConfig, DrawSchedule } from '../types';
+import { BrandConfig, DrawSchedule, AppUser } from '../types';
 import { isLightColor } from '../utils/storage';
-import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw, Lock } from 'lucide-react';
+import { Tv, ShieldCheck, Ticket, Calendar, Sparkles, Database, RefreshCw, Lock, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   currentView: 'public' | 'live' | 'admin';
@@ -10,6 +10,7 @@ interface NavbarProps {
   nextSchedule?: DrawSchedule;
   participantsCount: number;
   isAdminUnlocked: boolean;
+  currentUser?: AppUser | null;
   onToggleAdminLock: () => void;
   onRequestUnlockAdmin?: () => void;
   isServerConnected?: boolean;
@@ -24,12 +25,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   nextSchedule,
   participantsCount,
   isAdminUnlocked,
+  currentUser = null,
   onToggleAdminLock,
   onRequestUnlockAdmin,
   isServerConnected = true,
   isSyncing = false,
   onManualSync,
 }) => {
+  const isStandardUser = currentUser?.role === 'standard';
   const [logoTapCount, setLogoTapCount] = useState<number>(0);
   const logoTimerRef = useRef<any>(null);
 
@@ -116,9 +119,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Center: Live Sync (Admin only) */}
+        {/* Center: Live Sync (Admin only, hidden for standard users) */}
         <div className="flex items-center gap-2">
-          {isAdminUnlocked && onManualSync && (
+          {isAdminUnlocked && !isStandardUser && onManualSync && (
             <button
               onClick={onManualSync}
               disabled={isSyncing}
@@ -139,23 +142,26 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Mobile Actions (sm:hidden) */}
         <div className="flex sm:hidden items-center gap-1.5">
           {isAdminUnlocked ? (
-            <div className="flex items-center gap-1 bg-red-50 dark:bg-slate-800 p-1 rounded-xl border border-red-200 dark:border-slate-700">
+            <div className={`flex items-center gap-1 p-1 rounded-xl border ${
+              isLight ? 'bg-red-50 border-red-200' : 'bg-slate-800 border-slate-700'
+            }`}>
               <button
                 onClick={() => onViewChange('admin')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   currentView === 'admin'
                     ? 'bg-[#E30613] text-white shadow-sm'
-                    : 'text-[#E30613] dark:text-red-400'
+                    : isLight ? 'text-[#E30613]' : 'text-red-400'
                 }`}
               >
-                Admin
+                {isStandardUser ? 'Painel' : 'Admin'}
               </button>
               <button
                 onClick={onToggleAdminLock}
-                className="p-1 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
-                title="Bloquear Acesso Administrador"
+                className="px-1.5 py-1 rounded-lg text-slate-600 hover:text-red-600 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                title="Terminar Sessão"
               >
-                ✕
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sair</span>
               </button>
             </div>
           ) : (
@@ -197,26 +203,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className={`flex items-center gap-1 pl-1 ml-1 border-l ${isLight ? 'border-slate-300' : 'border-slate-800'}`}>
               <button
                 onClick={() => onViewChange('admin')}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer ${
                   currentView === 'admin'
                     ? 'bg-[#E30613] text-white font-semibold shadow-md'
                     : isLight ? 'text-[#E30613] hover:bg-red-50' : 'text-red-400 hover:text-red-300 hover:bg-slate-800/50'
                 }`}
-                title="Painel de Administração"
+                title="Painel de Operação e Sorteio"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span className="hidden sm:inline">Admin [Alt+C]</span>
-                <span className="sm:hidden">Admin</span>
+                {isStandardUser ? (
+                  <span>Painel</span>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Admin [Alt+C]</span>
+                    <span className="sm:hidden">Admin</span>
+                  </>
+                )}
               </button>
 
               <button
                 onClick={onToggleAdminLock}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  isLight ? 'text-slate-400 hover:text-red-600 hover:bg-slate-200' : 'text-slate-500 hover:text-red-400 hover:bg-slate-800'
+                className={`px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer ${
+                  isLight ? 'text-slate-600 hover:text-red-700 hover:bg-slate-200' : 'text-slate-400 hover:text-red-400 hover:bg-slate-800'
                 }`}
-                title="Ocultar e Bloquear Painel de Administrador"
+                title="Terminar Sessão"
               >
-                ✕
+                <LogOut className="w-3.5 h-3.5" />
+                {isStandardUser && <span>Sair</span>}
               </button>
             </div>
           ) : (

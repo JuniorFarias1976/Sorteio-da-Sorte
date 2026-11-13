@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Participant, 
   Prize, 
@@ -57,6 +57,7 @@ export default function App() {
 
   const [adminToast, setAdminToast] = useState<string | null>(null);
   const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [dbErrorToast, setDbErrorToast] = useState<string | null>(null);
 
   // In-App Admin / User Unlock Modal
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
@@ -82,6 +83,30 @@ export default function App() {
   const [reportConfig, setReportConfig] = useState<ReportPdfConfig>(() => StorageService.getReportConfig());
   const [users, setUsers] = useState<AppUser[]>(() => StorageService.getUsers());
 
+  // Refs for deletion guards & initial seeding
+  const deletedUserIdsRef = useRef<Set<string>>(new Set());
+  const deletedParticipantIdsRef = useRef<Set<string>>(new Set());
+  const hasSeededUsersRef = useRef<boolean>(false);
+  const latestUsersRef = useRef<AppUser[]>(users);
+  const lastSyncedUsersJsonRef = useRef<string>('');
+  const lastSyncedParticipantsJsonRef = useRef<string>('');
+  const lastSyncedWinnersJsonRef = useRef<string>('');
+
+  useEffect(() => {
+    latestUsersRef.current = users;
+  }, [users]);
+
+  const notifyPersistError = useCallback((context: string, err: unknown) => {
+    console.error(`[Persistence Error] ${context}:`, err);
+    const msg = err instanceof Error ? err.message : String(err || 'Erro desconhecido');
+    if (msg.includes('Quota exceeded')) {
+      setDbErrorToast('Quota diária da base de dados excedida. Tente novamente amanhã ou atualize o plano Firebase.');
+    } else {
+      setDbErrorToast(`Aviso ao gravar ${context} na nuvem. Dados guardados localmente.`);
+    }
+    setTimeout(() => setDbErrorToast(null), 5000);
+  }, []);
+
   // Next Upcoming Draw
   const nextSchedule = schedules.find((s) => s.status === 'scheduled') || schedules[0];
 
@@ -90,33 +115,39 @@ export default function App() {
     if (!serverData) return;
 
     if (Array.isArray(serverData.participants)) {
-      setParticipants((current) => {
-        // Safe Union Merge: Never discard existing participants from local storage or Firestore
-        const map = new Map<string, Participant>();
-        for (const p of current) {
-          const key = p.id || (p.ticketNumber ? `ticket-${p.ticketNumber}` : '');
-          if (key) map.set(key, p);
-        }
-        for (const serverP of serverData.participants!) {
-          const key = serverP.id || (serverP.ticketNumber ? `ticket-${serverP.ticketNumber}` : '');
-          if (!key) continue;
-          const local = map.get(key) || current.find((c) => c.id === serverP.id || c.ticketNumber === serverP.ticketNumber);
-          map.set(key, {
-            ...local,
-            ...serverP,
-            clinic: serverP.clinic?.trim() ? serverP.clinic : (local?.clinic || ''),
-            specialty: (serverP.specialty?.trim() && serverP.specialty !== 'Não especificada') ? serverP.specialty : (local?.specialty || ''),
-            wantsLacerVisit: serverP.wantsLacerVisit !== undefined ? serverP.wantsLacerVisit : local?.wantsLacerVisit,
-            marketingConsent: serverP.marketingConsent !== undefined ? serverP.marketingConsent : local?.marketingConsent,
-            profilingConsent: serverP.profilingConsent !== undefined ? serverP.profilingConsent : local?.profilingConsent,
-            termsAccepted: serverP.termsAccepted !== undefined ? serverP.termsAccepted : local?.termsAccepted,
-          });
-        }
-        const merged = Array.from(map.values());
-        try { StorageService.saveParticipants(merged); } catch {}
-        // Do NOT call saveParticipantsBatch here to prevent overwriting cloud Firestore during initial load/refresh
-        return merged;
-      });
+      if (serverData.isFactoryReset || serverData.allowParticipantDeletion) {
+        const filtered = serverData.participants.filter((p) => !deletedParticipantIdsRef.current.has(p.id));
+        setParticipants(filtered);
+        try { StorageService.saveParticipants(filtered); } catch {}
+      } else {
+        setParticipants((current) => {
+          const map = new Map<string, Participant>();
+          for (const p of current) {
+            if (p.id && deletedParticipantIdsRef.current.has(p.id)) continue;
+            const key = p.id || (p.ticketNumber ? `ticket-${p.ticketNumber}` : '');
+            if (key) map.set(key, p);
+          }
+          for (const serverP of serverData.participants!) {
+            if (serverP.id && deletedParticipantIdsRef.current.has(serverP.id)) continue;
+            const key = serverP.id || (serverP.ticketNumber ? `ticket-${serverP.ticketNumber}` : '');
+            if (!key) continue;
+            const local = map.get(key) || current.find((c) => c.id === serverP.id || c.ticketNumber === serverP.ticketNumber);
+            map.set(key, {
+              ...local,
+              ...serverP,
+              clinic: serverP.clinic?.trim() ? serverP.clinic : (local?.clinic || ''),
+              specialty: (serverP.specialty?.trim() && serverP.specialty !== 'Não especificada') ? serverP.specialty : (local?.specialty || ''),
+              wantsLacerVisit: serverP.wantsLacerVisit !== undefined ? serverP.wantsLacerVisit : local?.wantsLacerVisit,
+              marketingConsent: serverP.marketingConsent !== undefined ? serverP.marketingConsent : local?.marketingConsent,
+              profilingConsent: serverP.profilingConsent !== undefined ? serverP.profilingConsent : local?.profilingConsent,
+              termsAccepted: serverP.termsAccepted !== undefined ? serverP.termsAccepted : local?.termsAccepted,
+            });
+          }
+          const merged = Array.from(map.values());
+          try { StorageService.saveParticipants(merged); } catch {}
+          return merged;
+        });
+      }
     }
     if (Array.isArray(serverData.prizes)) {
       setPrizes(serverData.prizes);
@@ -132,18 +163,23 @@ export default function App() {
       try { StorageService.saveSchedules(sortedSchedules); } catch {}
     }
     if (Array.isArray(serverData.winners)) {
-      setWinners((current) => {
-        const winnerMap = new Map<string, DrawWinner>();
-        for (const w of current) {
-          if (w?.id) winnerMap.set(w.id, w);
-        }
-        for (const w of serverData.winners!) {
-          if (w?.id) winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
-        }
-        const mergedWinners = Array.from(winnerMap.values());
-        try { StorageService.saveWinners(mergedWinners); } catch {}
-        return mergedWinners;
-      });
+      if (serverData.isFactoryReset || serverData.allowWinnerDeletion) {
+        setWinners(serverData.winners);
+        try { StorageService.saveWinners(serverData.winners); } catch {}
+      } else {
+        setWinners((current) => {
+          const winnerMap = new Map<string, DrawWinner>();
+          for (const w of current) {
+            if (w?.id) winnerMap.set(w.id, w);
+          }
+          for (const w of serverData.winners!) {
+            if (w?.id) winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+          }
+          const mergedWinners = Array.from(winnerMap.values());
+          try { StorageService.saveWinners(mergedWinners); } catch {}
+          return mergedWinners;
+        });
+      }
     }
     if (Array.isArray(serverData.notifications)) {
       setNotifications(serverData.notifications);
@@ -174,20 +210,26 @@ export default function App() {
       try { StorageService.saveReportConfig(serverData.reportConfig); } catch {}
     }
     if (Array.isArray(serverData.users) && serverData.users.length > 0) {
-      setUsers((currentUsers) => {
-        const userMap = new Map<string, AppUser>();
-        for (const u of currentUsers) {
-          if (u.id) userMap.set(u.id, u);
-        }
-        for (const serverU of serverData.users!) {
-          if (serverU.id) {
-            userMap.set(serverU.id, { ...(userMap.get(serverU.id) || {}), ...serverU });
+      if (serverData.isFactoryReset || serverData.allowUserDeletion) {
+        const filtered = serverData.users.filter((u) => !deletedUserIdsRef.current.has(u.id));
+        setUsers(filtered);
+        try { StorageService.saveUsers(filtered); } catch {}
+      } else {
+        setUsers((currentUsers) => {
+          const userMap = new Map<string, AppUser>();
+          for (const u of currentUsers) {
+            if (u.id && !deletedUserIdsRef.current.has(u.id)) userMap.set(u.id, u);
           }
-        }
-        const merged = Array.from(userMap.values());
-        try { StorageService.saveUsers(merged); } catch {}
-        return merged;
-      });
+          for (const serverU of serverData.users!) {
+            if (serverU.id && !deletedUserIdsRef.current.has(serverU.id)) {
+              userMap.set(serverU.id, { ...(userMap.get(serverU.id) || {}), ...serverU });
+            }
+          }
+          const merged = Array.from(userMap.values());
+          try { StorageService.saveUsers(merged); } catch {}
+          return merged;
+        });
+      }
     }
 
     setIsServerConnected(true);
@@ -233,6 +275,7 @@ export default function App() {
   // Real-time synchronization across devices and browsers (Cloud Firestore + SSE + Local)
   useEffect(() => {
     setIsSyncing(true);
+    FirestoreService.testConnection();
 
     // 1. Cloud Firestore real-time listener (Global, multi-device, works across mobile/desktop)
     const unsubscribeFirestore = FirestoreService.subscribeAll({
@@ -248,13 +291,13 @@ export default function App() {
       onParticipantsChange: (pList) => {
         setParticipants((current) => {
           const map = new Map<string, Participant>();
-          // 1. Seed with current participants (so nothing is ever dropped)
           for (const c of current) {
+            if (c.id && deletedParticipantIdsRef.current.has(c.id)) continue;
             const key = c.id || (c.ticketNumber ? `ticket-${c.ticketNumber}` : '');
             if (key) map.set(key, c);
           }
-          // 2. Incorporate or update all Firestore participants
           for (const remote of pList) {
+            if (remote.id && deletedParticipantIdsRef.current.has(remote.id)) continue;
             const key = remote.id || (remote.ticketNumber ? `ticket-${remote.ticketNumber}` : '');
             if (!key) continue;
             const local = map.get(key) || current.find((c) => c.id === remote.id || c.ticketNumber === remote.ticketNumber);
@@ -271,8 +314,9 @@ export default function App() {
           }
           const merged = Array.from(map.values());
           try { StorageService.saveParticipants(merged); } catch {}
-          // Automatically synchronize all Firestore participants into server database.json so Git pushes/pulls retain them!
-          if (merged.length > 0) {
+          const mergedJson = JSON.stringify(merged.map((p) => p.id + ':' + p.status));
+          if (merged.length > 0 && mergedJson !== lastSyncedParticipantsJsonRef.current) {
+            lastSyncedParticipantsJsonRef.current = mergedJson;
             ApiService.saveData({ participants: merged }).catch(() => {});
           }
           return merged;
@@ -281,8 +325,10 @@ export default function App() {
         setIsSyncing(false);
       },
       onPrizesChange: (przList) => {
-        setPrizes(przList);
-        try { StorageService.savePrizes(przList); } catch {}
+        if (przList.length > 0) {
+          setPrizes(przList);
+          try { StorageService.savePrizes(przList); } catch {}
+        }
         setIsServerConnected(true);
         setIsSyncing(false);
       },
@@ -309,11 +355,42 @@ export default function App() {
           }
           const mergedWinners = Array.from(winnerMap.values());
           try { StorageService.saveWinners(mergedWinners); } catch {}
-          if (mergedWinners.length > 0) {
+          const winnersJson = JSON.stringify(mergedWinners.map((w) => w.id));
+          if (mergedWinners.length > 0 && winnersJson !== lastSyncedWinnersJsonRef.current) {
+            lastSyncedWinnersJsonRef.current = winnersJson;
             ApiService.saveData({ winners: mergedWinners }).catch(() => {});
           }
           return mergedWinners;
         });
+        setIsServerConnected(true);
+      },
+      onNotificationsChange: (nList) => {
+        if (nList.length > 0) {
+          setNotifications(nList);
+          try { StorageService.saveNotifications(nList); } catch {}
+        }
+      },
+      onUsersChange: (uList) => {
+        if (uList.length === 0) {
+          if (!hasSeededUsersRef.current) {
+            hasSeededUsersRef.current = true;
+            const seed = latestUsersRef.current.length > 0 ? latestUsersRef.current : DEFAULT_USERS;
+            FirestoreService.saveUsersBatch(seed, false).catch((err) => {
+              console.warn('Initial users seed to Firestore failed:', err);
+            });
+          }
+          return;
+        }
+        const filtered = uList.filter((u) => u?.id && !deletedUserIdsRef.current.has(u.id));
+        if (filtered.length > 0) {
+          setUsers(filtered);
+          try { StorageService.saveUsers(filtered); } catch {}
+          const usersJson = JSON.stringify(filtered.map((u) => `${u.id}:${u.username}:${u.role}:${u.active}:${u.name}`));
+          if (usersJson !== lastSyncedUsersJsonRef.current) {
+            lastSyncedUsersJsonRef.current = usersJson;
+            ApiService.saveData({ users: filtered }).catch(() => {});
+          }
+        }
         setIsServerConnected(true);
       },
       onSettingsChange: (s) => {
@@ -403,28 +480,34 @@ export default function App() {
     setParticipants(data);
     try { StorageService.saveParticipants(data); } catch {}
     if (deletedId) {
-      FirestoreService.deleteParticipant(deletedId).catch(() => {});
+      deletedParticipantIdsRef.current.add(deletedId);
+      setTimeout(() => deletedParticipantIdsRef.current.delete(deletedId), 10000);
+      FirestoreService.deleteParticipant(deletedId).catch((err) => notifyPersistError('eliminação de participante', err));
     }
-    FirestoreService.saveParticipantsBatch(data, !!deletedId).catch(() => {});
+    FirestoreService.saveParticipantsBatch(data, !!deletedId).catch((err) => notifyPersistError('participantes', err));
     ApiService.saveData({ participants: data, allowParticipantDeletion: !!deletedId });
-    broadcastCrossTab({ participants: data });
+    broadcastCrossTab({ participants: data, allowParticipantDeletion: !!deletedId });
   };
 
   const handleClearAllParticipants = () => {
+    participants.forEach((p) => {
+      if (p?.id) deletedParticipantIdsRef.current.add(p.id);
+    });
+    setTimeout(() => deletedParticipantIdsRef.current.clear(), 10000);
     setParticipants([]);
     try { StorageService.saveParticipants([]); } catch {}
-    FirestoreService.clearAllParticipants().catch(() => {});
+    FirestoreService.clearAllParticipants().catch((err) => notifyPersistError('limpeza de participantes', err));
     ApiService.saveData({ participants: [], allowParticipantDeletion: true });
-    broadcastCrossTab({ participants: [] });
+    broadcastCrossTab({ participants: [], allowParticipantDeletion: true });
   };
 
   const handleUpdatePrizes = (data: Prize[], deletedId?: string) => {
     setPrizes(data);
     try { StorageService.savePrizes(data); } catch {}
     if (deletedId) {
-      FirestoreService.deletePrize(deletedId).catch(() => {});
+      FirestoreService.deletePrize(deletedId).catch((err) => notifyPersistError('eliminação de prémio', err));
     }
-    FirestoreService.savePrizesBatch(data).catch(() => {});
+    FirestoreService.savePrizesBatch(data).catch((err) => notifyPersistError('prémios', err));
     ApiService.saveData({ prizes: data });
     broadcastCrossTab({ prizes: data });
   };
@@ -445,7 +528,7 @@ export default function App() {
       const remainingWinners = prizeId === 'all'
         ? []
         : winners.filter((w) => w.prizeId !== prizeId);
-      handleUpdateWinners(remainingWinners);
+      handleUpdateWinners(remainingWinners, true);
     }
 
     // Call server API for atomic reset & SSE broadcast
@@ -460,25 +543,24 @@ export default function App() {
     });
     setSchedules(sorted);
     try { StorageService.saveSchedules(sorted); } catch {}
-    FirestoreService.saveSchedulesBatch(sorted).catch((err) => {
-      console.warn('Failed to sync schedules to Firestore:', err);
-    });
+    FirestoreService.saveSchedulesBatch(sorted).catch((err) => notifyPersistError('calendário', err));
     ApiService.saveData({ schedules: sorted });
     broadcastCrossTab({ schedules: sorted });
   };
 
-  const handleUpdateWinners = (data: DrawWinner[]) => {
+  const handleUpdateWinners = (data: DrawWinner[], allowDeletion: boolean = false) => {
     setWinners(data);
     try { StorageService.saveWinners(data); } catch {}
-    FirestoreService.saveWinnersBatch(data).catch(() => {});
-    ApiService.saveData({ winners: data });
-    broadcastCrossTab({ winners: data });
+    FirestoreService.saveWinnersBatch(data).catch((err) => notifyPersistError('vencedores', err));
+    ApiService.saveData({ winners: data, allowWinnerDeletion: allowDeletion });
+    broadcastCrossTab({ winners: data, allowWinnerDeletion: allowDeletion });
   };
 
   const handleAddNotificationLog = (log: NotificationLog) => {
     const updated = [log, ...notifications];
     setNotifications(updated);
     try { StorageService.saveNotifications(updated); } catch {}
+    FirestoreService.saveNotification(log).catch((err) => notifyPersistError('notificações', err));
     ApiService.saveData({ notifications: updated });
     broadcastCrossTab({ notifications: updated });
   };
@@ -486,7 +568,7 @@ export default function App() {
   const handleUpdateSettings = (newSettings: NotificationSettings) => {
     setSettings(newSettings);
     try { StorageService.saveSettings(newSettings); } catch {}
-    FirestoreService.saveSettings(newSettings).catch(() => {});
+    FirestoreService.saveSettings(newSettings).catch((err) => notifyPersistError('definições', err));
     ApiService.saveData({ settings: newSettings });
     broadcastCrossTab({ settings: newSettings });
   };
@@ -497,7 +579,7 @@ export default function App() {
     if (newBrand.companyName) {
       document.title = `${newBrand.companyName} - Sorteios Oficiais`;
     }
-    FirestoreService.saveBrand(newBrand).catch(() => {});
+    FirestoreService.saveBrand(newBrand).catch((err) => notifyPersistError('personalização', err));
     ApiService.saveData({ brand: newBrand });
     broadcastCrossTab({ brand: newBrand });
   };
@@ -505,7 +587,7 @@ export default function App() {
   const handleUpdateFormFields = (newFields: FormFieldsConfig) => {
     setFormFields(newFields);
     try { StorageService.saveFormFields(newFields); } catch {}
-    FirestoreService.saveFormFields(newFields).catch(() => {});
+    FirestoreService.saveFormFields(newFields).catch((err) => notifyPersistError('campos do formulário', err));
     ApiService.saveData({ formFields: newFields });
     broadcastCrossTab({ formFields: newFields });
   };
@@ -513,7 +595,7 @@ export default function App() {
   const handleUpdatePosterConfig = (newPoster: QRCodePosterConfig) => {
     setPosterConfig(newPoster);
     try { StorageService.savePosterConfig(newPoster); } catch {}
-    FirestoreService.savePosterConfig(newPoster).catch(() => {});
+    FirestoreService.savePosterConfig(newPoster).catch((err) => notifyPersistError('cartaz QR Code', err));
     ApiService.saveData({ posterConfig: newPoster });
     broadcastCrossTab({ posterConfig: newPoster });
   };
@@ -521,7 +603,7 @@ export default function App() {
   const handleUpdateReportConfig = (newReport: ReportPdfConfig) => {
     setReportConfig(newReport);
     try { StorageService.saveReportConfig(newReport); } catch {}
-    FirestoreService.saveReportConfig(newReport).catch(() => {});
+    FirestoreService.saveReportConfig(newReport).catch((err) => notifyPersistError('configuração de relatório', err));
     ApiService.saveData({ reportConfig: newReport });
     broadcastCrossTab({ reportConfig: newReport });
   };
@@ -552,7 +634,7 @@ export default function App() {
       const filtered = prev.filter((p) => p.id !== participant.id && p.ticketNumber !== participant.ticketNumber);
       const updated = [participant, ...filtered];
       try { StorageService.saveParticipants(updated); } catch {}
-      FirestoreService.saveParticipant(participant).catch(() => {});
+      FirestoreService.saveParticipant(participant).catch((err) => notifyPersistError('registo de participante', err));
       ApiService.saveData({ participants: updated });
       broadcastCrossTab({ participants: updated });
       return updated;
@@ -578,12 +660,22 @@ export default function App() {
     handleUpdatePrizes(updatedPrizes);
   };
 
-  // Update users list and synchronize
-  const handleUpdateUsers = (newUsers: AppUser[]) => {
+  // Update users list and synchronize to Firestore, Server API, LocalStorage, and Cross-Tab
+  const handleUpdateUsers = (newUsers: AppUser[], deletedId?: string) => {
     setUsers(newUsers);
     try { StorageService.saveUsers(newUsers); } catch {}
-    ApiService.saveData({ users: newUsers });
-    broadcastCrossTab({ users: newUsers });
+    if (deletedId) {
+      deletedUserIdsRef.current.add(deletedId);
+      setTimeout(() => deletedUserIdsRef.current.delete(deletedId), 10000);
+      FirestoreService.deleteUser(deletedId).catch((err) => notifyPersistError('eliminação de utilizador', err));
+    }
+    FirestoreService.saveUsersBatch(newUsers, !!deletedId).catch((err) => notifyPersistError('utilizadores', err));
+    ApiService.saveData({ users: newUsers, allowUserDeletion: !!deletedId }).then((res) => {
+      if (!res.success && !res.serverOffline) {
+        notifyPersistError('utilizadores no servidor', res.error);
+      }
+    });
+    broadcastCrossTab({ users: newUsers, allowUserDeletion: !!deletedId });
   };
 
   // Logout handler
@@ -724,6 +816,7 @@ export default function App() {
       const defFields = StorageService.getFormFields();
       const defPoster = StorageService.getPosterConfig();
       const defReport = StorageService.getReportConfig();
+      const defUsers = StorageService.getUsers();
 
       setParticipants(defParticipants);
       setPrizes(defPrizes);
@@ -735,6 +828,19 @@ export default function App() {
       setFormFields(defFields);
       setPosterConfig(defPoster);
       setReportConfig(defReport);
+      setUsers(defUsers);
+
+      // Persist factory reset to Cloud Firestore
+      FirestoreService.clearAllParticipants().catch(() => {});
+      FirestoreService.clearAllWinners().catch(() => {});
+      FirestoreService.savePrizesBatch(defPrizes).catch(() => {});
+      FirestoreService.saveSchedulesBatch(defSchedules).catch(() => {});
+      FirestoreService.saveSettings(defSettings).catch(() => {});
+      FirestoreService.saveBrand(defBrand).catch(() => {});
+      FirestoreService.saveFormFields(defFields).catch(() => {});
+      FirestoreService.savePosterConfig(defPoster).catch(() => {});
+      FirestoreService.saveReportConfig(defReport).catch(() => {});
+      FirestoreService.saveUsersBatch(defUsers, true).catch(() => {});
 
       // Persist factory reset to server database
       ApiService.saveData({
@@ -748,6 +854,8 @@ export default function App() {
         formFields: defFields,
         posterConfig: defPoster,
         reportConfig: defReport,
+        users: defUsers,
+        isFactoryReset: true,
       });
 
       broadcastCrossTab({
@@ -761,6 +869,8 @@ export default function App() {
         formFields: defFields,
         posterConfig: defPoster,
         reportConfig: defReport,
+        users: defUsers,
+        isFactoryReset: true,
       });
     }
   };
@@ -838,6 +948,7 @@ export default function App() {
           isServerConnected={isServerConnected}
           isSyncing={isSyncing}
           onManualSync={handleManualSync}
+          currentUser={currentUser}
         />
       )}
 
@@ -846,6 +957,14 @@ export default function App() {
         <div className="fixed top-24 right-4 z-50 bg-slate-900 border-2 border-emerald-500 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <p className="text-xs font-bold text-emerald-200">{syncToast}</p>
+        </div>
+      )}
+
+      {/* Database Error Toast */}
+      {dbErrorToast && (
+        <div className="fixed top-24 right-4 z-50 bg-red-700 border-2 border-red-400 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <AlertCircle className="w-5 h-5 text-white shrink-0" />
+          <p className="text-xs font-bold text-white">{dbErrorToast}</p>
         </div>
       )}
 
@@ -939,17 +1058,6 @@ export default function App() {
                     <span>{adminKeyError}</span>
                   </p>
                 )}
-                
-                {/* Helpful quick accounts info for operators */}
-                <div className={`mt-3 p-2.5 rounded-xl border text-[11px] space-y-1 ${
-                  isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-950/80 border-slate-800 text-slate-400'
-                }`}>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">Perfis Pré-configurados:</p>
-                  <div className="flex flex-col gap-0.5 font-mono text-[10px]">
-                    <span className="text-[#E30613]">🛡️ Administrador: <strong className="font-sans">admin</strong> / senha: <strong className="font-sans">admin</strong></span>
-                    <span className="text-blue-600 dark:text-blue-400">👤 Utilizador Padrão: <strong className="font-sans">operador</strong> / senha: <strong className="font-sans">lacer2026</strong></span>
-                  </div>
-                </div>
               </div>
 
               <div className="flex gap-3 pt-2">

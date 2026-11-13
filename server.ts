@@ -442,9 +442,36 @@ async function startServer() {
       }
     }
 
+    let mergedUsers = db.users || INITIAL_DATABASE.users;
+    if (Array.isArray(updates.users)) {
+      if (updates.isFactoryReset || updates.allowUserDeletion) {
+        mergedUsers = updates.users.length > 0 ? updates.users : INITIAL_DATABASE.users;
+      } else {
+        const userMap = new Map<string, any>();
+        for (const u of db.users || []) {
+          if (u?.id) userMap.set(u.id, u);
+        }
+        for (const u of updates.users) {
+          if (u?.id) {
+            const existing = userMap.get(u.id);
+            userMap.set(u.id, { ...existing, ...u });
+          }
+        }
+        mergedUsers = Array.from(userMap.values());
+      }
+    }
+
+    const {
+      allowParticipantDeletion: _apd,
+      allowWinnerDeletion: _awd,
+      allowUserDeletion: _aud,
+      isFactoryReset: _ifr,
+      ...cleanUpdates
+    } = updates || {};
+
     db = {
       ...db,
-      ...updates,
+      ...cleanUpdates,
       participants: mergedParticipants,
       winners: mergedWinners,
       brand: mergedBrand,
@@ -452,12 +479,12 @@ async function startServer() {
       posterConfig: updates.posterConfig ? { ...db.posterConfig, ...updates.posterConfig } : db.posterConfig,
       reportConfig: updates.reportConfig ? { ...db.reportConfig, ...updates.reportConfig } : db.reportConfig,
       formFields: updates.formFields ? { ...db.formFields, ...updates.formFields } : db.formFields,
-      users: Array.isArray(updates.users) ? updates.users : (db.users || []),
+      users: mergedUsers,
       version: Date.now(),
     };
 
     saveDB(db);
-    console.log(`[DB-SAVE] Successfully saved to database.json. Brand: "${db.brand.companyName}", Logo bytes: ${db.brand.logoUrl?.length || 0}`);
+    console.log(`[DB-SAVE] Successfully saved to database.json. Brand: "${db.brand.companyName}", Users: ${db.users?.length || 0}, Participants: ${db.participants?.length || 0}`);
     broadcastSSE('DATA_UPDATED', db);
     res.json({ success: true, data: db, version: db.version, savedAt: new Date().toISOString() });
   });
@@ -476,6 +503,7 @@ async function startServer() {
       participantsCount: db.participants.length,
       prizesCount: db.prizes.length,
       winnersCount: db.winners.length,
+      usersCount: db.users?.length || 0,
       brand: {
         companyName: db.brand.companyName,
         hasCustomLogo: db.brand.logoUrl !== DEFAULT_BRAND_LOGO,
