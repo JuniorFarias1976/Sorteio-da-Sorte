@@ -340,10 +340,73 @@ function broadcastSSE(eventType: string, payload: any) {
   }
 }
 
+// Schedule lock helpers (aligned with src/utils/scheduleLock.ts)
+function formatScheduleDatePtServer(dateStr?: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+}
+
+function getScheduleSlotKeyServer(schedule: { scheduledDate?: string; scheduledTime?: string }): string {
+  const datePart = (schedule.scheduledDate || '0000-00-00').trim();
+  const rawTime = (schedule.scheduledTime || '00:00').trim();
+  const [hh = '00', mm = '00'] = rawTime.split(':');
+  return `${datePart}T${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
+}
+
+function isScheduleLockedServer(schedule?: any): boolean {
+  if (!schedule) return false;
+  return schedule.isLocked === true || schedule.status === 'completed';
+}
+
+function getScheduleDrawLockStatusServer(targetSchedule: any, allSchedules: any[]) {
+  const locked = (allSchedules || []).filter((s) => isScheduleLockedServer(s));
+  const latestDrawnSchedule =
+    locked.length > 0
+      ? locked.reduce((latest, curr) =>
+          getScheduleSlotKeyServer(curr) > getScheduleSlotKeyServer(latest) ? curr : latest
+        )
+      : null;
+
+  if (!targetSchedule) {
+    return { isLocked: false, reason: null as string | null, message: null as string | null };
+  }
+
+  if (isScheduleLockedServer(targetSchedule)) {
+    return {
+      isLocked: true,
+      reason: 'ALREADY_DRAWN',
+      message: `O sorteio agendado para ${formatScheduleDatePtServer(targetSchedule.scheduledDate)} às ${targetSchedule.scheduledTime} já foi realizado. Só é possível realizar um novo sorteio numa data ou hora posterior.`,
+    };
+  }
+
+  if (targetSchedule.manuallyUnlocked === true) {
+    return { isLocked: false, reason: null as string | null, message: null as string | null };
+  }
+
+  if (latestDrawnSchedule) {
+    const targetKey = getScheduleSlotKeyServer(targetSchedule);
+    const latestKey = getScheduleSlotKeyServer(latestDrawnSchedule);
+    if (targetKey <= latestKey) {
+      return {
+        isLocked: true,
+        reason: 'NOT_POSTERIOR',
+        message: `Já foi realizado um sorteio em ${formatScheduleDatePtServer(latestDrawnSchedule.scheduledDate)} às ${latestDrawnSchedule.scheduledTime}. Um novo sorteio só pode ser realizado numa data ou hora posterior.`,
+      };
+    }
+  }
+
+  return { isLocked: false, reason: null as string | null, message: null as string | null };
+}
+
 // Live Draw in-memory state
 let liveState = {
   isDrawing: false,
   prizeId: null as string | null,
+  scheduleId: null as string | null,
   round: 1,
   countdown: null as number | null,
   currentDisplayTicket: '-----',
@@ -747,9 +810,25 @@ async function startServer() {
     res.json(liveState);
   });
 
-  // 5. Admin performs draw: only admin can trigger this endpoint!
+  // 5. Admin / Operator performs draw: enforces schedule lock & posterior date/time validation!
   app.post('/api/live/draw', async (req, res) => {
-    const { prizeId, round } = req.body;
+    const { prizeId, round, scheduleId } = req.body;
+    db = loadDB();
+
+    const schedule =
+      (scheduleId ? db.schedules.find((s: any) => s.id === scheduleId) : undefined) ||
+      db.schedules.find((s: any) => s.roundNumber === round) ||
+      db.schedules[0];
+
+    const lockStatus = getScheduleDrawLockStatusServer(schedule, db.schedules || []);
+    if (lockStatus.isLocked) {
+      res.status(423).json({
+        error: 'SCHEDULE_LOCKED',
+        reason: lockStatus.reason,
+        message: lockStatus.message || 'Este sorteio está bloqueado. Só é possível sortear numa data ou hora posterior.',
+      });
+      return;
+    }
 
     const prize = db.prizes.find((p) => p.id === prizeId);
     if (!prize) {
@@ -783,35 +862,58 @@ async function startServer() {
       Math.floor(Math.random() * 16).toString(16).toUpperCase()
     ).join('');
 
-    const schedule = db.schedules.find((s) => s.roundNumber === round) || db.schedules[0];
-
+    const nowIso = new Date().toISOString();
     const newWinner = {
       id: `win-${Date.now()}`,
       drawId: schedule?.id || `draw-${Date.now()}`,
-      drawTitle: schedule?.title || `${round}º Sorteio Oficial`,
+      drawTitle: schedule
+        ? `${schedule.title} (${schedule.scheduledDate} às ${schedule.scheduledTime})`
+        : `${round}º Sorteio Oficial`,
       participantId: chosenParticipant.id,
       participantName: chosenParticipant.name,
       participantEmail: chosenParticipant.email,
       participantPhone: chosenParticipant.phone,
       participantTicket: chosenParticipant.ticketNumber,
       participantDocument: chosenParticipant.document || 'Documento Auditado',
+      participantClinic: chosenParticipant.clinic || '',
+      participantCity: chosenParticipant.city || '',
+      participantSpecialty: chosenParticipant.specialty || '',
       prizeId: prize.id,
       prizeTitle: prize.title,
-      wonAt: new Date().toISOString(),
+      wonAt: nowIso,
       validationHash,
     };
+
+    // Immediately lock the scheduled slot to prevent duplicate draws
+    if (schedule) {
+      db.schedules = db.schedules.map((s: any) =>
+        s.id === schedule.id
+          ? {
+              ...s,
+              status: 'completed',
+              isLocked: true,
+              manuallyUnlocked: false,
+              drawnAt: nowIso,
+            }
+          : s
+      );
+      db.version = Date.now();
+      saveDB(db);
+    }
 
     // Begin live animation broadcast sequence
     liveState.isDrawing = true;
     liveState.prizeId = prizeId;
-    liveState.round = round || 1;
+    liveState.scheduleId = schedule?.id || null;
+    liveState.round = schedule?.roundNumber || round || 1;
     liveState.latestWinner = null;
     liveState.countdown = null;
 
     broadcastSSE('LIVE_EVENT', {
       type: 'START_DRAW',
       prizeId,
-      round,
+      scheduleId: schedule?.id || null,
+      round: schedule?.roundNumber || round || 1,
       prizeTitle: prize.title,
     });
 
@@ -836,7 +938,7 @@ async function startServer() {
       if (remainingTicks <= 0) {
         clearInterval(tickInterval);
 
-        // Update database: increment drawnQuantity and add winner
+        // Update database: increment drawnQuantity, add winner, ensure schedule locked
         db.prizes = db.prizes.map((p) =>
           p.id === prizeId ? { ...p, drawnQuantity: p.drawnQuantity + 1 } : p
         );
@@ -845,7 +947,22 @@ async function startServer() {
           p.id === chosenParticipant.id ? { ...p, status: 'winner' as const } : p
         );
 
+        if (schedule) {
+          db.schedules = db.schedules.map((s: any) =>
+            s.id === schedule.id
+              ? {
+                  ...s,
+                  status: 'completed',
+                  isLocked: true,
+                  manuallyUnlocked: false,
+                  drawnAt: nowIso,
+                }
+              : s
+          );
+        }
+
         db.winners = [newWinner, ...db.winners];
+        db.version = Date.now();
         saveDB(db);
 
         // Finalize liveState
@@ -870,6 +987,7 @@ async function startServer() {
     res.json({
       success: true,
       winner: newWinner,
+      scheduleLocked: schedule?.id || null,
       message: 'Sorteio iniciado com sucesso e sincronizado em todas as telas!',
     });
   });
@@ -879,6 +997,7 @@ async function startServer() {
     liveState = {
       isDrawing: false,
       prizeId: null,
+      scheduleId: null,
       round: 1,
       countdown: null,
       currentDisplayTicket: '-----',

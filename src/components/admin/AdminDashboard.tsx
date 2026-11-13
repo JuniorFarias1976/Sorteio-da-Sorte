@@ -61,6 +61,7 @@ interface AdminDashboardProps {
   onResetPrize?: (prizeId: string, clearAssociatedWinners?: boolean) => void;
   onClearAllParticipants?: () => void;
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
+  onUnlockSchedule?: (scheduleId: string, clearSessionWinners?: boolean) => void;
   onUpdateWinners: (winners: DrawWinner[], allowDeletion?: boolean) => void;
   onAddNotificationLog: (log: NotificationLog) => void;
   onUpdateNotificationSettings: (settings: NotificationSettings) => void;
@@ -106,6 +107,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetPrize,
   onClearAllParticipants,
   onUpdateSchedules,
+  onUnlockSchedule,
   onUpdateWinners,
   onAddNotificationLog,
   onUpdateNotificationSettings,
@@ -419,9 +421,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <CalendarTab
               schedules={schedules}
               prizes={prizes}
+              winners={winners}
               onUpdateSchedules={onUpdateSchedules}
+              onUnlockSchedule={onUnlockSchedule}
               onGoToLive={onGoToLive}
               brand={brand}
+              isStandardUser={isStandardUser}
             />
           )}
 

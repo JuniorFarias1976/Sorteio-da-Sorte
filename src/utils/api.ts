@@ -21,6 +21,7 @@ export interface AppServerData {
 export interface LiveState {
   isDrawing: boolean;
   prizeId: string | null;
+  scheduleId?: string | null;
   round: number;
   countdown: number | null;
   currentDisplayTicket: string;
@@ -209,17 +210,25 @@ export const ApiService = {
     }
   },
 
-  // Trigger draw (Only Admin can trigger)
-  async triggerDraw(prizeId: string, round: number): Promise<{ success: boolean; winner?: DrawWinner; error?: string }> {
+  // Trigger draw (Only Admin / Operator can trigger on unlocked posterior schedule)
+  async triggerDraw(
+    prizeId: string,
+    round: number,
+    scheduleId?: string
+  ): Promise<{ success: boolean; winner?: DrawWinner; error?: string; code?: string }> {
     try {
       const res = await fetch(`${API_BASE}/live/draw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeId, round }),
+        body: JSON.stringify({ prizeId, round, scheduleId }),
       });
       const data = await res.json();
       if (!res.ok) {
-        return { success: false, error: data.message || 'Erro ao sortear prêmio.' };
+        return {
+          success: false,
+          code: data.error,
+          error: data.message || 'Erro ao sortear prêmio.',
+        };
       }
       return { success: true, winner: data.winner };
     } catch (err: any) {

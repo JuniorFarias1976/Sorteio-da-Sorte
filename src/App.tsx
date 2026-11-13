@@ -86,6 +86,9 @@ export default function App() {
   // Refs for deletion guards & initial seeding
   const deletedUserIdsRef = useRef<Set<string>>(new Set());
   const deletedParticipantIdsRef = useRef<Set<string>>(new Set());
+  const deletedWinnerIdsRef = useRef<Set<string>>(new Set());
+  const processedWinnerIdsRef = useRef<Set<string>>(new Set());
+  const processedPrizeWinnerIdsRef = useRef<Set<string>>(new Set());
   const hasSeededUsersRef = useRef<boolean>(false);
   const latestUsersRef = useRef<AppUser[]>(users);
   const lastSyncedUsersJsonRef = useRef<string>('');
@@ -108,7 +111,7 @@ export default function App() {
   }, []);
 
   // Next Upcoming Draw
-  const nextSchedule = schedules.find((s) => s.status === 'scheduled') || schedules[0];
+  const nextSchedule = schedules.find((s) => !s.isLocked && (s.status === 'live' || s.status === 'scheduled')) || schedules[0];
 
   // Helper to safely apply full server data across all states and LocalStorage (additive union merge)
   const applyServerData = useCallback((serverData: Partial<AppServerData>) => {
@@ -165,16 +168,19 @@ export default function App() {
     }
     if (Array.isArray(serverData.winners)) {
       if (serverData.isFactoryReset || serverData.allowWinnerDeletion) {
-        setWinners(serverData.winners);
-        try { StorageService.saveWinners(serverData.winners); } catch {}
+        const filtered = serverData.winners.filter((w) => !deletedWinnerIdsRef.current.has(w.id));
+        setWinners(filtered);
+        try { StorageService.saveWinners(filtered); } catch {}
       } else {
         setWinners((current) => {
           const winnerMap = new Map<string, DrawWinner>();
           for (const w of current) {
-            if (w?.id) winnerMap.set(w.id, w);
+            if (w?.id && !deletedWinnerIdsRef.current.has(w.id)) winnerMap.set(w.id, w);
           }
           for (const w of serverData.winners!) {
-            if (w?.id) winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+            if (w?.id && !deletedWinnerIdsRef.current.has(w.id)) {
+              winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+            }
           }
           const mergedWinners = Array.from(winnerMap.values());
           try { StorageService.saveWinners(mergedWinners); } catch {}
@@ -358,10 +364,12 @@ export default function App() {
         setWinners((current) => {
           const winnerMap = new Map<string, DrawWinner>();
           for (const w of current) {
-            if (w?.id) winnerMap.set(w.id, w);
+            if (w?.id && !deletedWinnerIdsRef.current.has(w.id)) winnerMap.set(w.id, w);
           }
           for (const w of wList) {
-            if (w?.id) winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+            if (w?.id && !deletedWinnerIdsRef.current.has(w.id)) {
+              winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
+            }
           }
           const mergedWinners = Array.from(winnerMap.values());
           try { StorageService.saveWinners(mergedWinners); } catch {}
@@ -651,8 +659,104 @@ export default function App() {
     });
   };
 
-  // Live Draw Winner Announced handler
+  const isAdministrator = isAdminUnlocked && (!currentUser || currentUser.role === 'admin');
+
+  // Lock scheduled draw slot immediately after draw execution
+  const handleLockSchedule = useCallback((scheduleId: string) => {
+    if (!scheduleId) return;
+    setSchedules((prev) => {
+      const nowIso = new Date().toISOString();
+      const updated = prev.map((s) =>
+        s.id === scheduleId
+          ? {
+              ...s,
+              status: 'completed' as const,
+              isLocked: true,
+              manuallyUnlocked: false,
+              drawnAt: s.drawnAt || nowIso,
+            }
+          : s
+      );
+      const sorted = [...updated].sort((a, b) =>
+        `${a.scheduledDate || ''}T${a.scheduledTime || ''}`.localeCompare(`${b.scheduledDate || ''}T${b.scheduledTime || ''}`)
+      );
+      try { StorageService.saveSchedules(sorted); } catch {}
+      FirestoreService.saveSchedulesBatch(sorted).catch((err) => notifyPersistError('calendário', err));
+      ApiService.saveData({ schedules: sorted });
+      broadcastCrossTab({ schedules: sorted });
+      return sorted;
+    });
+  }, [broadcastCrossTab, notifyPersistError]);
+
+  // Administrator-only unlock of a completed/locked schedule (in case of mistake)
+  const handleUnlockSchedule = (scheduleId: string, clearSessionWinners: boolean = false) => {
+    if (!isAdministrator) {
+      setDbErrorToast('Acesso restrito: Somente o Administrador pode desbloquear um sorteio já realizado.');
+      setTimeout(() => setDbErrorToast(null), 4000);
+      return;
+    }
+
+    const unlockedBy = currentUser?.name || currentUser?.username || 'Administrador';
+    const nowIso = new Date().toISOString();
+
+    const updatedSchedules = schedules.map((s) =>
+      s.id === scheduleId
+        ? {
+            ...s,
+            status: 'scheduled' as const,
+            isLocked: false,
+            manuallyUnlocked: true,
+            unlockedAt: nowIso,
+            unlockedBy,
+          }
+        : s
+    );
+    handleUpdateSchedules(updatedSchedules);
+
+    if (clearSessionWinners) {
+      const sessionWinners = winners.filter((w) => w.drawId === scheduleId);
+      if (sessionWinners.length > 0) {
+        sessionWinners.forEach((w) => {
+          if (w.id) deletedWinnerIdsRef.current.add(w.id);
+        });
+        setTimeout(() => deletedWinnerIdsRef.current.clear(), 10000);
+
+        const remainingWinners = winners.filter((w) => w.drawId !== scheduleId);
+        handleUpdateWinners(remainingWinners, true);
+
+        const remainingWinnerParticipantIds = new Set(remainingWinners.map((w) => w.participantId));
+        const removedParticipantIds = new Set(sessionWinners.map((w) => w.participantId));
+        const updatedParticipants = participants.map((p) =>
+          removedParticipantIds.has(p.id) && !remainingWinnerParticipantIds.has(p.id)
+            ? { ...p, status: 'active' as const }
+            : p
+        );
+        handleUpdateParticipants(updatedParticipants);
+
+        const prizeDecrementMap = new Map<string, number>();
+        sessionWinners.forEach((w) => {
+          prizeDecrementMap.set(w.prizeId, (prizeDecrementMap.get(w.prizeId) || 0) + 1);
+        });
+        const updatedPrizes = prizes.map((p) => {
+          const dec = prizeDecrementMap.get(p.id) || 0;
+          return dec > 0 ? { ...p, drawnQuantity: Math.max(0, p.drawnQuantity - dec) } : p;
+        });
+        handleUpdatePrizes(updatedPrizes);
+      }
+      ApiService.resetLive().catch(() => {});
+    }
+
+    setAdminToast('🔓 Horário de sorteio desbloqueado pelo Administrador.');
+    setTimeout(() => setAdminToast(null), 3500);
+  };
+
+  // Live Draw Winner Announced handler (idempotent across local finish + SSE reveal)
   const handleWinnerAnnounced = (winner: DrawWinner) => {
+    if (processedWinnerIdsRef.current.has(winner.id) || winners.some((w) => w.id === winner.id)) {
+      return;
+    }
+    processedWinnerIdsRef.current.add(winner.id);
+
     const updatedWinners = [winner, ...winners];
     handleUpdateWinners(updatedWinners);
 
@@ -660,10 +764,20 @@ export default function App() {
       p.id === winner.participantId ? { ...p, status: 'winner' as const } : p
     );
     handleUpdateParticipants(updatedParticipants);
+
+    if (winner.drawId) {
+      handleLockSchedule(winner.drawId);
+    }
   };
 
-  // Increment prize drawn count
-  const handlePrizeQuantityDrawn = (prizeId: string) => {
+  // Increment prize drawn count (idempotent when winnerId is supplied)
+  const handlePrizeQuantityDrawn = (prizeId: string, winnerId?: string) => {
+    if (winnerId) {
+      if (processedPrizeWinnerIdsRef.current.has(winnerId) || winners.some((w) => w.id === winnerId)) {
+        return;
+      }
+      processedPrizeWinnerIdsRef.current.add(winnerId);
+    }
     const updatedPrizes = prizes.map((p) =>
       p.id === prizeId ? { ...p, drawnQuantity: p.drawnQuantity + 1 } : p
     );
@@ -1129,8 +1243,12 @@ export default function App() {
             winners={winners}
             brand={brand}
             isAdmin={isAdminUnlocked}
+            isAdministrator={isAdministrator}
+            currentUser={currentUser}
             onWinnerAnnounced={handleWinnerAnnounced}
             onPrizeQuantityDrawn={handlePrizeQuantityDrawn}
+            onLockSchedule={handleLockSchedule}
+            onUnlockSchedule={handleUnlockSchedule}
             onRequestUnlockAdmin={() => {
               if (isAdminUnlocked) {
                 setCurrentView('admin');
@@ -1171,6 +1289,7 @@ export default function App() {
             onUpdatePrizes={handleUpdatePrizes}
             onResetPrize={handleResetPrize}
             onUpdateSchedules={handleUpdateSchedules}
+            onUnlockSchedule={handleUnlockSchedule}
             onUpdateWinners={handleUpdateWinners}
             onAddNotificationLog={handleAddNotificationLog}
             onUpdateNotificationSettings={handleUpdateSettings}

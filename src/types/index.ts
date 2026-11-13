@@ -60,6 +60,11 @@ export interface DrawSchedule {
   createdAt: string;
   roundNumber?: number; // 1, 2, 3 or 4
   roundLabel?: string; // e.g. "1ª Rodada - 10:00"
+  isLocked?: boolean; // Bloqueado após execução do sorteio na hora agendada
+  manuallyUnlocked?: boolean; // Desbloqueado manualmente pelo Administrador em caso de engano
+  drawnAt?: string; // Data/hora ISO em que o sorteio foi executado
+  unlockedAt?: string; // Data/hora ISO em que o Administrador desbloqueou
+  unlockedBy?: string; // Nome/utilizador do Administrador que desbloqueou
 }
 
 export interface DrawWinner {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DrawSchedule, Prize, BrandConfig } from '../../types';
+import { DrawSchedule, DrawWinner, Prize, BrandConfig } from '../../types';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -11,24 +11,33 @@ import {
   Pencil, 
   X,
   Check,
-  Sparkles
+  Lock,
+  Unlock,
+  ShieldAlert
 } from 'lucide-react';
 import { isLightColor } from '../../utils/storage';
+import { isScheduleCompletedOrLocked, getScheduleDrawLockStatus } from '../../utils/scheduleLock';
 
 interface CalendarTabProps {
   schedules: DrawSchedule[];
   prizes: Prize[];
+  winners?: DrawWinner[];
   onUpdateSchedules: (schedules: DrawSchedule[]) => void;
+  onUnlockSchedule?: (scheduleId: string, clearSessionWinners?: boolean) => void;
   onGoToLive: () => void;
   brand?: BrandConfig;
+  isStandardUser?: boolean;
 }
 
 export const CalendarTab: React.FC<CalendarTabProps> = ({
   schedules,
   prizes,
+  winners = [],
   onUpdateSchedules,
+  onUnlockSchedule,
   onGoToLive,
   brand,
+  isStandardUser = false,
 }) => {
   const isLight = isLightColor(brand?.backgroundColor || '#FFFFFF');
 
@@ -54,6 +63,8 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [deletingSchedule, setDeletingSchedule] = useState<DrawSchedule | null>(null);
+  const [unlockingSchedule, setUnlockingSchedule] = useState<DrawSchedule | null>(null);
+  const [clearWinnersOnUnlock, setClearWinnersOnUnlock] = useState<boolean>(false);
 
   // Abrir Modal de Edição com os valores atuais do sorteio
   const handleOpenEdit = (schedule: DrawSchedule) => {
@@ -79,8 +90,15 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
       return;
     }
 
+    const wasLocked = isScheduleCompletedOrLocked(editingSchedule);
+    if (isStandardUser && wasLocked) {
+      setFormError('Somente o Administrador pode alterar ou desbloquear um sorteio já realizado.');
+      return;
+    }
+
     const updatedSchedules = schedules.map((s) => {
       if (s.id === editingSchedule.id) {
+        const isReopening = wasLocked && editStatus !== 'completed';
         return {
           ...s,
           title: editTitle.trim(),
@@ -89,6 +107,10 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
           scheduledTime: editScheduledTime,
           roundLabel: editRoundLabel.trim() || s.roundLabel,
           status: editStatus,
+          isLocked: editStatus === 'completed' ? true : false,
+          manuallyUnlocked: isReopening ? true : s.manuallyUnlocked,
+          unlockedAt: isReopening ? new Date().toISOString() : s.unlockedAt,
+          unlockedBy: isReopening ? 'Administrador' : s.unlockedBy,
           prizeIds: editSelectedPrizeIds.length > 0 ? editSelectedPrizeIds : s.prizeIds,
         };
       }
@@ -134,6 +156,10 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
 
   const handleConfirmDelete = () => {
     if (!deletingSchedule) return;
+    if (isStandardUser && isScheduleCompletedOrLocked(deletingSchedule)) {
+      setDeletingSchedule(null);
+      return;
+    }
     const targetId = deletingSchedule.id;
     onUpdateSchedules(schedules.filter((s) => s.id !== targetId));
     setDeletingSchedule(null);
@@ -141,12 +167,57 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleToggleStatus = (id: string, currentStatus: DrawSchedule['status']) => {
-    const nextStatus: DrawSchedule['status'] =
-      currentStatus === 'scheduled' ? 'live' : currentStatus === 'live' ? 'completed' : 'scheduled';
+  const handleToggleStatus = (schedule: DrawSchedule) => {
+    const isLocked = isScheduleCompletedOrLocked(schedule);
+    if (isLocked) {
+      if (isStandardUser) {
+        setToastMessage('Somente o Administrador pode desbloquear um sorteio já realizado.');
+        setTimeout(() => setToastMessage(null), 3500);
+        return;
+      }
+      setClearWinnersOnUnlock(false);
+      setUnlockingSchedule(schedule);
+      return;
+    }
 
-    const updated = schedules.map((s) => (s.id === id ? { ...s, status: nextStatus } : s));
+    const nextStatus: DrawSchedule['status'] =
+      schedule.status === 'scheduled' ? 'live' : 'completed';
+
+    const updated = schedules.map((s) =>
+      s.id === schedule.id
+        ? {
+            ...s,
+            status: nextStatus,
+            isLocked: nextStatus === 'completed',
+            drawnAt: nextStatus === 'completed' ? s.drawnAt || new Date().toISOString() : s.drawnAt,
+          }
+        : s
+    );
     onUpdateSchedules(updated);
+  };
+
+  const handleConfirmUnlock = () => {
+    if (!unlockingSchedule || isStandardUser) return;
+    if (onUnlockSchedule) {
+      onUnlockSchedule(unlockingSchedule.id, clearWinnersOnUnlock);
+    } else {
+      const updated = schedules.map((s) =>
+        s.id === unlockingSchedule.id
+          ? {
+              ...s,
+              status: 'scheduled' as const,
+              isLocked: false,
+              manuallyUnlocked: true,
+              unlockedAt: new Date().toISOString(),
+              unlockedBy: 'Administrador',
+            }
+          : s
+      );
+      onUpdateSchedules(updated);
+    }
+    setToastMessage(`Sorteio "${unlockingSchedule.title}" desbloqueado pelo Administrador.`);
+    setTimeout(() => setToastMessage(null), 3500);
+    setUnlockingSchedule(null);
   };
 
   const togglePrizeSelect = (prizeId: string) => {
@@ -246,15 +317,19 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
         {schedules.map((schedule) => {
           const scheduleDateTime = new Date(`${schedule.scheduledDate}T${schedule.scheduledTime}:00`);
           const assignedPrizes = prizes.filter((p) => schedule.prizeIds.includes(p.id));
+          const isCompletedLocked = isScheduleCompletedOrLocked(schedule);
+          const lockStatus = getScheduleDrawLockStatus(schedule, schedules);
 
           return (
             <div
               key={schedule.id}
               className={`border rounded-2xl p-5 transition-all shadow-sm ${
-                schedule.status === 'live'
+                schedule.status === 'live' && !isCompletedLocked
                   ? isLight ? 'border-red-400 bg-red-50/50 ring-2 ring-red-500/10' : 'border-red-500/60 bg-red-950/10'
-                  : schedule.status === 'completed'
+                  : isCompletedLocked
                   ? isLight ? 'border-emerald-200 bg-emerald-50/20' : 'border-emerald-500/30 bg-slate-900'
+                  : lockStatus.isLocked
+                  ? isLight ? 'border-amber-200 bg-amber-50/20' : 'border-amber-500/30 bg-slate-900'
                   : isLight ? 'border-slate-200 bg-white hover:border-slate-300' : 'border-slate-800 bg-slate-900'
               }`}
             >
@@ -262,22 +337,34 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Status Badge */}
-                    {schedule.status === 'live' && (
+                    {schedule.status === 'live' && !isCompletedLocked && (
                       <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E30613] text-white animate-pulse">
                         <span className="w-2 h-2 rounded-full bg-white"></span>
                         Transmissão Ao Vivo
                       </span>
                     )}
-                    {schedule.status === 'scheduled' && (
+                    {schedule.status === 'scheduled' && !isCompletedLocked && (
                       <span className="flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold text-[#E30613] bg-red-50 border border-red-200">
                         <Clock className="w-3 h-3 text-[#E30613]" />
                         Agendado
                       </span>
                     )}
-                    {schedule.status === 'completed' && (
-                      <span className="flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Concluído
+                    {isCompletedLocked && (
+                      <span className="flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300">
+                        <Lock className="w-3 h-3 text-emerald-700" />
+                        Bloqueado (Já Sorteado)
+                      </span>
+                    )}
+                    {!isCompletedLocked && lockStatus.reason === 'NOT_POSTERIOR' && (
+                      <span className="flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300">
+                        <Lock className="w-3 h-3 text-amber-700" />
+                        Bloqueado (Horário Anterior)
+                      </span>
+                    )}
+                    {!isCompletedLocked && schedule.manuallyUnlocked && (
+                      <span className="flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold text-blue-800 bg-blue-50 border border-blue-200">
+                        <Unlock className="w-3 h-3 text-blue-600" />
+                        Desbloqueado pelo Admin
                       </span>
                     )}
 
@@ -330,48 +417,79 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                   </div>
                 </div>
 
-                {/* Right Actions (Highlighted button to edit dates and times) */}
+                {/* Right Actions */}
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  {/* BOTÃO PARA EDITAR AS DATAS E HORAS DO SORTEIO */}
-                  <button
-                    onClick={() => handleOpenEdit(schedule)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer border ${
-                      isLight 
-                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300 hover:border-amber-400' 
-                        : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-600/40'
-                    }`}
-                    title="Editar a data, hora de início, título ou prémios deste sorteio"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>Editar Data/Hora</span>
-                  </button>
+                  {(!isStandardUser || !isCompletedLocked) && (
+                    <button
+                      onClick={() => handleOpenEdit(schedule)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer border ${
+                        isLight 
+                          ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300 hover:border-amber-400' 
+                          : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-600/40'
+                      }`}
+                      title="Editar a data, hora de início, título ou prémios deste sorteio"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>Editar Data/Hora</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => handleToggleStatus(schedule.id, schedule.status)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-                      isLight 
-                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' 
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                    }`}
-                  >
-                    Mudar Status
-                  </button>
+                  {isCompletedLocked ? (
+                    !isStandardUser ? (
+                      <button
+                        onClick={() => {
+                          setClearWinnersOnUnlock(false);
+                          setUnlockingSchedule(schedule);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-600 shadow-sm transition-colors cursor-pointer"
+                        title="Desbloquear este sorteio em caso de engano (exclusivo Administrador)"
+                      >
+                        <Unlock className="w-3.5 h-3.5" />
+                        <span>Desbloquear (Admin)</span>
+                      </button>
+                    ) : (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border ${
+                          isLight
+                            ? 'bg-slate-100 text-slate-500 border-slate-200'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                        title="Somente um Administrador pode desbloquear um sorteio já realizado"
+                      >
+                        <Lock className="w-3 h-3" />
+                        <span>Somente Admin pode desbloquear</span>
+                      </span>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => handleToggleStatus(schedule)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+                        isLight 
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' 
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      }`}
+                    >
+                      Mudar Status
+                    </button>
+                  )}
 
                   <button
                     onClick={onGoToLive}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white text-xs font-bold shadow transition-transform hover:scale-105 cursor-pointer"
                   >
                     <Tv className="w-3.5 h-3.5" />
-                    <span>Abrir na Live</span>
+                    <span>Abrir Sorteio</span>
                   </button>
 
-                  <button
-                    onClick={() => setDeletingSchedule(schedule)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                    title="Excluir Agendamento"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {(!isStandardUser || !isCompletedLocked) && (
+                    <button
+                      onClick={() => setDeletingSchedule(schedule)}
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Excluir Agendamento"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -797,6 +915,77 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Sim, Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Admin Unlock Schedule */}
+      {unlockingSchedule && !isStandardUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className={`border rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 ${
+            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-amber-600">
+                <Unlock className="w-5 h-5" />
+                <span>Desbloquear Sorteio (Admin)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setUnlockingSchedule(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className={`p-3.5 rounded-2xl border mb-4 text-xs space-y-1.5 ${
+              isLight ? 'bg-amber-50 border-amber-200 text-amber-950' : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+            }`}>
+              <div className="flex items-center gap-1.5 font-bold">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Ação Exclusiva de Administrador</span>
+              </div>
+              <p>
+                Vai desbloquear o horário <strong>{unlockingSchedule.title}</strong> ({unlockingSchedule.scheduledDate} às {unlockingSchedule.scheduledTime}), permitindo realizar o sorteio novamente caso tenha ocorrido algum engano.
+              </p>
+            </div>
+
+            {winners.filter((w) => w.drawId === unlockingSchedule.id).length > 0 && (
+              <label className={`flex items-start gap-2.5 p-3 rounded-2xl border mb-5 text-xs cursor-pointer ${
+                isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-800 text-slate-300'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={clearWinnersOnUnlock}
+                  onChange={(e) => setClearWinnersOnUnlock(e.target.checked)}
+                  className="mt-0.5 rounded text-[#E30613] focus:ring-[#E30613]"
+                />
+                <span>
+                  <strong>Remover também o(s) {winners.filter((w) => w.drawId === unlockingSchedule.id).length} vencedor(es)</strong> registado(s) nesta sessão e repor a quantidade do prémio.
+                </span>
+              </label>
+            )}
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setUnlockingSchedule(null)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer border ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'text-slate-400 hover:text-white border-slate-700'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnlock}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Unlock className="w-4 h-4" />
+                <span>Confirmar Desbloqueio</span>
               </button>
             </div>
           </div>

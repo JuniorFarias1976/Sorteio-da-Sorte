@@ -74,6 +74,13 @@
         "scheduledDate": { "type": "string" },
         "scheduledTime": { "type": "string" },
         "status": { "type": "string", "enum": ["scheduled", "live", "completed", "cancelled"] },
+        "roundNumber": { "type": "number" },
+        "roundLabel": { "type": "string" },
+        "isLocked": { "type": "boolean" },
+        "manuallyUnlocked": { "type": "boolean" },
+        "drawnAt": { "type": "string", "format": "date-time" },
+        "unlockedAt": { "type": "string", "format": "date-time" },
+        "unlockedBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "title", "scheduledDate", "scheduledTime", "status"]

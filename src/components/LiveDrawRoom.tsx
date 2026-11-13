@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { Participant, Prize, DrawSchedule, DrawWinner, BrandConfig } from '../types';
+import { Participant, Prize, DrawSchedule, DrawWinner, BrandConfig, AppUser } from '../types';
 import { isLightColor } from '../utils/storage';
 import { playTickSound, playSuspenseSound, playWinFanfare, playCountdownBeep } from '../utils/audio';
 import { exportCertificatePDF } from '../utils/export';
+import {
+  formatScheduleDatePt,
+  getNextAvailablePosteriorSchedule,
+  getScheduleDrawLockStatus,
+  isScheduleCompletedOrLocked,
+} from '../utils/scheduleLock';
 import { 
   Trophy, 
   Sparkles, 
@@ -26,7 +32,7 @@ import {
   Calendar,
   Clock,
   Lock,
-  ChevronLeft,
+  Unlock,
   X
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
@@ -38,8 +44,12 @@ interface LiveDrawRoomProps {
   winners: DrawWinner[];
   brand: BrandConfig;
   isAdmin: boolean;
+  isAdministrator?: boolean;
+  currentUser?: AppUser | null;
   onWinnerAnnounced: (winner: DrawWinner) => void;
-  onPrizeQuantityDrawn: (prizeId: string) => void;
+  onPrizeQuantityDrawn: (prizeId: string, winnerId?: string) => void;
+  onLockSchedule?: (scheduleId: string) => void;
+  onUnlockSchedule?: (scheduleId: string, clearSessionWinners?: boolean) => void;
   onRequestUnlockAdmin?: () => void;
   onGoToAdmin?: () => void;
   onGoToPublic?: () => void;
@@ -53,8 +63,12 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   winners,
   brand,
   isAdmin,
+  isAdministrator = isAdmin,
+  currentUser = null,
   onWinnerAnnounced,
   onPrizeQuantityDrawn,
+  onLockSchedule,
+  onUnlockSchedule,
   onRequestUnlockAdmin,
   onGoToAdmin,
   onGoToPublic,
@@ -65,6 +79,8 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>(prizes[0]?.id || '');
   const [showResetConfirmModal, setShowResetConfirmModal] = useState<boolean>(false);
   const [clearWinnersOnReset, setClearWinnersOnReset] = useState<boolean>(true);
+  const [showUnlockScheduleModal, setShowUnlockScheduleModal] = useState<boolean>(false);
+  const [clearWinnersOnUnlock, setClearWinnersOnUnlock] = useState<boolean>(false);
   const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [currentDisplayTicket, setCurrentDisplayTicket] = useState<string>(winners[0]?.participantTicket || '00000');
@@ -73,12 +89,11 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const [latestWinner, setLatestWinner] = useState<DrawWinner | null>(winners[0] || null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [drawSpeed, setDrawSpeed] = useState<number>(40); // ms per tick
-  const [countdown, setCountdown] = useState<number | null>(null);
   const [drawErrorNotice, setDrawErrorNotice] = useState<string | null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
   const countdownIntervalRef = useRef<any>(null);
   const tumblerTimeoutRef = useRef<any>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const authoritativeWinnerRef = useRef<DrawWinner | null>(null);
 
   const clearAllTimers = () => {
@@ -116,9 +131,12 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   }, [schedules, selectedScheduleId]);
 
   const activeSchedule = schedules.find(s => s.id === selectedScheduleId) || schedules[0];
+  const drawLockStatus = getScheduleDrawLockStatus(activeSchedule, schedules);
+  const nextPosteriorSchedule = getNextAvailablePosteriorSchedule(activeSchedule, schedules);
 
   const handleSelectSchedule = (schedId: string) => {
     setSelectedScheduleId(schedId);
+    setDrawErrorNotice(null);
     const target = schedules.find(s => s.id === schedId);
     if (target && target.prizeIds && target.prizeIds.length > 0) {
       const matchPrize = prizes.find(p => target.prizeIds.includes(p.id));
@@ -240,7 +258,12 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     setLatestWinner(winnerRecord);
 
     onWinnerAnnounced(winnerRecord);
-    onPrizeQuantityDrawn(winnerRecord.prizeId);
+    onPrizeQuantityDrawn(winnerRecord.prizeId, winnerRecord.id);
+
+    const targetSchedId = activeSchedule?.id || winnerRecord.drawId;
+    if (targetSchedId) {
+      onLockSchedule?.(targetSchedId);
+    }
 
     broadcastEvent({
       type: 'WINNER_REVEALED',
@@ -314,7 +337,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     ApiService.getLiveState().then((state) => {
       if (!state) return;
       if (state.prizeId) setSelectedPrizeId(state.prizeId);
-      if (state.round) {
+      if (state.scheduleId) {
+        const matchedById = schedules.find(s => s.id === state.scheduleId);
+        if (matchedById) setSelectedScheduleId(matchedById.id);
+      } else if (state.round) {
         const matched = schedules.find(s => s.roundNumber === state.round);
         if (matched) setSelectedScheduleId(matched.id);
       }
@@ -336,7 +362,10 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
           clearAllTimers();
           if (data.prizeId) setSelectedPrizeId(data.prizeId);
-          if (data.round) {
+          if (data.scheduleId) {
+            const matchedById = schedules.find(s => s.id === data.scheduleId);
+            if (matchedById) setSelectedScheduleId(matchedById.id);
+          } else if (data.round) {
             const matched = schedules.find(s => s.roundNumber === data.round);
             if (matched) setSelectedScheduleId(matched.id);
           }
@@ -378,7 +407,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
           setCurrentDisplayCity(data.winner.participantCity || data.winner.participantDocument || '');
           setLatestWinner(data.winner);
           onWinnerAnnounced(data.winner);
-          onPrizeQuantityDrawn(data.winner.prizeId);
+          onPrizeQuantityDrawn(data.winner.prizeId, data.winner.id);
           if (soundEnabled) playWinFanfare();
           triggerConfettiExplosion();
         } else if (data.type === 'LIVE_RESET') {
@@ -436,9 +465,17 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
   const startDrawRoutine = async () => {
     if (!isAdmin) {
-      setDrawErrorNotice('Acesso Restrito: Somente o administrador do aplicativo pode realizar o sorteio!');
+      setDrawErrorNotice('Acesso Restrito: Somente um utilizador autenticado pode realizar o sorteio!');
       onRequestUnlockAdmin?.();
       setTimeout(() => setDrawErrorNotice(null), 4000);
+      return;
+    }
+    if (drawLockStatus.isLocked) {
+      setDrawErrorNotice(
+        drawLockStatus.message ||
+          'Este sorteio já foi realizado e está bloqueado. Só é possível realizar um novo sorteio numa data ou hora posterior.'
+      );
+      setTimeout(() => setDrawErrorNotice(null), 5000);
       return;
     }
     if (eligibleParticipants.length === 0) {
@@ -461,22 +498,30 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     clearAllTimers();
     authoritativeWinnerRef.current = null;
     setLatestWinner(null);
+    setDrawErrorNotice(null);
     setIsDrawing(true);
     setCountdown(3);
 
     broadcastEvent({
       type: 'START_DRAW',
       prizeId: currentPrize.id,
+      scheduleId: activeSchedule?.id,
       round: selectedRound,
     });
 
     if (soundEnabled) playCountdownBeep(false);
 
-    // Call server to trigger draw asynchronously (does not block local animation)
-    ApiService.triggerDraw(currentPrize.id, selectedRound)
+    // Call server to trigger draw asynchronously (validates schedule lock on server)
+    ApiService.triggerDraw(currentPrize.id, selectedRound, activeSchedule?.id)
       .then((res) => {
         if (res.success && res.winner) {
           authoritativeWinnerRef.current = res.winner;
+        } else if (!res.success && res.code === 'SCHEDULE_LOCKED') {
+          clearAllTimers();
+          setIsDrawing(false);
+          setCountdown(null);
+          setDrawErrorNotice(res.error || 'Este sorteio está bloqueado. Só é possível sortear numa data ou hora posterior.');
+          setTimeout(() => setDrawErrorNotice(null), 5000);
         }
       })
       .catch((err) => {
@@ -613,7 +658,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
             <div className={`flex items-center gap-1.5 px-3 py-1 border rounded-full text-xs font-bold tracking-wider uppercase ${
               isLight ? 'bg-red-50 border-red-200 text-[#E30613]' : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
             }`}>
-              👑 MESA DO ADMINISTRADOR
+              {isAdministrator ? '👑 MESA DO ADMINISTRADOR' : `👤 MESA DO OPERADOR${currentUser?.name ? ` (${currentUser.name})` : ''}`}
             </div>
           ) : (
             <div className={`flex items-center gap-2 px-3 py-1 border rounded-full text-xs font-bold tracking-wider uppercase animate-pulse ${
@@ -624,7 +669,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
             </div>
           )}
 
-          {/* Dynamic Schedules Switcher (Showing Days and Times) */}
+          {/* Dynamic Schedules Switcher (Showing Days, Times, and Lock State) */}
           <div className={`flex flex-wrap items-center border rounded-xl p-1 gap-1 max-w-full overflow-x-auto ${
             isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-900 border-slate-800'
           }`}>
@@ -632,6 +677,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
               schedules.map((s) => {
                 const isSelected = selectedScheduleId === s.id;
                 const shortDate = formatScheduleShortDate(s.scheduledDate);
+                const slotLocked = isScheduleCompletedOrLocked(s) || getScheduleDrawLockStatus(s, schedules).isLocked;
                 return (
                   <button
                     key={s.id}
@@ -643,13 +689,22 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                       isAdmin ? 'cursor-pointer' : 'cursor-default'
                     } ${
                       isSelected
-                        ? (isLight ? 'bg-[#E30613] text-white font-bold shadow-sm' : 'bg-amber-500 text-slate-950 font-bold shadow-md')
+                        ? slotLocked
+                          ? (isLight ? 'bg-slate-800 text-white font-bold shadow-sm' : 'bg-slate-700 text-amber-300 font-bold shadow-md')
+                          : (isLight ? 'bg-[#E30613] text-white font-bold shadow-sm' : 'bg-amber-500 text-slate-950 font-bold shadow-md')
+                        : slotLocked
+                        ? (isLight ? 'text-slate-400 bg-slate-200/70 hover:text-slate-700' : 'text-slate-500 bg-slate-950/60 hover:text-slate-300')
                         : isAdmin
                         ? (isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/60')
                         : (isLight ? 'text-slate-500 opacity-70' : 'text-slate-500 opacity-60')
                     }`}
-                    title={isAdmin ? `${s.title} • ${formatScheduleFullDate(s.scheduledDate)} às ${s.scheduledTime}` : `Sessão: ${s.title}`}
+                    title={
+                      isAdmin
+                        ? `${s.title} • ${formatScheduleFullDate(s.scheduledDate)} às ${s.scheduledTime}${slotLocked ? ' (Bloqueado)' : ''}`
+                        : `Sessão: ${s.title}`
+                    }
                   >
+                    {slotLocked && <Lock className="w-3 h-3 shrink-0 opacity-85" />}
                     <span className="font-mono text-[11px] opacity-90">{shortDate}</span>
                     <span className="font-bold">{s.scheduledTime}</span>
                     <span className="hidden md:inline text-[11px]">({s.title})</span>
@@ -675,7 +730,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                 isLight ? 'bg-red-50 border-red-200 text-[#E30613]' : 'bg-red-500/15 border-red-500/30 text-red-300'
               }`}>
                 <ShieldAlert className={`w-3.5 h-3.5 ${isLight ? 'text-[#E30613]' : 'text-red-400'}`} />
-                <span>Admin Ativo</span>
+                <span>{isAdministrator ? 'Admin Ativo' : 'Operador Ativo'}</span>
               </span>
               <button
                 onClick={handleResetScreen}
@@ -921,6 +976,22 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                         <span className={`font-normal ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Horário:</span>
                         <span className="font-mono text-[#E30613] font-extrabold text-sm">{activeSchedule?.scheduledTime || '10:00'}</span>
                       </div>
+                      {drawLockStatus.isLocked && (
+                        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-[11px] font-bold ${
+                          isLight ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                        }`}>
+                          <Lock className="w-3 h-3 shrink-0" />
+                          <span>{drawLockStatus.reason === 'ALREADY_DRAWN' ? 'Bloqueado • Já Sorteado' : 'Bloqueado • Horário Anterior'}</span>
+                        </div>
+                      )}
+                      {!drawLockStatus.isLocked && activeSchedule?.manuallyUnlocked && (
+                        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-[11px] font-bold ${
+                          isLight ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                        }`}>
+                          <Unlock className="w-3 h-3 shrink-0" />
+                          <span>Desbloqueado pelo Admin</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -990,24 +1061,97 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                       <div>
                         <button
                           onClick={startDrawRoutine}
-                          disabled={isDrawing || countdown !== null || isPrizeExhausted}
+                          disabled={isDrawing || countdown !== null || isPrizeExhausted || drawLockStatus.isLocked}
                           className={`w-full max-w-md mx-auto py-5 px-8 rounded-2xl font-black text-lg sm:text-xl tracking-wider uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${
-                            isPrizeExhausted
+                            drawLockStatus.isLocked
+                              ? (isLight ? 'bg-slate-200 text-slate-600 border-2 border-slate-300 cursor-not-allowed shadow-none' : 'bg-slate-800/90 text-amber-300/80 border-2 border-amber-500/30 cursor-not-allowed shadow-none')
+                              : isPrizeExhausted
                               ? (isLight ? 'bg-red-100 text-red-700 border border-red-300 cursor-not-allowed' : 'bg-red-950/60 text-red-400 border border-red-500/50 cursor-not-allowed opacity-90')
                               : isDrawing || countdown !== null
                               ? (isLight ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700')
                               : 'bg-[#E30613] hover:bg-[#C80510] text-white active:scale-98 shadow-red-600/30 cursor-pointer ring-4 ring-red-500/25'
                           }`}
                         >
-                          <Flame className="w-6 h-6 fill-current animate-pulse shrink-0" />
+                          {drawLockStatus.isLocked ? (
+                            <Lock className="w-6 h-6 shrink-0" />
+                          ) : (
+                            <Flame className="w-6 h-6 fill-current animate-pulse shrink-0" />
+                          )}
                           <span>
-                            {isPrizeExhausted
+                            {drawLockStatus.isLocked
+                              ? `SORTEIO BLOQUEADO — ${activeSchedule?.scheduledTime || 'REALIZADO'}`
+                              : isPrizeExhausted
                               ? 'PRÊMIO TOTALMENTE ESGOTADO'
                               : isDrawing
                               ? 'GIRANDO GLOBO...'
                               : `SORTEAR: ${activeSchedule ? `${activeSchedule.scheduledTime} - ${activeSchedule.title}` : 'SORTEIO OFICIAL'}!`}
                           </span>
                         </button>
+
+                        {/* Schedule Lock Notice + Posterior Navigation + Administrator-Only Unlock */}
+                        {drawLockStatus.isLocked && (
+                          <div className={`mt-4 max-w-lg mx-auto p-4 rounded-2xl border text-left space-y-3 shadow-sm ${
+                            isLight
+                              ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+                              : 'bg-amber-950/30 border-amber-500/40 text-amber-100'
+                          }`}>
+                            <div className="flex items-start gap-2.5 text-xs leading-relaxed">
+                              <Lock className={`w-4 h-4 shrink-0 mt-0.5 ${isLight ? 'text-amber-700' : 'text-amber-400'}`} />
+                              <div>
+                                <p className="font-bold uppercase tracking-wide text-[11px] mb-0.5">
+                                  {drawLockStatus.reason === 'ALREADY_DRAWN'
+                                    ? 'Sorteio Concluído e Bloqueado'
+                                    : 'Horário Anterior Bloqueado'}
+                                </p>
+                                <p>{drawLockStatus.message}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              {nextPosteriorSchedule && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectSchedule(nextPosteriorSchedule.id)}
+                                  className="flex-1 min-w-[200px] py-2.5 px-3.5 rounded-xl bg-[#E30613] hover:bg-[#C80510] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-98"
+                                >
+                                  <span>
+                                    Avançar para Próximo Horário ({formatScheduleDatePt(nextPosteriorSchedule.scheduledDate)} às {nextPosteriorSchedule.scheduledTime})
+                                  </span>
+                                  <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                                </button>
+                              )}
+
+                              {isAdministrator && activeSchedule && isScheduleCompletedOrLocked(activeSchedule) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setClearWinnersOnUnlock(false);
+                                    setShowUnlockScheduleModal(true);
+                                  }}
+                                  className={`py-2.5 px-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border shadow-sm transition-all cursor-pointer ${
+                                    isLight
+                                      ? 'bg-white hover:bg-amber-100 text-amber-900 border-amber-400'
+                                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
+                                  }`}
+                                  title="Exclusivo do Administrador: desbloquear este sorteio em caso de engano"
+                                >
+                                  <Unlock className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Desbloquear Sorteio (Admin)</span>
+                                </button>
+                              ) : null}
+                            </div>
+
+                            {!isAdministrator && (
+                              <div className={`flex items-center gap-2 pt-2 border-t text-[11px] font-semibold ${
+                                isLight ? 'border-amber-200 text-amber-900' : 'border-amber-500/30 text-amber-300'
+                              }`}>
+                                <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                                <span>Somente o Administrador pode desbloquear este sorteio caso haja algum engano.</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {isPrizeExhausted && currentPrize && (
                           <div className="mt-3 flex flex-col items-center gap-1.5">
                             <button
@@ -1027,7 +1171,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
                             </span>
                           </div>
                         )}
-                        {activeSchedule && (
+                        {activeSchedule && !drawLockStatus.isLocked && (
                           <p className={`text-xs font-mono mt-2 text-center ${isLight ? 'text-[#E30613]' : 'text-red-400/90'}`}>
                             📅 Agendado para {formatScheduleFullDate(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
                           </p>
@@ -1253,6 +1397,87 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
               >
                 <RotateCcw className="w-4 h-4 stroke-[2.5]" />
                 <span>Confirmar e Resetar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Confirmation Modal to Unlock Scheduled Draw (Administrator Only) */}
+      {showUnlockScheduleModal && isAdministrator && activeSchedule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className={`border rounded-3xl max-w-md w-full p-6 shadow-2xl text-left ${
+            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-700 text-white'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5 text-amber-500">
+                <Unlock className="w-5 h-5 stroke-[2.5]" />
+                <h3 className="text-lg font-bold">Desbloquear Sorteio (Admin)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUnlockScheduleModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className={`p-3.5 rounded-2xl border mb-4 text-xs space-y-1.5 ${
+              isLight ? 'bg-amber-50 border-amber-200 text-amber-950' : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+            }`}>
+              <p>
+                <strong>Sessão:</strong> {activeSchedule.title}
+              </p>
+              <p>
+                <strong>Data & Hora:</strong> {formatScheduleDatePt(activeSchedule.scheduledDate)} às {activeSchedule.scheduledTime}
+              </p>
+              <p>
+                Use esta opção apenas caso tenha ocorrido algum engano ao acionar o sorteio deste horário.
+              </p>
+            </div>
+
+            {winners.filter((w) => w.drawId === activeSchedule.id).length > 0 && (
+              <label className={`flex items-start gap-2.5 p-3 rounded-2xl border mb-6 text-xs cursor-pointer ${
+                isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950/70 border-slate-800 text-slate-300'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={clearWinnersOnUnlock}
+                  onChange={(e) => setClearWinnersOnUnlock(e.target.checked)}
+                  className="mt-0.5 rounded text-[#E30613] focus:ring-[#E30613]"
+                />
+                <span>
+                  <strong>Remover também o(s) {winners.filter((w) => w.drawId === activeSchedule.id).length} vencedor(es)</strong> registado(s) neste horário e repor a quantidade do prémio.
+                </span>
+              </label>
+            )}
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowUnlockScheduleModal(false)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer border ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onUnlockSchedule?.(activeSchedule.id, clearWinnersOnUnlock);
+                  if (clearWinnersOnUnlock) {
+                    setLatestWinner(null);
+                    setCurrentDisplayTicket('-----');
+                    setCurrentDisplayName('AGUARDANDO SORTEIO...');
+                    setCurrentDisplayCity('');
+                  }
+                  setShowUnlockScheduleModal(false);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer shadow-lg flex items-center gap-2"
+              >
+                <Unlock className="w-4 h-4 stroke-[2.5]" />
+                <span>Confirmar Desbloqueio</span>
               </button>
             </div>
           </div>
