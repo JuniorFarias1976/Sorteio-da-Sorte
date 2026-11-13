@@ -78,6 +78,20 @@ export function getModalLogoSizeClass(size?: string): string {
   }
 }
 
+export const LEGACY_CONSENT_VISIT_TITLE =
+  'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?';
+
+export const DEFAULT_CONSENT_VISIT_TITLE =
+  'Sim, gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?';
+
+export function normalizeConsentVisitTitle(title?: string): string {
+  const trimmed = (title || '').trim();
+  if (!trimmed || trimmed === LEGACY_CONSENT_VISIT_TITLE) {
+    return DEFAULT_CONSENT_VISIT_TITLE;
+  }
+  return trimmed;
+}
+
 export const DEFAULT_BRAND: BrandConfig = {
   companyName: 'Lacer - Sorteio OMD 2026',
   companySlogan: 'Higiene e Saúde Oral • Stand Lacer',
@@ -126,7 +140,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   rafflePrivacyPdfUrl: '',
   rafflePrivacyPdfName: '',
   goodLuckBadgeUrl: '/assets/boa_sorte_badge.jpg',
-  consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+  consentVisitTitle: DEFAULT_CONSENT_VISIT_TITLE,
   consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
   consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
   consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
@@ -381,7 +395,14 @@ export const StorageService = {
   getSettings: () => loadFromStorage<NotificationSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS),
   saveSettings: (data: NotificationSettings) => saveToStorage(STORAGE_KEYS.SETTINGS, data),
 
-  getBrand: () => loadFromStorage<BrandConfig>(STORAGE_KEYS.BRAND, DEFAULT_BRAND),
+  getBrand: () => {
+    const loaded = loadFromStorage<BrandConfig>(STORAGE_KEYS.BRAND, DEFAULT_BRAND);
+    return {
+      ...DEFAULT_BRAND,
+      ...loaded,
+      consentVisitTitle: normalizeConsentVisitTitle(loaded?.consentVisitTitle),
+    };
+  },
   saveBrand: (data: BrandConfig) => saveToStorage(STORAGE_KEYS.BRAND, data),
 
   getFormFields: () => {

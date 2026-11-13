@@ -22,7 +22,7 @@ import {
   Trash2,
   ShieldCheck
 } from 'lucide-react';
-import { DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass } from '../../utils/storage';
+import { DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass, DEFAULT_CONSENT_VISIT_TITLE, normalizeConsentVisitTitle } from '../../utils/storage';
 import { ApiService } from '../../utils/api';
 import { compressImageFile } from '../../utils/imageCompressor';
 import { 
@@ -93,7 +93,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
   // RGPD & Consent Text States
   const [consentVisitTitle, setConsentVisitTitle] = useState(
-    brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'
+    normalizeConsentVisitTitle(brand.consentVisitTitle)
   );
   const [consentHcpDatabaseText, setConsentHcpDatabaseText] = useState(
     brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.'
@@ -177,7 +177,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
     setTicketNotice(brand.ticketNotice || 'Validação única: limite de 1 inscrição por e-mail');
     setTicketModalTitle(brand.ticketModalTitle || 'INSCRIÇÃO CONFIRMADA COM SUCESSO!');
     setTicketModalSubtitle(brand.ticketModalSubtitle || 'O Seu Bilhete Oficial');
-    setConsentVisitTitle(brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?');
+    setConsentVisitTitle(normalizeConsentVisitTitle(brand.consentVisitTitle));
     setConsentHcpDatabaseText(brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.');
     setConsentCommunicationsText(brand.consentCommunicationsText || 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.');
     setConsentProfilingText(brand.consentProfilingText || 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).');
@@ -1191,7 +1191,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                     </span>
                   </span>
                   <span className="text-[11px] text-slate-400">
-                    Desmarque para <strong>retirar do formulário público</strong> a pergunta <em>"Gostaria que um representante da LACER visitasse a sua clínica..."</em> e a caixa de opção <em>"Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde..."</em>.
+                    Desmarque para <strong>retirar do formulário público</strong> a caixa de opção <em>"Sim, gostaria que um representante da LACER visitasse a sua clínica..."</em> e a caixa de opção <em>"Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde..."</em>.
                   </span>
                 </div>
               </label>
@@ -2026,7 +2026,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
                 type="button"
                 onClick={() => {
                   const defaults = {
-                    consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+                    consentVisitTitle: DEFAULT_CONSENT_VISIT_TITLE,
                     consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
                     consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
                     consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
@@ -2081,7 +2081,7 @@ export const BrandCustomizerTab: React.FC<BrandCustomizerTabProps> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  1. Pergunta de Visita da LACER à Clínica
+                  1. Consentimento / Caixa de Aceitação: Visita da LACER à Clínica
                 </label>
                 <input
                   type="text"

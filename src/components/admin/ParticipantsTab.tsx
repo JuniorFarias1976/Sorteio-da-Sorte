@@ -69,6 +69,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [newSelectedSpecialties, setNewSelectedSpecialties] = useState<string[]>([DENTAL_SPECIALTIES[0]]);
   const [newSpecialtyOther, setNewSpecialtyOther] = useState('');
   const [newWantsLacerVisit, setNewWantsLacerVisit] = useState(false);
+  const [newHcpDatabaseConsent, setNewHcpDatabaseConsent] = useState(false);
   const [newMarketingConsent, setNewMarketingConsent] = useState(true);
   const [customTicket, setCustomTicket] = useState('');
   const [allowExtraTicket, setAllowExtraTicket] = useState(false);
@@ -92,6 +93,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   const [editSelectedSpecialties, setEditSelectedSpecialties] = useState<string[]>([]);
   const [editSpecialtyOther, setEditSpecialtyOther] = useState('');
   const [editWantsLacerVisit, setEditWantsLacerVisit] = useState(false);
+  const [editHcpDatabaseConsent, setEditHcpDatabaseConsent] = useState(false);
   const [editMarketingConsent, setEditMarketingConsent] = useState(true);
   const [editTermsAccepted, setEditTermsAccepted] = useState(true);
   const [editTicketNumber, setEditTicketNumber] = useState('');
@@ -190,6 +192,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     setEditSelectedSpecialties(initialSpecs);
     setEditSpecialtyOther(p.specialtyOther || otherText);
     setEditWantsLacerVisit(!!p.wantsLacerVisit);
+    setEditHcpDatabaseConsent(!!p.hcpDatabaseConsent);
     setEditMarketingConsent(p.marketingConsent !== false);
     setEditTermsAccepted(p.termsAccepted !== false);
     setEditTicketNumber(p.ticketNumber || '');
@@ -222,6 +225,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       specialties: processedSpecs,
       specialtyOther: editSpecialtyOther.trim(),
       wantsLacerVisit: editWantsLacerVisit,
+      hcpDatabaseConsent: editHcpDatabaseConsent,
       marketingConsent: editMarketingConsent,
       termsAccepted: editTermsAccepted,
       ticketNumber: editTicketNumber.trim() || editingParticipant.ticketNumber,
@@ -246,6 +250,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     setNewSelectedSpecialties([DENTAL_SPECIALTIES[0]]);
     setNewSpecialtyOther('');
     setNewWantsLacerVisit(false);
+    setNewHcpDatabaseConsent(false);
     setNewMarketingConsent(true);
     setCustomTicket('');
     setAllowExtraTicket(false);
@@ -324,6 +329,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       specialties: processedSpecs,
       specialtyOther: newSpecialtyOther.trim(),
       wantsLacerVisit: newWantsLacerVisit,
+      hcpDatabaseConsent: newHcpDatabaseConsent,
       marketingConsent: newMarketingConsent,
       termsAccepted: true,
       ticketNumber: ticket,
@@ -394,6 +400,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
         clinic: clinics[i % clinics.length],
         specialty: specialties[i % specialties.length],
         wantsLacerVisit: i % 2 === 0,
+        hcpDatabaseConsent: i % 2 === 0,
         marketingConsent: true,
         termsAccepted: true,
         document: '',
@@ -647,6 +654,13 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       ✓ Visita
                     </span>
                   )}
+                  {p.hcpDatabaseConsent && (
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                      isLight ? 'text-sky-900 bg-sky-100 border-sky-300' : 'text-sky-300 bg-sky-500/15 border-sky-500/30'
+                    }`}>
+                      ✓ BD Saúde
+                    </span>
+                  )}
                   {p.marketingConsent && (
                     <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
                       isLight ? 'text-purple-900 bg-purple-100 border-purple-300' : 'text-purple-300 bg-purple-500/15 border-purple-500/30'
@@ -820,15 +834,24 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-3">
-                    {p.wantsLacerVisit ? (
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
-                        isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
-                      }`}>
-                        ✓ Sim (Visita)
-                      </span>
-                    ) : (
-                      <span className="text-slate-500 text-[11px] font-medium">Não</span>
-                    )}
+                    <div className="flex flex-col items-start gap-1">
+                      {p.wantsLacerVisit ? (
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          isLight ? 'text-emerald-900 bg-emerald-100 border-emerald-300' : 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                        }`}>
+                          ✓ Sim (Visita)
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 text-[11px] font-medium">Não</span>
+                      )}
+                      {p.hcpDatabaseConsent && (
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          isLight ? 'text-sky-900 bg-sky-100 border-sky-300' : 'text-sky-300 bg-sky-500/15 border-sky-500/30'
+                        }`}>
+                          ✓ BD Saúde
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 px-3">
                     {p.marketingConsent ? (
@@ -1100,7 +1123,17 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     onChange={(e) => setNewWantsLacerVisit(e.target.checked)}
                     className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
                   />
-                  <span>Gostaria de agendar visita de representante da Lacer</span>
+                  <span>Sim, gostaria que um representante da LACER visitasse a sua clínica</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={newHcpDatabaseConsent}
+                    onChange={(e) => setNewHcpDatabaseConsent(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Concordo com o armazenamento na base de dados de profissionais de saúde</span>
                 </label>
 
                 <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
@@ -1380,8 +1413,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       <p className="font-semibold text-white">Visita de Representante Lacer à Clínica</p>
                       <p className="text-[11px] mt-0.5">
                         {viewingParticipant.wantsLacerVisit
-                          ? '✓ Sim, solicitou agendamento de visita de representante da Lacer.'
+                          ? '✓ Sim, solicitou visita de representante da LACER à clínica.'
                           : 'Não solicitou visita de representante.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Base de Dados de Profissionais de Saúde */}
+                  <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+                    viewingParticipant.hcpDatabaseConsent 
+                      ? 'bg-sky-500/10 border-sky-500/30 text-sky-200' 
+                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${viewingParticipant.hcpDatabaseConsent ? 'text-sky-400' : 'text-slate-600'}`} />
+                    <div>
+                      <p className="font-semibold text-white">Base de Dados de Profissionais de Saúde</p>
+                      <p className="text-[11px] mt-0.5">
+                        {viewingParticipant.hcpDatabaseConsent
+                          ? '✓ Sim, concordou com o armazenamento dos dados na base de dados de profissionais de saúde.'
+                          : 'Não autorizou armazenamento adicional na base de dados de profissionais de saúde.'}
                       </p>
                     </div>
                   </div>
@@ -1635,7 +1685,17 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     onChange={(e) => setEditWantsLacerVisit(e.target.checked)}
                     className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
                   />
-                  <span>Gostaria que um representante da Lacer visitasse a sua clínica</span>
+                  <span>Sim, gostaria que um representante da LACER visitasse a sua clínica</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={editHcpDatabaseConsent}
+                    onChange={(e) => setEditHcpDatabaseConsent(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde</span>
                 </label>
 
                 <label className="flex items-center gap-2.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl cursor-pointer text-xs text-slate-300 hover:text-white">

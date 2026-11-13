@@ -137,6 +137,7 @@ export const ApiService = {
     specialties?: string[];
     specialtyOther?: string;
     wantsLacerVisit?: boolean;
+    hcpDatabaseConsent?: boolean;
     marketingConsent?: boolean;
     profilingConsent?: boolean;
     termsAccepted?: boolean;

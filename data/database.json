@@ -285,7 +285,7 @@
     "rafflePrivacyPdfName": "",
     "showFormPrizeHighlight": true,
     "showConsentVisitSection": true,
-    "consentVisitTitle": "Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?",
+    "consentVisitTitle": "Sim, gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?",
     "consentHcpDatabaseText": "Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.",
     "consentCommunicationsText": "Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.",
     "consentProfilingText": "Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).",
@@ -400,6 +400,6 @@
       "active": true
     }
   ],
-  "version": 1794565625458,
+  "version": 1794571647581,
   "test": 123
 }

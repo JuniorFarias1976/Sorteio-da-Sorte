@@ -17,7 +17,7 @@ import {
   ReportPdfConfig,
   AppUser
 } from './types';
-import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, DEFAULT_USERS, isLightColor } from './utils/storage';
+import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, DEFAULT_USERS, isLightColor, normalizeConsentVisitTitle } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
 import { FirestoreService } from './utils/firestoreService';
 import { Navbar } from './components/Navbar';
@@ -138,6 +138,7 @@ export default function App() {
               clinic: serverP.clinic?.trim() ? serverP.clinic : (local?.clinic || ''),
               specialty: (serverP.specialty?.trim() && serverP.specialty !== 'Não especificada') ? serverP.specialty : (local?.specialty || ''),
               wantsLacerVisit: serverP.wantsLacerVisit !== undefined ? serverP.wantsLacerVisit : local?.wantsLacerVisit,
+              hcpDatabaseConsent: serverP.hcpDatabaseConsent !== undefined ? serverP.hcpDatabaseConsent : local?.hcpDatabaseConsent,
               marketingConsent: serverP.marketingConsent !== undefined ? serverP.marketingConsent : local?.marketingConsent,
               profilingConsent: serverP.profilingConsent !== undefined ? serverP.profilingConsent : local?.profilingConsent,
               termsAccepted: serverP.termsAccepted !== undefined ? serverP.termsAccepted : local?.termsAccepted,
@@ -190,10 +191,14 @@ export default function App() {
       try { StorageService.saveSettings(serverData.settings); } catch {}
     }
     if (serverData.brand) {
-      setBrand(serverData.brand);
-      try { StorageService.saveBrand(serverData.brand); } catch {}
-      if (serverData.brand.companyName) {
-        document.title = `${serverData.brand.companyName} - Sorteios Oficiais`;
+      const normalizedBrand: BrandConfig = {
+        ...serverData.brand,
+        consentVisitTitle: normalizeConsentVisitTitle(serverData.brand.consentVisitTitle),
+      };
+      setBrand(normalizedBrand);
+      try { StorageService.saveBrand(normalizedBrand); } catch {}
+      if (normalizedBrand.companyName) {
+        document.title = `${normalizedBrand.companyName} - Sorteios Oficiais`;
       }
     }
     if (serverData.formFields) {
@@ -280,10 +285,14 @@ export default function App() {
     // 1. Cloud Firestore real-time listener (Global, multi-device, works across mobile/desktop)
     const unsubscribeFirestore = FirestoreService.subscribeAll({
       onBrandChange: (b) => {
-        setBrand(b);
-        try { StorageService.saveBrand(b); } catch {}
-        if (b.companyName) {
-          document.title = `${b.companyName} - Sorteios Oficiais`;
+        const normalizedBrand: BrandConfig = {
+          ...b,
+          consentVisitTitle: normalizeConsentVisitTitle(b.consentVisitTitle),
+        };
+        setBrand(normalizedBrand);
+        try { StorageService.saveBrand(normalizedBrand); } catch {}
+        if (normalizedBrand.companyName) {
+          document.title = `${normalizedBrand.companyName} - Sorteios Oficiais`;
         }
         setIsServerConnected(true);
         setIsSyncing(false);
@@ -307,6 +316,7 @@ export default function App() {
               clinic: remote.clinic?.trim() ? remote.clinic : (local?.clinic || ''),
               specialty: (remote.specialty?.trim() && remote.specialty !== 'Não especificada') ? remote.specialty : (local?.specialty || ''),
               wantsLacerVisit: remote.wantsLacerVisit !== undefined ? remote.wantsLacerVisit : local?.wantsLacerVisit,
+              hcpDatabaseConsent: remote.hcpDatabaseConsent !== undefined ? remote.hcpDatabaseConsent : local?.hcpDatabaseConsent,
               marketingConsent: remote.marketingConsent !== undefined ? remote.marketingConsent : local?.marketingConsent,
               profilingConsent: remote.profilingConsent !== undefined ? remote.profilingConsent : local?.profilingConsent,
               termsAccepted: remote.termsAccepted !== undefined ? remote.termsAccepted : local?.termsAccepted,

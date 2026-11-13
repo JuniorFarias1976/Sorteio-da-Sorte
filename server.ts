@@ -210,7 +210,7 @@ const INITIAL_DATABASE = {
     rafflePrivacyPdfName: '',
     showFormPrizeHighlight: true,
     showConsentVisitSection: true,
-    consentVisitTitle: 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+    consentVisitTitle: 'Sim, gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
     consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
     consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
     consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
@@ -287,10 +287,18 @@ function loadDB(): typeof INITIAL_DATABASE & { version: number } {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
       const parsed = JSON.parse(content);
+      const mergedBrand = { ...INITIAL_DATABASE.brand, ...(parsed.brand || {}) };
+      if (
+        !mergedBrand.consentVisitTitle ||
+        mergedBrand.consentVisitTitle.trim() ===
+          'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'
+      ) {
+        mergedBrand.consentVisitTitle = INITIAL_DATABASE.brand.consentVisitTitle;
+      }
       return {
         ...INITIAL_DATABASE,
         ...parsed,
-        brand: { ...INITIAL_DATABASE.brand, ...(parsed.brand || {}) },
+        brand: mergedBrand,
         settings: { ...INITIAL_DATABASE.settings, ...(parsed.settings || {}) },
         posterConfig: { ...INITIAL_DATABASE.posterConfig, ...(parsed.posterConfig || {}) },
         reportConfig: { ...INITIAL_DATABASE.reportConfig, ...(parsed.reportConfig || {}) },
@@ -525,6 +533,7 @@ async function startServer() {
       specialty, 
       specialtyOther, 
       wantsLacerVisit, 
+      hcpDatabaseConsent,
       marketingConsent, 
       profilingConsent,
       termsAccepted 
@@ -571,6 +580,7 @@ async function startServer() {
       specialties: specialtiesArray,
       specialtyOther: (specialtyOther || '').trim(),
       wantsLacerVisit: Boolean(wantsLacerVisit),
+      hcpDatabaseConsent: Boolean(hcpDatabaseConsent),
       marketingConsent: Boolean(marketingConsent),
       profilingConsent: Boolean(profilingConsent),
       termsAccepted: Boolean(termsAccepted),

@@ -37,6 +37,7 @@
         "city": { "type": "string" },
         "specialty": { "type": "string" },
         "wantsLacerVisit": { "type": "boolean" },
+        "hcpDatabaseConsent": { "type": "boolean" },
         "marketingConsent": { "type": "boolean" },
         "profilingConsent": { "type": "boolean" },
         "termsAccepted": { "type": "boolean" },

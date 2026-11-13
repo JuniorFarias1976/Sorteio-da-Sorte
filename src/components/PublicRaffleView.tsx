@@ -20,7 +20,7 @@ import {
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass } from '../utils/storage';
+import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass, normalizeConsentVisitTitle } from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
 import { 
@@ -111,6 +111,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [specialtyOther, setSpecialtyOther] = useState('');
   const [wantsLacerVisit, setWantsLacerVisit] = useState(false);
+  const [hcpDatabaseConsent, setHcpDatabaseConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [profilingConsent, setProfilingConsent] = useState(false);
   const [document, setDocument] = useState('');
@@ -255,6 +256,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         specialties: processedSpecialties,
         specialtyOther: specialtyOther.trim(),
         wantsLacerVisit,
+        hcpDatabaseConsent,
         marketingConsent,
         profilingConsent,
         termsAccepted: acceptedTerms,
@@ -293,6 +295,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           specialty: finalSpecialty,
           specialtyOther: specialtyOther.trim(),
           wantsLacerVisit,
+          hcpDatabaseConsent,
           marketingConsent,
           profilingConsent,
           termsAccepted: acceptedTerms,
@@ -314,6 +317,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         setSelectedSpecialties([]);
         setSpecialtyOther('');
         setWantsLacerVisit(false);
+        setHcpDatabaseConsent(false);
         setMarketingConsent(false);
         setProfilingConsent(false);
         setDocument('');
@@ -331,6 +335,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
           : finalSpecialty,
         specialtyOther: baseParticipant.specialtyOther || specialtyOther.trim(),
         wantsLacerVisit: baseParticipant.wantsLacerVisit !== undefined ? Boolean(baseParticipant.wantsLacerVisit) : Boolean(wantsLacerVisit),
+        hcpDatabaseConsent: baseParticipant.hcpDatabaseConsent !== undefined ? Boolean(baseParticipant.hcpDatabaseConsent) : Boolean(hcpDatabaseConsent),
         marketingConsent: baseParticipant.marketingConsent !== undefined ? Boolean(baseParticipant.marketingConsent) : Boolean(marketingConsent),
         profilingConsent: baseParticipant.profilingConsent !== undefined ? Boolean(baseParticipant.profilingConsent) : Boolean(profilingConsent),
         termsAccepted: baseParticipant.termsAccepted !== undefined ? Boolean(baseParticipant.termsAccepted) : Boolean(acceptedTerms),
@@ -350,6 +355,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setSelectedSpecialties([]);
       setSpecialtyOther('');
       setWantsLacerVisit(false);
+      setHcpDatabaseConsent(false);
       setMarketingConsent(false);
       setProfilingConsent(false);
       setDocument('');
@@ -373,6 +379,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
         specialties: processedSpecialties,
         specialtyOther: specialtyOther.trim(),
         wantsLacerVisit,
+        hcpDatabaseConsent,
         marketingConsent,
         profilingConsent,
         termsAccepted: acceptedTerms,
@@ -394,6 +401,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
       setSelectedSpecialties([]);
       setSpecialtyOther('');
       setWantsLacerVisit(false);
+      setHcpDatabaseConsent(false);
       setMarketingConsent(false);
       setProfilingConsent(false);
       setDocument('');
@@ -1010,25 +1018,41 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                 {/* Pergunta de Visita Lacer e Base de Dados de Saúde (Controlado no Painel de Controlo) */}
                 {brand.showConsentVisitSection !== false && (
                   <div className="space-y-3">
-                    {/* Pergunta de Visita Lacer */}
-                    <h4 className={`text-xs sm:text-sm font-bold leading-snug ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                      {brand.consentVisitTitle || 'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?'}
-                    </h4>
-
-                    {/* Checkbox 1: Base de dados de profissionais de saúde / interações científicas */}
+                    {/* Checkbox 1: Visita de representante LACER à clínica */}
                     <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
                       isLight 
                         ? wantsLacerVisit 
                           ? 'bg-red-50/60 border-red-300 text-slate-900' 
-                          : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
+                          : 'bg-slate-50/90 border-slate-200 text-slate-800 hover:border-red-200 hover:bg-red-50/20'
                         : wantsLacerVisit 
                           ? 'bg-red-950/30 border-red-500/50 text-white' 
-                          : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                          : 'bg-slate-950/70 border-slate-800 text-slate-200 hover:border-slate-700'
                     }`}>
                       <input
                         type="checkbox"
                         checked={wantsLacerVisit}
                         onChange={(e) => setWantsLacerVisit(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                      />
+                      <span className="leading-relaxed font-semibold">
+                        {normalizeConsentVisitTitle(brand.consentVisitTitle)}
+                      </span>
+                    </label>
+
+                    {/* Checkbox 2: Base de dados de profissionais de saúde / interações científicas */}
+                    <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
+                      isLight 
+                        ? hcpDatabaseConsent 
+                          ? 'bg-red-50/60 border-red-300 text-slate-900' 
+                          : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
+                        : hcpDatabaseConsent 
+                          ? 'bg-red-950/30 border-red-500/50 text-white' 
+                          : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={hcpDatabaseConsent}
+                        onChange={(e) => setHcpDatabaseConsent(e.target.checked)}
                         className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
                       />
                       <span className="leading-relaxed">

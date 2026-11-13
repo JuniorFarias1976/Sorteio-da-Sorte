@@ -9,7 +9,8 @@ export interface Participant {
   specialty?: string; // Especialidade odontológica (ou múltiplas separadas por vírgula)
   specialties?: string[]; // Lista de especialidades selecionadas
   specialtyOther?: string; // Outra especialidade indicada
-  wantsLacerVisit?: boolean; // Base de dados de profissionais de saúde / Visita científica
+  wantsLacerVisit?: boolean; // Visita de representante LACER à clínica
+  hcpDatabaseConsent?: boolean; // Consentimento para armazenamento na base de dados de profissionais de saúde
   marketingConsent?: boolean; // Comunicações científicas e educacionais / Novidades
   profilingConsent?: boolean; // Perfil profissional e interesses em áreas terapêuticas (perfilado)
   termsAccepted?: boolean; // Declaração de leitura e aceitação dos termos legais e políticas de privacidade
