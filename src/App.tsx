@@ -403,7 +403,7 @@ export default function App() {
         if (filtered.length > 0) {
           setUsers(filtered);
           try { StorageService.saveUsers(filtered); } catch {}
-          const usersJson = JSON.stringify(filtered.map((u) => `${u.id}:${u.username}:${u.role}:${u.active}:${u.name}`));
+          const usersJson = JSON.stringify(filtered.map((u) => `${u.id}:${u.username}:${u.password || ''}:${u.role}:${u.active}:${u.name}`));
           if (usersJson !== lastSyncedUsersJsonRef.current) {
             lastSyncedUsersJsonRef.current = usersJson;
             ApiService.saveData({ users: filtered }).catch(() => {});
@@ -788,6 +788,20 @@ export default function App() {
   const handleUpdateUsers = (newUsers: AppUser[], deletedId?: string) => {
     setUsers(newUsers);
     try { StorageService.saveUsers(newUsers); } catch {}
+    if (currentUser) {
+      const updatedCurrent = newUsers.find((u) => u.id === currentUser.id);
+      if (updatedCurrent) {
+        setCurrentUser(updatedCurrent);
+        StorageService.saveCurrentUser(updatedCurrent);
+      }
+    }
+    const primaryAdmin =
+      newUsers.find((u) => u.id === 'usr-admin-1') ||
+      newUsers.find((u) => u.username.toLowerCase() === 'admin') ||
+      newUsers.find((u) => u.role === 'admin' && u.active);
+    if (primaryAdmin?.password && primaryAdmin.password !== brand.adminPassword) {
+      handleUpdateBrand({ ...brand, adminPassword: primaryAdmin.password });
+    }
     if (deletedId) {
       deletedUserIdsRef.current.add(deletedId);
       setTimeout(() => deletedUserIdsRef.current.delete(deletedId), 10000);
@@ -822,7 +836,7 @@ export default function App() {
     handleLogout();
   };
 
-  // In-app Unlock Admin / User submit (Supports individual credentials & master password)
+  // In-app Unlock Admin / User submit (Strictly validates against active user credentials)
   const handleAdminModalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAdminKeyError(null);
@@ -834,7 +848,7 @@ export default function App() {
       return;
     }
 
-    // 1. If username is provided, match by username + password
+    // 1. If username is provided, match strictly by username + exact stored password
     if (username) {
       const foundUser = users.find((u) => u.username.toLowerCase() === username);
       if (!foundUser) {
@@ -845,7 +859,7 @@ export default function App() {
         setAdminKeyError('Esta conta de utilizador está desativada. Contacte o administrador.');
         return;
       }
-      if (foundUser.password !== code && code !== brand.adminPassword && code !== 'admin') {
+      if (foundUser.password !== code) {
         setAdminKeyError('Palavra-passe incorreta para este utilizador.');
         return;
       }
@@ -866,40 +880,32 @@ export default function App() {
       return;
     }
 
-    // 2. If username is empty, check master passwords or match user by password
-    const currentConfigPassword = brand.adminPassword?.trim();
-    const masterAdminPasswords = [
-      currentConfigPassword,
-      'admin',
-      'lacer2026',
-      'admin2026',
-      'laceromd',
-    ].filter(Boolean) as string[];
-
-    // Check if code matches any user password directly
-    const userWithPassword = users.find((u) => u.password === code && u.active);
-    if (userWithPassword) {
+    // 2. If username is empty, match active user strictly by their current stored password
+    const matchingUsers = users.filter((u) => u.active && u.password === code);
+    if (matchingUsers.length > 0) {
+      const matchedUser = matchingUsers.find((u) => u.role === 'admin') || matchingUsers[0];
       setIsAdminUnlocked(true);
-      setCurrentUser(userWithPassword);
-      StorageService.saveCurrentUser(userWithPassword);
+      setCurrentUser(matchedUser);
+      StorageService.saveCurrentUser(matchedUser);
       try {
         sessionStorage.setItem('sorteiolive_admin_authenticated', 'true');
       } catch {}
       setShowAdminModal(false);
       setAdminUsernameInput('');
       setAdminKeyInput('');
-      setAdminToast(`🔑 Sessão iniciada como ${userWithPassword.name}!`);
+      setAdminToast(`🔑 Sessão iniciada como ${matchedUser.name} (${matchedUser.role === 'admin' ? 'Administrador' : 'Utilizador Padrão'})!`);
       setTimeout(() => setAdminToast(null), 3500);
       setCurrentView('admin');
       return;
     }
 
-    if (masterAdminPasswords.includes(code)) {
-      const defaultAdmin = users.find((u) => u.role === 'admin' && u.active) || {
+    // Fallback ONLY when no user accounts exist in the database
+    if (users.length === 0 && brand.adminPassword?.trim() && code === brand.adminPassword.trim()) {
+      const defaultAdmin: AppUser = {
         id: 'usr-admin-1',
         username: 'admin',
         name: 'Administrador Geral',
-        role: 'admin' as const,
+        role: 'admin',
         createdAt: new Date().toISOString(),
         active: true,
       };
@@ -1145,7 +1151,7 @@ export default function App() {
                   <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Ex: admin ou operador (opcional p/ senha mestra)"
+                    placeholder="Ex: admin ou operador"
                     value={adminUsernameInput}
                     onChange={(e) => setAdminUsernameInput(e.target.value)}
                     autoFocus
