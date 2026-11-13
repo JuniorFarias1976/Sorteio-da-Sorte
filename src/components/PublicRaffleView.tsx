@@ -718,49 +718,31 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
             <form onSubmit={handleRegister} className="space-y-4" autoComplete="off">
               {/* Duplicate Email Warning Banner */}
               {duplicateEmailError && (
-                <div className="p-4 rounded-2xl bg-red-950/40 border-2 border-red-500/50 text-red-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-sm text-red-400">
-                      <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                      <span>ATENÇÃO: E-MAIL JÁ REGISTADO NO SISTEMA!</span>
+                <div className={`p-4 rounded-2xl border-2 space-y-1.5 ${
+                  isLight
+                    ? 'bg-red-50 border-red-300 text-red-900'
+                    : 'bg-red-950/40 border-red-500/50 text-red-200'
+                }`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className={`flex items-center gap-2 font-bold text-sm ${
+                      isLight ? 'text-[#E30613]' : 'text-red-400'
+                    }`}>
+                      <AlertTriangle className={`w-5 h-5 shrink-0 ${isLight ? 'text-[#E30613]' : 'text-red-400'}`} />
+                      <span>Este e-mail já foi inscrito!</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setDuplicateEmailError(null)}
-                      className="text-xs text-slate-400 hover:text-white"
+                      className={`text-xs p-1 rounded-lg transition-colors cursor-pointer ${
+                        isLight ? 'text-red-400 hover:text-red-700 hover:bg-red-100' : 'text-slate-400 hover:text-white'
+                      }`}
                     >
                       ✕
                     </button>
                   </div>
-                  <p className="text-xs text-slate-300">
-                    O e-mail <strong className="text-white">{duplicateEmailError.email}</strong> já possui inscrição confirmada neste sorteio. Cada participante só pode se cadastrar <strong>uma única vez</strong>.
+                  <p className={`text-xs leading-relaxed ${isLight ? 'text-red-900/90' : 'text-slate-300'}`}>
+                    O e-mail <strong>{duplicateEmailError.email}</strong> já está registado neste sorteio. Cada participante só pode se inscrever <strong>uma única vez</strong>.
                   </p>
-                  <div className="p-3 bg-slate-950 rounded-xl border border-red-500/30 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase text-slate-400 block font-semibold">
-                        Seu Bilhete Cadastrado:
-                      </span>
-                      <span className="text-xl font-black font-mono text-red-400">
-                        #{duplicateEmailError.ticketNumber}
-                      </span>
-                    </div>
-                    <div className="text-right text-xs">
-                      <p className="font-bold text-white">{duplicateEmailError.name}</p>
-                      <p className="text-[11px] text-emerald-400">✓ Concorrendo em todos os sorteios programados</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewlyCreatedTicket(duplicateEmailError);
-                        setDuplicateEmailError(null);
-                      }}
-                      className="px-3 py-1.5 bg-[#E30613] text-white rounded-lg text-xs font-bold hover:bg-[#C80510] transition-colors"
-                    >
-                      Visualizar Meu Bilhete
-                    </button>
-                  </div>
                 </div>
               )}
 
