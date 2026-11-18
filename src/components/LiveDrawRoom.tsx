@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
 import { FirestoreService } from '../utils/firestoreService';
+import { getEligibleParticipants } from '../utils/participantEligibility';
 
 interface LiveDrawRoomProps {
   participants: Participant[];
@@ -98,6 +99,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   const tumblerTimeoutRef = useRef<any>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const authoritativeWinnerRef = useRef<DrawWinner | null>(null);
+  const eligiblePoolSnapshotRef = useRef<Participant[]>([]);
 
   const clearAllTimers = () => {
     if (countdownIntervalRef.current) {
@@ -116,7 +118,8 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     };
   }, []);
 
-  const eligibleParticipants = participants.filter(p => p.status === 'active');
+  const eligibleParticipants = getEligibleParticipants(participants, winners);
+  const blockedParticipantsCount = Math.max(0, participants.length - eligibleParticipants.length);
   const currentPrize = prizes.find(p => p.id === selectedPrizeId) || prizes[0];
 
   // Active Draw Schedule selection (supports dynamic schedules configured in calendar)
@@ -296,15 +299,28 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     setCountdown(null);
     if (soundEnabled) playSuspenseSound();
 
+    const pool = eligiblePoolSnapshotRef.current.length > 0
+      ? eligiblePoolSnapshotRef.current
+      : eligibleParticipants;
+
     let step = 0;
     const totalSteps = 42; // around 4-5 seconds of suspenseful deceleration
-    const randomFallback = eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)] || participants[0];
+    const randomFallback = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : undefined;
+
+    if (!randomFallback && !authoritativeWinnerRef.current) {
+      clearAllTimers();
+      setIsDrawing(false);
+      setDrawErrorNotice('Não há participantes elegíveis disponíveis para sortear. Todos os jogadores ativos já foram premiados ou bloqueados.');
+      return;
+    }
 
     const tick = () => {
       step++;
 
-      // Pick random participant display during the spin
-      const randomDisplay = eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)] || randomFallback;
+      // Pick random eligible participant display during the spin (never displays blocked/winner participants)
+      const randomDisplay = pool.length > 0
+        ? pool[Math.floor(Math.random() * pool.length)]
+        : randomFallback;
       if (randomDisplay) {
         setCurrentDisplayTicket(randomDisplay.ticketNumber);
         setCurrentDisplayName(randomDisplay.name);
@@ -325,9 +341,15 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       }
 
       if (step >= totalSteps) {
-        // Tumbler roll finished: lock onto the authoritative winner
-        const targetWinner = authoritativeWinnerRef.current || createLocalWinnerRecord(randomFallback);
-        finalizeWinner(targetWinner);
+        // Tumbler roll finished: lock onto the authoritative winner (guaranteed non-winner)
+        const targetWinner = authoritativeWinnerRef.current || (randomFallback ? createLocalWinnerRecord(randomFallback) : null);
+        if (targetWinner) {
+          finalizeWinner(targetWinner);
+        } else {
+          clearAllTimers();
+          setIsDrawing(false);
+          setDrawErrorNotice('Nenhum participante elegível disponível para concluir o sorteio.');
+        }
       } else {
         // Dramatic deceleration curve towards the end
         let delay = 45;
@@ -534,8 +556,9 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       return;
     }
 
-    // Reset previous timers and state
+    // Reset previous timers and state, and freeze eligible pool snapshot
     clearAllTimers();
+    eligiblePoolSnapshotRef.current = [...eligibleParticipants];
     authoritativeWinnerRef.current = null;
     setLatestWinner(null);
     setDrawErrorNotice(null);
@@ -563,11 +586,20 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
     if (soundEnabled) playCountdownBeep(false);
 
-    // Call server to trigger draw asynchronously (validates schedule lock on server)
-    ApiService.triggerDraw(currentPrize.id, selectedRound, activeSchedule?.id)
+    // Call server to trigger draw asynchronously (validates schedule lock & authoritative non-winner eligibility)
+    const eligibleIds = eligibleParticipants.map((p) => p.id);
+    const eligibleIdSet = new Set(eligibleIds);
+    const excludedIds = participants.filter((p) => !eligibleIdSet.has(p.id)).map((p) => p.id);
+
+    ApiService.triggerDraw(currentPrize.id, selectedRound, activeSchedule?.id, eligibleIds, excludedIds)
       .then((res) => {
         if (res.success && res.winner) {
-          authoritativeWinnerRef.current = res.winner;
+          const isValidNonWinner = eligiblePoolSnapshotRef.current.some(
+            (p) => p.id === res.winner!.participantId
+          );
+          if (isValidNonWinner) {
+            authoritativeWinnerRef.current = res.winner;
+          }
         } else if (!res.success && res.code === 'SCHEDULE_LOCKED') {
           clearAllTimers();
           setIsDrawing(false);
@@ -781,7 +813,14 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
 
           <div className={`flex items-center gap-1.5 text-xs ${isLight ? 'text-slate-700 font-medium' : 'text-slate-300'}`}>
             <Users className={`w-3.5 h-3.5 ${isLight ? 'text-[#E30613]' : 'text-amber-400'}`} />
-            <span>{eligibleParticipants.length} concorrentes ativos no globo</span>
+            <span>
+              {eligibleParticipants.length} concorrentes ativos no globo
+              {blockedParticipantsCount > 0 && (
+                <span className={`ml-1.5 text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  ({blockedParticipantsCount} {blockedParticipantsCount === 1 ? 'premiado bloqueado' : 'premiados/bloqueados'})
+                </span>
+              )}
+            </span>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Participant, BrandConfig, FormFieldsConfig, DENTAL_SPECIALTIES } from '../../types';
+import { Participant, BrandConfig, FormFieldsConfig, DrawWinner, DENTAL_SPECIALTIES } from '../../types';
 import { exportParticipantsToExcel, exportParticipantsToPDF } from '../../utils/export';
+import { isParticipantAlreadyWinner } from '../../utils/participantEligibility';
 import { 
   Users, 
   FileSpreadsheet, 
@@ -25,13 +26,15 @@ import {
   MapPin,
   Calendar,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 
 import { isLightColor } from '../../utils/storage';
 
 interface ParticipantsTabProps {
   participants: Participant[];
+  winners?: DrawWinner[];
   brand: BrandConfig;
   formFields: FormFieldsConfig;
   isStandardUser?: boolean;
@@ -42,6 +45,7 @@ interface ParticipantsTabProps {
 
 export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
   participants,
+  winners = [],
   brand,
   formFields,
   isStandardUser = false,
@@ -131,13 +135,14 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       (p.ticketNumber || '').toLowerCase().includes(query) ||
       (p.city || '').toLowerCase().includes(query);
 
+    const isWinnerLocked = isParticipantAlreadyWinner(p, winners);
     const matchStatus =
       statusFilter === 'all'
         ? true
         : statusFilter === 'active'
-        ? p.status === 'active'
+        ? p.status === 'active' && !isWinnerLocked
         : statusFilter === 'winner'
-        ? p.status === 'winner'
+        ? isWinnerLocked || p.status === 'banned'
         : statusFilter === 'wants_visit'
         ? !!p.wantsLacerVisit
         : statusFilter === 'marketing_yes'
@@ -214,6 +219,11 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
     );
     const finalSpecialty = processedSpecs.join(', ');
 
+    const finalStatus =
+      isStandardUser && isParticipantAlreadyWinner(editingParticipant, winners)
+        ? 'winner'
+        : editStatus;
+
     const updatedParticipant: Participant = {
       ...editingParticipant,
       name: editName.trim() || 'Participante',
@@ -229,7 +239,15 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
       marketingConsent: editMarketingConsent,
       termsAccepted: editTermsAccepted,
       ticketNumber: editTicketNumber.trim() || editingParticipant.ticketNumber,
-      status: editStatus,
+      status: finalStatus,
+      ...(finalStatus === 'winner'
+        ? {
+            banReason: editingParticipant.banReason || 'Bloqueado automaticamente — contemplado no sorteio',
+            banDate: editingParticipant.banDate || new Date().toISOString(),
+          }
+        : finalStatus === 'active'
+        ? { banReason: undefined, banDate: undefined }
+        : {}),
     };
 
     const updatedList = participants.map((p) => p.id === editingParticipant.id ? updatedParticipant : p);
@@ -599,7 +617,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 : isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Ativos ({participants.filter((p) => p.status === 'active').length})
+            Ativos ({participants.filter((p) => p.status === 'active' && !isParticipantAlreadyWinner(p, winners)).length})
           </button>
           <button
             onClick={() => setStatusFilter('wants_visit')}
@@ -629,7 +647,7 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 : isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Premiados ({participants.filter((p) => p.status === 'winner').length})
+            Premiados / Bloqueados ({participants.filter((p) => isParticipantAlreadyWinner(p, winners) || p.status === 'banned').length})
           </button>
         </div>
       </div>
@@ -668,9 +686,22 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                       ✓ Comercial
                     </span>
                   )}
-                  {p.status === 'winner' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
-                      🏆 Premiado
+                  {isParticipantAlreadyWinner(p, winners) ? (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        isLight
+                          ? 'text-amber-900 bg-amber-100 border-amber-300'
+                          : 'text-amber-300 bg-amber-500/15 border-amber-500/30'
+                      }`}
+                      title="Jogador já premiado — bloqueado para não ser sorteado novamente"
+                    >
+                      <Lock className="w-2.5 h-2.5" />
+                      🏆 Premiado · Bloqueado
+                    </span>
+                  ) : p.status === 'banned' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded border border-red-500/30">
+                      <Lock className="w-2.5 h-2.5" />
+                      Bloqueado
                     </span>
                   ) : (
                     <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
@@ -876,9 +907,25 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-3">
-                    {p.status === 'winner' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
-                        🏆 Premiado
+                    {isParticipantAlreadyWinner(p, winners) ? (
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded border ${
+                          isLight
+                            ? 'text-amber-900 bg-amber-100 border-amber-300'
+                            : 'text-amber-300 bg-amber-500/15 border-amber-500/30'
+                        }`}
+                        title="Este jogador já ganhou e está bloqueado para novos sorteios"
+                      >
+                        <Lock className="w-3 h-3 shrink-0" />
+                        🏆 Premiado · Bloqueado
+                      </span>
+                    ) : p.status === 'banned' ? (
+                      <span
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded border border-red-500/30"
+                        title={p.banReason || 'Participante bloqueado do sorteio'}
+                      >
+                        <Lock className="w-3 h-3 shrink-0" />
+                        Bloqueado
                       </span>
                     ) : (
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded border ${
@@ -1290,9 +1337,15 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                     <Ticket className="w-4 h-4" />
                     Bilhete #{viewingParticipant.ticketNumber}
                   </span>
-                  {viewingParticipant.status === 'winner' ? (
-                    <span className="text-[11px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
-                      🏆 Vencedor Homologado
+                  {isParticipantAlreadyWinner(viewingParticipant, winners) ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                      <Lock className="w-3 h-3" />
+                      🏆 Premiado · Bloqueado no Sorteio
+                    </span>
+                  ) : viewingParticipant.status === 'banned' ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded border border-red-500/30">
+                      <Lock className="w-3 h-3" />
+                      Bloqueado no Sorteio
                     </span>
                   ) : (
                     <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -1734,17 +1787,28 @@ export const ParticipantsTab: React.FC<ParticipantsTabProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                    Status
+                    Status no Sorteio
                   </label>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    disabled={isStandardUser && isParticipantAlreadyWinner(editingParticipant, winners)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="active">Ativo no Sorteio</option>
-                    <option value="winner">Premiado</option>
-                    <option value="banned">Banido / Cancelado</option>
+                    <option value="winner">🏆 Premiado (Bloqueado para novos sorteios)</option>
+                    <option value="banned">🚫 Bloqueado / Cancelado</option>
                   </select>
+                  {isParticipantAlreadyWinner(editingParticipant, winners) && (
+                    <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
+                      <Lock className="w-3 h-3 shrink-0" />
+                      <span>
+                        {isStandardUser
+                          ? 'Este jogador já ganhou e está bloqueado. Apenas o Administrador pode alterar este estado.'
+                          : 'Este jogador já ganhou e está bloqueado automaticamente para não voltar a ser sorteado.'}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </div>
 

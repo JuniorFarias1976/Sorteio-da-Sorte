@@ -1483,7 +1483,7 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
                             #{p.ticketNumber}
                           </span>
                           <p className={`text-[10px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                            {p.status === 'winner' ? '🏆 CONTEMPLADO' : p.status === 'banned' ? '❌ Restrito' : '✓ A Concorrer'}
+                            {p.status === 'winner' ? '🏆 CONTEMPLADO · Já Premiado' : p.status === 'banned' ? '🔒 Bloqueado' : '✓ A Concorrer'}
                           </p>
                         </div>
                       </div>

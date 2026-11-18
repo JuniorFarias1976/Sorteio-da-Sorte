@@ -214,13 +214,21 @@ export const ApiService = {
   async triggerDraw(
     prizeId: string,
     round: number,
-    scheduleId?: string
+    scheduleId?: string,
+    eligibleParticipantIds?: string[],
+    excludedParticipantIds?: string[]
   ): Promise<{ success: boolean; winner?: DrawWinner; error?: string; code?: string }> {
     try {
       const res = await fetch(`${API_BASE}/live/draw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeId, round, scheduleId }),
+        body: JSON.stringify({
+          prizeId,
+          round,
+          scheduleId,
+          eligibleParticipantIds,
+          excludedParticipantIds,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {

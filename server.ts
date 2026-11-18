@@ -831,7 +831,7 @@ async function startServer() {
 
   // 5. Admin / Operator performs draw: enforces schedule lock & posterior date/time validation!
   app.post('/api/live/draw', async (req, res) => {
-    const { prizeId, round, scheduleId } = req.body;
+    const { prizeId, round, scheduleId, eligibleParticipantIds, excludedParticipantIds } = req.body;
     db = loadDB();
 
     const schedule =
@@ -863,8 +863,32 @@ async function startServer() {
       return;
     }
 
-    // Eligible participants: active status only
-    const eligibleParticipants = db.participants.filter((p) => p.status === 'active');
+    // Eligible participants: active status only AND never previously recorded in winners or excluded by client Firestore
+    const winnerIds = new Set((db.winners || []).map((w: any) => w.participantId).filter(Boolean));
+    const winnerTickets = new Set((db.winners || []).map((w: any) => w.participantTicket).filter(Boolean));
+    const winnerEmails = new Set(
+      (db.winners || [])
+        .map((w: any) => (w.participantEmail || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const allowedIdSet = Array.isArray(eligibleParticipantIds) && eligibleParticipantIds.length > 0
+      ? new Set(eligibleParticipantIds)
+      : null;
+    const excludedIdSet = Array.isArray(excludedParticipantIds)
+      ? new Set(excludedParticipantIds)
+      : new Set();
+
+    const eligibleParticipants = db.participants.filter((p) => {
+      if (p.status !== 'active') return false;
+      if (p.id && excludedIdSet.has(p.id)) return false;
+      if (allowedIdSet && p.id && !allowedIdSet.has(p.id)) return false;
+      if (p.id && winnerIds.has(p.id)) return false;
+      if (p.ticketNumber && winnerTickets.has(p.ticketNumber)) return false;
+      const pEmail = (p.email || '').trim().toLowerCase();
+      if (pEmail && winnerEmails.has(pEmail)) return false;
+      return true;
+    });
+
     if (eligibleParticipants.length === 0) {
       res.status(400).json({
         error: 'NO_PARTICIPANTS',
@@ -903,7 +927,17 @@ async function startServer() {
       validationHash,
     };
 
-    // Immediately lock the scheduled slot to prevent duplicate draws
+    // Immediately lock the scheduled slot AND block the chosen winner from any concurrent/future draws
+    db.participants = db.participants.map((p: any) =>
+      p.id === chosenParticipant.id
+        ? {
+            ...p,
+            status: 'winner' as const,
+            banReason: 'Bloqueado automaticamente — contemplado no sorteio',
+            banDate: nowIso,
+          }
+        : p
+    );
     if (schedule) {
       db.schedules = db.schedules.map((s: any) =>
         s.id === schedule.id
@@ -916,9 +950,9 @@ async function startServer() {
             }
           : s
       );
-      db.version = Date.now();
-      saveDB(db);
     }
+    db.version = Date.now();
+    saveDB(db);
 
     // Begin live animation broadcast sequence
     liveState.isDrawing = true;
@@ -936,12 +970,12 @@ async function startServer() {
       prizeTitle: prize.title,
     });
 
-    // Run simulation ticks on server and push to all clients
+    // Run simulation ticks on server and push to all clients (only eligible non-winner candidates)
     let remainingTicks = 28;
     const tickInterval = setInterval(() => {
       remainingTicks--;
       const randomPart =
-        db.participants[Math.floor(Math.random() * db.participants.length)] || chosenParticipant;
+        eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)] || chosenParticipant;
 
       liveState.currentDisplayTicket = randomPart.ticketNumber;
       liveState.currentDisplayName = randomPart.name;
@@ -957,13 +991,20 @@ async function startServer() {
       if (remainingTicks <= 0) {
         clearInterval(tickInterval);
 
-        // Update database: increment drawnQuantity, add winner, ensure schedule locked
+        // Update database: increment drawnQuantity, add winner, ensure schedule locked & winner blocked
         db.prizes = db.prizes.map((p) =>
           p.id === prizeId ? { ...p, drawnQuantity: p.drawnQuantity + 1 } : p
         );
 
-        db.participants = db.participants.map((p) =>
-          p.id === chosenParticipant.id ? { ...p, status: 'winner' as const } : p
+        db.participants = db.participants.map((p: any) =>
+          p.id === chosenParticipant.id
+            ? {
+                ...p,
+                status: 'winner' as const,
+                banReason: 'Bloqueado automaticamente — contemplado no sorteio',
+                banDate: nowIso,
+              }
+            : p
         );
 
         if (schedule) {

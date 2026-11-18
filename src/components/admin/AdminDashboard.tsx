@@ -398,6 +398,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {effectiveActiveTab === 'participants' && (
             <ParticipantsTab
               participants={participants}
+              winners={winners}
               brand={brand}
               formFields={formFields}
               isStandardUser={isStandardUser}

@@ -20,6 +20,7 @@ import {
 import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, DEFAULT_USERS, isLightColor, normalizeBrandConsentTexts } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
 import { FirestoreService } from './utils/firestoreService';
+import { doesWinnerMatchParticipant } from './utils/participantEligibility';
 import { Navbar } from './components/Navbar';
 import { PublicRaffleView } from './components/PublicRaffleView';
 import { LiveDrawRoom } from './components/LiveDrawRoom';
@@ -92,6 +93,9 @@ export default function App() {
   const processedPrizeWinnerIdsRef = useRef<Set<string>>(new Set());
   const hasSeededUsersRef = useRef<boolean>(false);
   const latestUsersRef = useRef<AppUser[]>(users);
+  const latestParticipantsRef = useRef<Participant[]>(participants);
+  const latestWinnersRef = useRef<DrawWinner[]>(winners);
+  const repairedWinnerParticipantIdsRef = useRef<Set<string>>(new Set());
   const firestoreHydratedRef = useRef<Record<string, boolean>>({});
   const lastSyncedUsersJsonRef = useRef<string>('');
   const lastSyncedParticipantsJsonRef = useRef<string>('');
@@ -108,6 +112,44 @@ export default function App() {
   useEffect(() => {
     latestUsersRef.current = users;
   }, [users]);
+
+  useEffect(() => {
+    latestParticipantsRef.current = participants;
+  }, [participants]);
+
+  useEffect(() => {
+    latestWinnersRef.current = winners;
+  }, [winners]);
+
+  // Self-healing guard: if any participant already appears in winners while still marked 'active', lock them automatically
+  useEffect(() => {
+    if (winners.length === 0 || participants.length === 0) return;
+    const toBlock: Participant[] = [];
+    const nextList = participants.map((p) => {
+      if (p.status !== 'active') return p;
+      const matchedWin = winners.find((w) => doesWinnerMatchParticipant(w, p));
+      if (!matchedWin) return p;
+      const blocked: Participant = {
+        ...p,
+        status: 'winner',
+        banReason: p.banReason || 'Bloqueado automaticamente — contemplado no sorteio',
+        banDate: p.banDate || matchedWin.wonAt || new Date().toISOString(),
+      };
+      if (!repairedWinnerParticipantIdsRef.current.has(p.id)) {
+        repairedWinnerParticipantIdsRef.current.add(p.id);
+        toBlock.push(blocked);
+      }
+      return blocked;
+    });
+    if (toBlock.length > 0) {
+      setParticipants(nextList);
+      try { StorageService.saveParticipants(nextList); } catch {}
+      toBlock.forEach((bp) => {
+        FirestoreService.saveParticipant(bp).catch(() => {});
+      });
+      ApiService.saveData({ participants: nextList }).catch(() => {});
+    }
+  }, [participants, winners]);
 
   const notifyPersistError = useCallback((context: string, err: unknown) => {
     console.error(`[Persistence Error] ${context}:`, err);
@@ -827,11 +869,13 @@ export default function App() {
 
         const remainingWinnerParticipantIds = new Set(remainingWinners.map((w) => w.participantId));
         const removedParticipantIds = new Set(sessionWinners.map((w) => w.participantId));
-        const updatedParticipants = participants.map((p) =>
-          removedParticipantIds.has(p.id) && !remainingWinnerParticipantIds.has(p.id)
-            ? { ...p, status: 'active' as const }
-            : p
-        );
+        const updatedParticipants = latestParticipantsRef.current.map((p) => {
+          if (removedParticipantIds.has(p.id) && !remainingWinnerParticipantIds.has(p.id)) {
+            const { banReason: _br, banDate: _bd, ...rest } = p;
+            return { ...rest, status: 'active' as const };
+          }
+          return p;
+        });
         handleUpdateParticipants(updatedParticipants);
 
         const prizeDecrementMap = new Map<string, number>();
@@ -851,22 +895,48 @@ export default function App() {
     setTimeout(() => setAdminToast(null), 3500);
   };
 
-  // Live Draw Winner Announced handler (idempotent across local finish + SSE reveal)
+  // Live Draw Winner Announced handler (idempotent across local finish + SSE reveal; always blocks winner from future draws)
   const handleWinnerAnnounced = (winner: DrawWinner) => {
-    if (processedWinnerIdsRef.current.has(winner.id) || winners.some((w) => w.id === winner.id)) {
-      return;
+    const currentWinners = latestWinnersRef.current;
+    const currentParticipants = latestParticipantsRef.current;
+
+    const alreadyRecorded =
+      processedWinnerIdsRef.current.has(winner.id) ||
+      currentWinners.some((w) => w.id === winner.id);
+
+    if (!alreadyRecorded) {
+      processedWinnerIdsRef.current.add(winner.id);
+      const updatedWinners = [winner, ...currentWinners];
+      latestWinnersRef.current = updatedWinners;
+      handleUpdateWinners(updatedWinners);
     }
-    processedWinnerIdsRef.current.add(winner.id);
 
-    const updatedWinners = [winner, ...winners];
-    handleUpdateWinners(updatedWinners);
+    // Always enforce winner blocking on matching participant (even if winner came first via SSE/Firestore)
+    let changedParticipant: Participant | null = null;
+    const updatedParticipants = currentParticipants.map((p) => {
+      if (doesWinnerMatchParticipant(winner, p) && p.status !== 'winner') {
+        const blocked: Participant = {
+          ...p,
+          status: 'winner' as const,
+          banReason: 'Bloqueado automaticamente — contemplado no sorteio',
+          banDate: winner.wonAt || new Date().toISOString(),
+        };
+        changedParticipant = blocked;
+        return blocked;
+      }
+      return p;
+    });
 
-    const updatedParticipants = participants.map((p) =>
-      p.id === winner.participantId ? { ...p, status: 'winner' as const } : p
-    );
-    handleUpdateParticipants(updatedParticipants);
+    if (changedParticipant) {
+      latestParticipantsRef.current = updatedParticipants;
+      setParticipants(updatedParticipants);
+      try { StorageService.saveParticipants(updatedParticipants); } catch {}
+      FirestoreService.saveParticipant(changedParticipant).catch((err) => notifyPersistError('bloqueio de vencedor', err));
+      ApiService.saveData({ participants: updatedParticipants }).catch(() => {});
+      broadcastCrossTab({ participants: updatedParticipants });
+    }
 
-    if (winner.drawId) {
+    if (!alreadyRecorded && winner.drawId) {
       handleLockSchedule(winner.drawId);
     }
   };
