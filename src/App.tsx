@@ -17,7 +17,7 @@ import {
   ReportPdfConfig,
   AppUser
 } from './types';
-import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, DEFAULT_USERS, isLightColor, normalizeConsentVisitTitle } from './utils/storage';
+import { StorageService, DEFAULT_POSTER_CONFIG, DEFAULT_REPORT_CONFIG, DEFAULT_FORM_FIELDS, DEFAULT_USERS, isLightColor, normalizeBrandConsentTexts } from './utils/storage';
 import { ApiService, AppServerData } from './utils/api';
 import { FirestoreService } from './utils/firestoreService';
 import { Navbar } from './components/Navbar';
@@ -197,10 +197,7 @@ export default function App() {
       try { StorageService.saveSettings(serverData.settings); } catch {}
     }
     if (serverData.brand) {
-      const normalizedBrand: BrandConfig = {
-        ...serverData.brand,
-        consentVisitTitle: normalizeConsentVisitTitle(serverData.brand.consentVisitTitle),
-      };
+      const normalizedBrand: BrandConfig = normalizeBrandConsentTexts(serverData.brand);
       setBrand(normalizedBrand);
       try { StorageService.saveBrand(normalizedBrand); } catch {}
       if (normalizedBrand.companyName) {
@@ -291,10 +288,7 @@ export default function App() {
     // 1. Cloud Firestore real-time listener (Global, multi-device, works across mobile/desktop)
     const unsubscribeFirestore = FirestoreService.subscribeAll({
       onBrandChange: (b) => {
-        const normalizedBrand: BrandConfig = {
-          ...b,
-          consentVisitTitle: normalizeConsentVisitTitle(b.consentVisitTitle),
-        };
+        const normalizedBrand: BrandConfig = normalizeBrandConsentTexts(b);
         setBrand(normalizedBrand);
         try { StorageService.saveBrand(normalizedBrand); } catch {}
         if (normalizedBrand.companyName) {

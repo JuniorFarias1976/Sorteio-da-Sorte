@@ -78,18 +78,69 @@ export function getModalLogoSizeClass(size?: string): string {
   }
 }
 
-export const LEGACY_CONSENT_VISIT_TITLE =
-  'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?';
+export const LEGACY_CONSENT_VISIT_TITLES = [
+  'Sim, gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?',
+  'Sim, gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos.',
+];
 
 export const DEFAULT_CONSENT_VISIT_TITLE =
-  'Sim, gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?';
+  'Gostaria que um representante da LACER visitasse a sua clínica para lhe apresentar os nossos produtos?';
+
+export const LEGACY_CONSENT_HCP_DATABASE_TEXTS = [
+  'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
+  'Sim, consisto que a Lacer trate os meus dados pessoais para gerir interações científicas, incluindo visitas médicas nas quais os seus produtos me possam ser apresentados.',
+];
+
+export const DEFAULT_CONSENT_HCP_DATABASE_TEXT =
+  'Sim, consinto que a Lacer trate os meus dados pessoais para gerir interações científicas, incluindo visitas médicas nas quais os seus produtos me possam ser apresentados.';
+
+export const LEGACY_CONSENT_COMMUNICATIONS_TEXTS = [
+  'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
+];
+
+export const DEFAULT_CONSENT_COMMUNICATIONS_TEXT =
+  'Consinto que a Lacer trate os meus dados pessoais para me enviar comunicações científicas e formativas e sobre produtos ou atividades, por correio eletrónico ou por outros meios, com acompanhamento destas através de tecnologias de rastreio.';
+
+export const LEGACY_CONSENT_PROFILING_TEXTS = [
+  'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
+];
+
+export const DEFAULT_CONSENT_PROFILING_TEXT =
+  'Consinto que a Lacer trate os meus dados pessoais para a criação de um perfil profissional, tendo em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes.';
 
 export function normalizeConsentVisitTitle(title?: string): string {
   const trimmed = (title || '').trim();
-  if (!trimmed || trimmed === LEGACY_CONSENT_VISIT_TITLE) {
+  if (!trimmed || LEGACY_CONSENT_VISIT_TITLES.includes(trimmed)) {
     return DEFAULT_CONSENT_VISIT_TITLE;
   }
   return trimmed;
+}
+
+export function normalizeBrandConsentTexts<T extends Partial<BrandConfig>>(brand: T): T {
+  const visitTitle = (brand.consentVisitTitle || '').trim();
+  const hcpText = (brand.consentHcpDatabaseText || '').trim();
+  const commText = (brand.consentCommunicationsText || '').trim();
+  const profText = (brand.consentProfilingText || '').trim();
+
+  return {
+    ...brand,
+    consentVisitTitle:
+      !visitTitle || LEGACY_CONSENT_VISIT_TITLES.includes(visitTitle)
+        ? DEFAULT_CONSENT_VISIT_TITLE
+        : visitTitle,
+    consentHcpDatabaseText:
+      !hcpText || LEGACY_CONSENT_HCP_DATABASE_TEXTS.includes(hcpText)
+        ? DEFAULT_CONSENT_HCP_DATABASE_TEXT
+        : hcpText,
+    consentCommunicationsText:
+      !commText || LEGACY_CONSENT_COMMUNICATIONS_TEXTS.includes(commText)
+        ? DEFAULT_CONSENT_COMMUNICATIONS_TEXT
+        : commText,
+    consentProfilingText:
+      !profText || LEGACY_CONSENT_PROFILING_TEXTS.includes(profText)
+        ? DEFAULT_CONSENT_PROFILING_TEXT
+        : profText,
+  };
 }
 
 export const DEFAULT_BRAND: BrandConfig = {
@@ -141,9 +192,9 @@ export const DEFAULT_BRAND: BrandConfig = {
   rafflePrivacyPdfName: '',
   goodLuckBadgeUrl: '/assets/boa_sorte_badge.jpg',
   consentVisitTitle: DEFAULT_CONSENT_VISIT_TITLE,
-  consentHcpDatabaseText: 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.',
-  consentCommunicationsText: 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.',
-  consentProfilingText: 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).',
+  consentHcpDatabaseText: DEFAULT_CONSENT_HCP_DATABASE_TEXT,
+  consentCommunicationsText: DEFAULT_CONSENT_COMMUNICATIONS_TEXT,
+  consentProfilingText: DEFAULT_CONSENT_PROFILING_TEXT,
   consentLegalNoticeP1: 'A LACER, S.A. processará os dados pessoais fornecidos para gerir a sua participação no sorteio, incluindo, quando aplicável, a seleção e comunicação dos vencedores e a gestão da entrega dos prémios. Além disso, com base no seu consentimento, iremos: enviar-lhe, incluindo por meios eletrónicos, informações científicas e educativas, notícias, eventos e produtos, e seguir esses envios utilizando tecnologias de rastreio; criar um perfil profissional com base nos seus interesses técnicos e profissionais em áreas terapêuticas relevantes; e incluir os seus dados na base de dados de profissionais de saúde para gerir as interações consigo, incluindo consultas médicas e atividades científicas.',
   consentLegalNoticeP2: 'Também processaremos os seus dados para cumprir as obrigações legais aplicáveis ao setor farmacêutico.',
   consentLegalNoticeP3: 'Para mais informações e para saber como exercer os seus direitos de acesso, retificação, supressão, revogação do consentimento, entre outros, consulte a nossa Política de Privacidade do Sorteio e a nossa Política de Privacidade para Profissionais de Saúde.',
@@ -397,11 +448,10 @@ export const StorageService = {
 
   getBrand: () => {
     const loaded = loadFromStorage<BrandConfig>(STORAGE_KEYS.BRAND, DEFAULT_BRAND);
-    return {
+    return normalizeBrandConsentTexts({
       ...DEFAULT_BRAND,
       ...loaded,
-      consentVisitTitle: normalizeConsentVisitTitle(loaded?.consentVisitTitle),
-    };
+    });
   },
   saveBrand: (data: BrandConfig) => saveToStorage(STORAGE_KEYS.BRAND, data),
 

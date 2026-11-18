@@ -20,7 +20,18 @@ import {
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DEFAULT_FORM_FIELDS, StorageService, DEFAULT_BRAND_LOGO, isLightColor, getLogoAnimationClass, getModalLogoSizeClass, normalizeConsentVisitTitle } from '../utils/storage';
+import {
+  DEFAULT_FORM_FIELDS,
+  StorageService,
+  DEFAULT_BRAND_LOGO,
+  isLightColor,
+  getLogoAnimationClass,
+  getModalLogoSizeClass,
+  normalizeConsentVisitTitle,
+  DEFAULT_CONSENT_HCP_DATABASE_TEXT,
+  DEFAULT_CONSENT_COMMUNICATIONS_TEXT,
+  DEFAULT_CONSENT_PROFILING_TEXT,
+} from '../utils/storage';
 import { FirestoreService } from '../utils/firestoreService';
 import { ApiService } from '../utils/api';
 import { 
@@ -997,94 +1008,76 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
               {/* SEÇÃO 3: Informação Legal, Visita LACER & Consentimentos RGPD */}
               <div className={`pt-4 border-t space-y-3.5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                {/* Pergunta de Visita Lacer e Base de Dados de Saúde (Controlado no Painel de Controlo) */}
+                {/* Bloco 1: Pergunta de Visita Lacer (título sem checkbox) + Caixa de aceitação única */}
                 {brand.showConsentVisitSection !== false && (
-                  <div className="space-y-3">
-                    {/* Checkbox 1: Visita de representante LACER à clínica */}
-                    <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
-                      isLight 
-                        ? wantsLacerVisit 
-                          ? 'bg-red-50/60 border-red-300 text-slate-900' 
+                  <div
+                    className={`p-3.5 sm:p-4 rounded-xl border space-y-2.5 transition-all ${
+                      isLight
+                        ? hcpDatabaseConsent
+                          ? 'bg-red-50/60 border-red-300 text-slate-900'
                           : 'bg-slate-50/90 border-slate-200 text-slate-800 hover:border-red-200 hover:bg-red-50/20'
-                        : wantsLacerVisit 
-                          ? 'bg-red-950/30 border-red-500/50 text-white' 
+                        : hcpDatabaseConsent
+                          ? 'bg-red-950/30 border-red-500/50 text-white'
                           : 'bg-slate-950/70 border-slate-800 text-slate-200 hover:border-slate-700'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={wantsLacerVisit}
-                        onChange={(e) => setWantsLacerVisit(e.target.checked)}
-                        className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
-                      />
-                      <span className="leading-relaxed font-semibold">
-                        {normalizeConsentVisitTitle(brand.consentVisitTitle)}
-                      </span>
-                    </label>
-
-                    {/* Checkbox 2: Base de dados de profissionais de saúde / interações científicas */}
-                    <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
-                      isLight 
-                        ? hcpDatabaseConsent 
-                          ? 'bg-red-50/60 border-red-300 text-slate-900' 
-                          : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
-                        : hcpDatabaseConsent 
-                          ? 'bg-red-950/30 border-red-500/50 text-white' 
-                          : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                    }`}>
+                    }`}
+                  >
+                    <p className={`text-xs font-bold leading-relaxed ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      {normalizeConsentVisitTitle(brand.consentVisitTitle)}
+                    </p>
+                    <label className="flex items-start gap-3 cursor-pointer text-xs">
                       <input
                         type="checkbox"
                         checked={hcpDatabaseConsent}
-                        onChange={(e) => setHcpDatabaseConsent(e.target.checked)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setHcpDatabaseConsent(checked);
+                          setWantsLacerVisit(checked);
+                        }}
                         className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
                       />
-                      <span className="leading-relaxed">
-                        {brand.consentHcpDatabaseText || 'Sim, concordo que os meus dados sejam armazenados na base de dados de profissionais de saúde para gerir interações científicas, incluindo consultas médicas.'}
+                      <span className={`leading-relaxed ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                        {brand.consentHcpDatabaseText || DEFAULT_CONSENT_HCP_DATABASE_TEXT}
                       </span>
                     </label>
                   </div>
                 )}
 
-                {/* Checkbox 2: Comunicações científicas e educacionais */}
-                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
-                  isLight 
-                    ? marketingConsent 
-                      ? 'bg-red-50/60 border-red-300 text-slate-900' 
-                      : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
-                    : marketingConsent 
-                      ? 'bg-red-950/30 border-red-500/50 text-white' 
-                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={marketingConsent}
-                    onChange={(e) => setMarketingConsent(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
-                  />
-                  <span className="leading-relaxed">
-                    {brand.consentCommunicationsText || 'Concordo em receber comunicações científicas e educacionais, bem como informações sobre produtos ou atividades, por e-mail ou outros meios, e que essas sejam seguidas através de tecnologias de rastreio.'}
-                  </span>
-                </label>
+                {/* Bloco 2: Comunicações científicas/formativas e Perfil profissional agrupados */}
+                <div
+                  className={`p-3.5 sm:p-4 rounded-xl border space-y-3 transition-all ${
+                    isLight
+                      ? (marketingConsent || profilingConsent)
+                        ? 'bg-red-50/40 border-red-200 text-slate-900'
+                        : 'bg-slate-50/90 border-slate-200 text-slate-700'
+                      : (marketingConsent || profilingConsent)
+                        ? 'bg-red-950/20 border-red-500/40 text-slate-200'
+                        : 'bg-slate-950/70 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  <label className="flex items-start gap-3 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={marketingConsent}
+                      onChange={(e) => setMarketingConsent(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                    />
+                    <span className="leading-relaxed">
+                      {brand.consentCommunicationsText || DEFAULT_CONSENT_COMMUNICATIONS_TEXT}
+                    </span>
+                  </label>
 
-                {/* Checkbox 3: Perfil profissional (perfilado) */}
-                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-all ${
-                  isLight 
-                    ? profilingConsent 
-                      ? 'bg-red-50/60 border-red-300 text-slate-900' 
-                      : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/20'
-                    : profilingConsent 
-                      ? 'bg-red-950/30 border-red-500/50 text-white' 
-                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={profilingConsent}
-                    onChange={(e) => setProfilingConsent(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
-                  />
-                  <span className="leading-relaxed">
-                    {brand.consentProfilingText || 'Concordo com a criação de um perfil profissional que tenha em conta os meus interesses técnico-profissionais em áreas terapêuticas relevantes (perfilado).'}
-                  </span>
-                </label>
+                  <label className="flex items-start gap-3 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={profilingConsent}
+                      onChange={(e) => setProfilingConsent(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 shrink-0 rounded text-[#E30613] border-slate-300 focus:ring-red-500"
+                    />
+                    <span className="leading-relaxed">
+                      {brand.consentProfilingText || DEFAULT_CONSENT_PROFILING_TEXT}
+                    </span>
+                  </label>
+                </div>
 
                 {/* Bloco Informativo de Tratamento de Dados & Política de Privacidade */}
                 <div className={`p-3.5 sm:p-4 rounded-2xl border text-[11px] sm:text-xs leading-relaxed space-y-2.5 ${
