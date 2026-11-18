@@ -82,8 +82,9 @@ export default function App() {
   const [posterConfig, setPosterConfig] = useState<QRCodePosterConfig>(() => StorageService.getPosterConfig());
   const [reportConfig, setReportConfig] = useState<ReportPdfConfig>(() => StorageService.getReportConfig());
   const [users, setUsers] = useState<AppUser[]>(() => StorageService.getUsers());
+  const [firestoreLiveState, setFirestoreLiveState] = useState<any>(null);
 
-  // Refs for deletion guards & initial seeding
+  // Refs for deletion guards, hydration tracking & sync deduplication
   const deletedUserIdsRef = useRef<Set<string>>(new Set());
   const deletedParticipantIdsRef = useRef<Set<string>>(new Set());
   const deletedWinnerIdsRef = useRef<Set<string>>(new Set());
@@ -91,9 +92,18 @@ export default function App() {
   const processedPrizeWinnerIdsRef = useRef<Set<string>>(new Set());
   const hasSeededUsersRef = useRef<boolean>(false);
   const latestUsersRef = useRef<AppUser[]>(users);
+  const firestoreHydratedRef = useRef<Record<string, boolean>>({});
   const lastSyncedUsersJsonRef = useRef<string>('');
   const lastSyncedParticipantsJsonRef = useRef<string>('');
+  const lastSyncedPrizesJsonRef = useRef<string>('');
+  const lastSyncedSchedulesJsonRef = useRef<string>('');
   const lastSyncedWinnersJsonRef = useRef<string>('');
+  const lastSyncedBrandJsonRef = useRef<string>('');
+  const lastSyncedSettingsJsonRef = useRef<string>('');
+  const lastSyncedFormFieldsJsonRef = useRef<string>('');
+  const lastSyncedPosterJsonRef = useRef<string>('');
+  const lastSyncedReportJsonRef = useRef<string>('');
+  const lastSyncedNotificationsJsonRef = useRef<string>('');
 
   useEffect(() => {
     latestUsersRef.current = users;
@@ -113,11 +123,16 @@ export default function App() {
   // Next Upcoming Draw
   const nextSchedule = schedules.find((s) => !s.isLocked && (s.status === 'live' || s.status === 'scheduled')) || schedules[0];
 
-  // Helper to safely apply full server data across all states and LocalStorage (additive union merge)
-  const applyServerData = useCallback((serverData: Partial<AppServerData>) => {
+  // Helper to safely apply server data ONLY when Firestore hasn't hydrated that slice (or on live SSE/cross-tab actions)
+  const applyServerData = useCallback((
+    serverData: Partial<AppServerData>,
+    source: 'initial' | 'focus' | 'sse' | 'crosstab' = 'initial'
+  ) => {
     if (!serverData) return;
+    const isStalePoll = source === 'initial' || source === 'focus';
+    const shouldApplySlice = (slice: string) => !isStalePoll || !firestoreHydratedRef.current[slice];
 
-    if (Array.isArray(serverData.participants)) {
+    if (Array.isArray(serverData.participants) && shouldApplySlice('participants')) {
       if (serverData.isFactoryReset || serverData.allowParticipantDeletion) {
         const filtered = serverData.participants.filter((p) => !deletedParticipantIdsRef.current.has(p.id));
         setParticipants(filtered);
@@ -153,11 +168,11 @@ export default function App() {
         });
       }
     }
-    if (Array.isArray(serverData.prizes)) {
+    if (Array.isArray(serverData.prizes) && shouldApplySlice('prizes')) {
       setPrizes(serverData.prizes);
       try { StorageService.savePrizes(serverData.prizes); } catch {}
     }
-    if (Array.isArray(serverData.schedules) && serverData.schedules.length > 0) {
+    if (Array.isArray(serverData.schedules) && serverData.schedules.length > 0 && shouldApplySlice('schedules')) {
       const sortedSchedules = [...serverData.schedules].sort((a, b) => {
         const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
         const dateB = `${b.scheduledDate || ''}T${b.scheduledTime || ''}`;
@@ -166,7 +181,7 @@ export default function App() {
       setSchedules(sortedSchedules);
       try { StorageService.saveSchedules(sortedSchedules); } catch {}
     }
-    if (Array.isArray(serverData.winners)) {
+    if (Array.isArray(serverData.winners) && shouldApplySlice('winners')) {
       if (serverData.isFactoryReset || serverData.allowWinnerDeletion) {
         const filtered = serverData.winners.filter((w) => !deletedWinnerIdsRef.current.has(w.id));
         setWinners(filtered);
@@ -188,15 +203,15 @@ export default function App() {
         });
       }
     }
-    if (Array.isArray(serverData.notifications)) {
+    if (Array.isArray(serverData.notifications) && shouldApplySlice('notifications')) {
       setNotifications(serverData.notifications);
       try { StorageService.saveNotifications(serverData.notifications); } catch {}
     }
-    if (serverData.settings) {
+    if (serverData.settings && shouldApplySlice('settings')) {
       setSettings(serverData.settings);
       try { StorageService.saveSettings(serverData.settings); } catch {}
     }
-    if (serverData.brand) {
+    if (serverData.brand && shouldApplySlice('brand')) {
       const normalizedBrand: BrandConfig = normalizeBrandConsentTexts(serverData.brand);
       setBrand(normalizedBrand);
       try { StorageService.saveBrand(normalizedBrand); } catch {}
@@ -204,20 +219,20 @@ export default function App() {
         document.title = `${normalizedBrand.companyName} - Sorteios Oficiais`;
       }
     }
-    if (serverData.formFields) {
+    if (serverData.formFields && shouldApplySlice('formFields')) {
       const mergedFields = { ...DEFAULT_FORM_FIELDS, ...serverData.formFields };
       setFormFields(mergedFields);
       try { StorageService.saveFormFields(mergedFields); } catch {}
     }
-    if (serverData.posterConfig) {
+    if (serverData.posterConfig && shouldApplySlice('posterConfig')) {
       setPosterConfig(serverData.posterConfig);
       try { StorageService.savePosterConfig(serverData.posterConfig); } catch {}
     }
-    if (serverData.reportConfig) {
+    if (serverData.reportConfig && shouldApplySlice('reportConfig')) {
       setReportConfig(serverData.reportConfig);
       try { StorageService.saveReportConfig(serverData.reportConfig); } catch {}
     }
-    if (Array.isArray(serverData.users) && serverData.users.length > 0) {
+    if (Array.isArray(serverData.users) && serverData.users.length > 0 && shouldApplySlice('users')) {
       if (serverData.isFactoryReset || serverData.allowUserDeletion) {
         const filtered = serverData.users.filter((u) => !deletedUserIdsRef.current.has(u.id));
         setUsers(filtered);
@@ -285,64 +300,53 @@ export default function App() {
     setIsSyncing(true);
     FirestoreService.testConnection();
 
-    // 1. Cloud Firestore real-time listener (Global, multi-device, works across mobile/desktop)
+    // 1. Cloud Firestore real-time listener (Authoritative global source across devices)
     const unsubscribeFirestore = FirestoreService.subscribeAll({
       onBrandChange: (b) => {
+        firestoreHydratedRef.current.brand = true;
         const normalizedBrand: BrandConfig = normalizeBrandConsentTexts(b);
         setBrand(normalizedBrand);
         try { StorageService.saveBrand(normalizedBrand); } catch {}
         if (normalizedBrand.companyName) {
           document.title = `${normalizedBrand.companyName} - Sorteios Oficiais`;
         }
+        const brandJson = JSON.stringify(normalizedBrand);
+        if (brandJson !== lastSyncedBrandJsonRef.current) {
+          lastSyncedBrandJsonRef.current = brandJson;
+          ApiService.saveData({ brand: normalizedBrand }).catch(() => {});
+        }
         setIsServerConnected(true);
         setIsSyncing(false);
       },
       onParticipantsChange: (pList) => {
-        setParticipants((current) => {
-          const map = new Map<string, Participant>();
-          for (const c of current) {
-            if (c.id && deletedParticipantIdsRef.current.has(c.id)) continue;
-            const key = c.id || (c.ticketNumber ? `ticket-${c.ticketNumber}` : '');
-            if (key) map.set(key, c);
-          }
-          for (const remote of pList) {
-            if (remote.id && deletedParticipantIdsRef.current.has(remote.id)) continue;
-            const key = remote.id || (remote.ticketNumber ? `ticket-${remote.ticketNumber}` : '');
-            if (!key) continue;
-            const local = map.get(key) || current.find((c) => c.id === remote.id || c.ticketNumber === remote.ticketNumber);
-            map.set(key, {
-              ...local,
-              ...remote,
-              clinic: remote.clinic?.trim() ? remote.clinic : (local?.clinic || ''),
-              specialty: (remote.specialty?.trim() && remote.specialty !== 'Não especificada') ? remote.specialty : (local?.specialty || ''),
-              wantsLacerVisit: remote.wantsLacerVisit !== undefined ? remote.wantsLacerVisit : local?.wantsLacerVisit,
-              hcpDatabaseConsent: remote.hcpDatabaseConsent !== undefined ? remote.hcpDatabaseConsent : local?.hcpDatabaseConsent,
-              marketingConsent: remote.marketingConsent !== undefined ? remote.marketingConsent : local?.marketingConsent,
-              profilingConsent: remote.profilingConsent !== undefined ? remote.profilingConsent : local?.profilingConsent,
-              termsAccepted: remote.termsAccepted !== undefined ? remote.termsAccepted : local?.termsAccepted,
-            });
-          }
-          const merged = Array.from(map.values());
-          try { StorageService.saveParticipants(merged); } catch {}
-          const mergedJson = JSON.stringify(merged.map((p) => p.id + ':' + p.status));
-          if (merged.length > 0 && mergedJson !== lastSyncedParticipantsJsonRef.current) {
-            lastSyncedParticipantsJsonRef.current = mergedJson;
-            ApiService.saveData({ participants: merged }).catch(() => {});
-          }
-          return merged;
-        });
+        firestoreHydratedRef.current.participants = true;
+        const filtered = pList.filter((p) => p?.id && !deletedParticipantIdsRef.current.has(p.id));
+        setParticipants(filtered);
+        try { StorageService.saveParticipants(filtered); } catch {}
+        const sig = JSON.stringify(filtered.map((p) => `${p.id}:${p.status}:${p.wantsLacerVisit}:${p.hcpDatabaseConsent}`));
+        if (sig !== lastSyncedParticipantsJsonRef.current) {
+          lastSyncedParticipantsJsonRef.current = sig;
+          ApiService.saveData({ participants: filtered, allowParticipantDeletion: true }).catch(() => {});
+        }
         setIsServerConnected(true);
         setIsSyncing(false);
       },
       onPrizesChange: (przList) => {
+        firestoreHydratedRef.current.prizes = true;
         if (przList.length > 0) {
           setPrizes(przList);
           try { StorageService.savePrizes(przList); } catch {}
+          const sig = JSON.stringify(przList);
+          if (sig !== lastSyncedPrizesJsonRef.current) {
+            lastSyncedPrizesJsonRef.current = sig;
+            ApiService.saveData({ prizes: przList }).catch(() => {});
+          }
         }
         setIsServerConnected(true);
         setIsSyncing(false);
       },
       onSchedulesChange: (schedList) => {
+        firestoreHydratedRef.current.schedules = true;
         if (Array.isArray(schedList) && schedList.length > 0) {
           const sorted = [...schedList].sort((a, b) => {
             const dateA = `${a.scheduledDate || ''}T${a.scheduledTime || ''}`;
@@ -351,38 +355,38 @@ export default function App() {
           });
           setSchedules(sorted);
           try { StorageService.saveSchedules(sorted); } catch {}
+          const sig = JSON.stringify(sorted);
+          if (sig !== lastSyncedSchedulesJsonRef.current) {
+            lastSyncedSchedulesJsonRef.current = sig;
+            ApiService.saveData({ schedules: sorted }).catch(() => {});
+          }
           setIsServerConnected(true);
         }
       },
       onWinnersChange: (wList) => {
-        setWinners((current) => {
-          const winnerMap = new Map<string, DrawWinner>();
-          for (const w of current) {
-            if (w?.id && !deletedWinnerIdsRef.current.has(w.id)) winnerMap.set(w.id, w);
-          }
-          for (const w of wList) {
-            if (w?.id && !deletedWinnerIdsRef.current.has(w.id)) {
-              winnerMap.set(w.id, { ...(winnerMap.get(w.id) || {}), ...w });
-            }
-          }
-          const mergedWinners = Array.from(winnerMap.values());
-          try { StorageService.saveWinners(mergedWinners); } catch {}
-          const winnersJson = JSON.stringify(mergedWinners.map((w) => w.id));
-          if (mergedWinners.length > 0 && winnersJson !== lastSyncedWinnersJsonRef.current) {
-            lastSyncedWinnersJsonRef.current = winnersJson;
-            ApiService.saveData({ winners: mergedWinners }).catch(() => {});
-          }
-          return mergedWinners;
-        });
+        firestoreHydratedRef.current.winners = true;
+        const filtered = wList.filter((w) => w?.id && !deletedWinnerIdsRef.current.has(w.id));
+        setWinners(filtered);
+        try { StorageService.saveWinners(filtered); } catch {}
+        const winnersJson = JSON.stringify(filtered.map((w) => w.id));
+        if (winnersJson !== lastSyncedWinnersJsonRef.current) {
+          lastSyncedWinnersJsonRef.current = winnersJson;
+          ApiService.saveData({ winners: filtered, allowWinnerDeletion: true }).catch(() => {});
+        }
         setIsServerConnected(true);
       },
       onNotificationsChange: (nList) => {
-        if (nList.length > 0) {
-          setNotifications(nList);
-          try { StorageService.saveNotifications(nList); } catch {}
+        firestoreHydratedRef.current.notifications = true;
+        setNotifications(nList);
+        try { StorageService.saveNotifications(nList); } catch {}
+        const sig = JSON.stringify(nList.map((n) => n.id));
+        if (sig !== lastSyncedNotificationsJsonRef.current) {
+          lastSyncedNotificationsJsonRef.current = sig;
+          ApiService.saveData({ notifications: nList }).catch(() => {});
         }
       },
       onUsersChange: (uList) => {
+        firestoreHydratedRef.current.users = true;
         if (uList.length === 0) {
           if (!hasSeededUsersRef.current) {
             hasSeededUsersRef.current = true;
@@ -400,38 +404,66 @@ export default function App() {
           const usersJson = JSON.stringify(filtered.map((u) => `${u.id}:${u.username}:${u.password || ''}:${u.role}:${u.active}:${u.name}`));
           if (usersJson !== lastSyncedUsersJsonRef.current) {
             lastSyncedUsersJsonRef.current = usersJson;
-            ApiService.saveData({ users: filtered }).catch(() => {});
+            ApiService.saveData({ users: filtered, allowUserDeletion: true }).catch(() => {});
           }
         }
         setIsServerConnected(true);
       },
       onSettingsChange: (s) => {
+        firestoreHydratedRef.current.settings = true;
         setSettings(s);
         try { StorageService.saveSettings(s); } catch {}
+        const sig = JSON.stringify(s);
+        if (sig !== lastSyncedSettingsJsonRef.current) {
+          lastSyncedSettingsJsonRef.current = sig;
+          ApiService.saveData({ settings: s }).catch(() => {});
+        }
       },
       onFormFieldsChange: (f) => {
+        firestoreHydratedRef.current.formFields = true;
         const merged = { ...DEFAULT_FORM_FIELDS, ...f };
         setFormFields(merged);
         try { StorageService.saveFormFields(merged); } catch {}
+        const sig = JSON.stringify(merged);
+        if (sig !== lastSyncedFormFieldsJsonRef.current) {
+          lastSyncedFormFieldsJsonRef.current = sig;
+          ApiService.saveData({ formFields: merged }).catch(() => {});
+        }
       },
       onPosterConfigChange: (pc) => {
+        firestoreHydratedRef.current.posterConfig = true;
         setPosterConfig(pc);
         try { StorageService.savePosterConfig(pc); } catch {}
+        const sig = JSON.stringify(pc);
+        if (sig !== lastSyncedPosterJsonRef.current) {
+          lastSyncedPosterJsonRef.current = sig;
+          ApiService.saveData({ posterConfig: pc }).catch(() => {});
+        }
       },
       onReportConfigChange: (rc) => {
+        firestoreHydratedRef.current.reportConfig = true;
         setReportConfig(rc);
         try { StorageService.saveReportConfig(rc); } catch {}
+        const sig = JSON.stringify(rc);
+        if (sig !== lastSyncedReportJsonRef.current) {
+          lastSyncedReportJsonRef.current = sig;
+          ApiService.saveData({ reportConfig: rc }).catch(() => {});
+        }
+      },
+      onLiveStateChange: (ls) => {
+        firestoreHydratedRef.current.liveState = true;
+        setFirestoreLiveState(ls);
       },
       onError: (err) => {
         console.warn('Firestore subscription fallback:', err);
       },
     });
 
-    // 2. Initial fallback fetch from server REST API
+    // 2. Initial fallback fetch from server REST API (skipped automatically for slices already hydrated by Firestore)
     ApiService.fetchAllData(2)
       .then((serverData) => {
         if (serverData) {
-          applyServerData(serverData);
+          applyServerData(serverData, 'initial');
         }
       })
       .catch(() => {})
@@ -439,15 +471,15 @@ export default function App() {
         setIsSyncing(false);
       });
 
-    // 3. Real-time Server-Sent Events subscriber (handles both INITIAL_STATE snapshot & DATA_UPDATED)
+    // 3. Real-time Server-Sent Events subscriber
     const unsubscribeSSE = ApiService.subscribeLiveEvents({
       onInitialState: (snapshot) => {
         if (snapshot?.db) {
-          applyServerData(snapshot.db);
+          applyServerData(snapshot.db, 'initial');
         }
       },
       onDataUpdated: (data) => {
-        applyServerData(data as AppServerData);
+        applyServerData(data as AppServerData, 'sse');
       },
     });
 
@@ -458,16 +490,16 @@ export default function App() {
         bc = new BroadcastChannel('sorteiolive_cross_tab_sync');
         bc.onmessage = (event) => {
           if (event.data?.type === 'DATA_SYNC' && event.data?.data) {
-            applyServerData(event.data.data);
+            applyServerData(event.data.data, 'crosstab');
           }
         };
       }
     } catch {}
 
-    // 5. Automatic sync when window/tab gains focus or becomes visible
+    // 5. Automatic sync when window/tab gains focus or becomes visible (never clobbers hydrated Firestore slices)
     const handleFocusOrVisible = () => {
       ApiService.fetchAllData(1).then((data) => {
-        if (data) applyServerData(data);
+        if (data) applyServerData(data, 'focus');
       });
     };
     window.addEventListener('focus', handleFocusOrVisible);
@@ -586,14 +618,32 @@ export default function App() {
   };
 
   const handleUpdateBrand = (newBrand: BrandConfig) => {
-    setBrand(newBrand);
-    try { StorageService.saveBrand(newBrand); } catch {}
-    if (newBrand.companyName) {
-      document.title = `${newBrand.companyName} - Sorteios Oficiais`;
+    const normalized = normalizeBrandConsentTexts(newBrand);
+    setBrand(normalized);
+    try { StorageService.saveBrand(normalized); } catch {}
+    if (normalized.companyName) {
+      document.title = `${normalized.companyName} - Sorteios Oficiais`;
     }
-    FirestoreService.saveBrand(newBrand).catch((err) => notifyPersistError('personalização', err));
-    ApiService.saveData({ brand: newBrand });
-    broadcastCrossTab({ brand: newBrand });
+    FirestoreService.saveBrand(normalized).catch((err) => notifyPersistError('personalização', err));
+    ApiService.saveData({ brand: normalized });
+    broadcastCrossTab({ brand: normalized });
+
+    // Keep primary administrator password aligned if updated via brand config
+    const newPwd = normalized.adminPassword?.trim();
+    if (newPwd) {
+      const primaryAdmin =
+        users.find((u) => u.id === 'usr-admin-1') ||
+        users.find((u) => u.username.toLowerCase() === 'admin');
+      if (primaryAdmin && primaryAdmin.password !== newPwd) {
+        const syncedUsers = users.map((u) =>
+          u.id === primaryAdmin.id ? { ...u, password: newPwd } : u
+        );
+        setUsers(syncedUsers);
+        try { StorageService.saveUsers(syncedUsers); } catch {}
+        FirestoreService.saveUsersBatch(syncedUsers, false).catch(() => {});
+        ApiService.saveData({ users: syncedUsers });
+      }
+    }
   };
 
   const handleUpdateFormFields = (newFields: FormFieldsConfig) => {
@@ -620,17 +670,74 @@ export default function App() {
     broadcastCrossTab({ reportConfig: newReport });
   };
 
-  // Manual Instant Synchronize button handler
+  // Manual Instant Synchronize button handler (Reconciles Cloud Firestore -> Local & Server DB)
   const handleManualSync = async () => {
     setIsSyncing(true);
     setSyncToast(null);
     try {
-      const freshData = await ApiService.fetchAllData(2);
-      if (freshData) {
-        applyServerData(freshData);
-        setSyncToast(`Base de dados sincronizada! (${freshData.participants?.length || 0} participantes, ${freshData.prizes?.length || 0} prêmios)`);
+      const cloud = await FirestoreService.fetchAllSnapshot();
+      const hasCloudData = Boolean(
+        cloud.brand || cloud.participants.length > 0 || cloud.prizes.length > 0 || cloud.users.length > 0
+      );
+
+      if (hasCloudData) {
+        const normBrand = cloud.brand ? normalizeBrandConsentTexts(cloud.brand) : brand;
+        const resolvedFields = cloud.formFields ? { ...DEFAULT_FORM_FIELDS, ...cloud.formFields } : formFields;
+
+        setBrand(normBrand);
+        setParticipants(cloud.participants);
+        if (cloud.prizes.length > 0) setPrizes(cloud.prizes);
+        if (cloud.schedules.length > 0) setSchedules(cloud.schedules);
+        setWinners(cloud.winners);
+        if (cloud.users.length > 0) setUsers(cloud.users);
+        setNotifications(cloud.notifications);
+        if (cloud.settings) setSettings(cloud.settings);
+        setFormFields(resolvedFields);
+        if (cloud.posterConfig) setPosterConfig(cloud.posterConfig);
+        if (cloud.reportConfig) setReportConfig(cloud.reportConfig);
+        if (cloud.liveState) setFirestoreLiveState(cloud.liveState);
+
+        try {
+          StorageService.saveBrand(normBrand);
+          StorageService.saveParticipants(cloud.participants);
+          if (cloud.prizes.length > 0) StorageService.savePrizes(cloud.prizes);
+          if (cloud.schedules.length > 0) StorageService.saveSchedules(cloud.schedules);
+          StorageService.saveWinners(cloud.winners);
+          if (cloud.users.length > 0) StorageService.saveUsers(cloud.users);
+          StorageService.saveNotifications(cloud.notifications);
+          if (cloud.settings) StorageService.saveSettings(cloud.settings);
+          StorageService.saveFormFields(resolvedFields);
+          if (cloud.posterConfig) StorageService.savePosterConfig(cloud.posterConfig);
+          if (cloud.reportConfig) StorageService.saveReportConfig(cloud.reportConfig);
+        } catch {}
+
+        await ApiService.saveData({
+          brand: normBrand,
+          participants: cloud.participants,
+          prizes: cloud.prizes.length > 0 ? cloud.prizes : prizes,
+          schedules: cloud.schedules.length > 0 ? cloud.schedules : schedules,
+          winners: cloud.winners,
+          users: cloud.users.length > 0 ? cloud.users : users,
+          notifications: cloud.notifications,
+          settings: cloud.settings || settings,
+          formFields: resolvedFields,
+          posterConfig: cloud.posterConfig || posterConfig,
+          reportConfig: cloud.reportConfig || reportConfig,
+          allowParticipantDeletion: true,
+          allowWinnerDeletion: true,
+          allowUserDeletion: true,
+        });
+
+        setLastSyncTime(new Date());
+        setSyncToast(`Base de dados sincronizada! (${cloud.participants.length} participantes, ${cloud.prizes.length || prizes.length} prémios, ${cloud.winners.length} vencedores)`);
       } else {
-        setSyncToast('Dados sincronizados com o Cloud Firestore!');
+        const freshData = await ApiService.fetchAllData(2);
+        if (freshData) {
+          applyServerData(freshData, 'sse');
+          setSyncToast(`Base de dados sincronizada! (${freshData.participants?.length || 0} participantes, ${freshData.prizes?.length || 0} prémios)`);
+        } else {
+          setSyncToast('Dados sincronizados com o Cloud Firestore!');
+        }
       }
     } catch (err: any) {
       setSyncToast('Erro na sincronização: ' + (err?.message || 'Falha de conexão'));
@@ -957,6 +1064,7 @@ export default function App() {
       // Persist factory reset to Cloud Firestore
       FirestoreService.clearAllParticipants().catch(() => {});
       FirestoreService.clearAllWinners().catch(() => {});
+      FirestoreService.clearAllNotifications().catch(() => {});
       FirestoreService.savePrizesBatch(defPrizes).catch(() => {});
       FirestoreService.saveSchedulesBatch(defSchedules).catch(() => {});
       FirestoreService.saveSettings(defSettings).catch(() => {});
@@ -965,6 +1073,17 @@ export default function App() {
       FirestoreService.savePosterConfig(defPoster).catch(() => {});
       FirestoreService.saveReportConfig(defReport).catch(() => {});
       FirestoreService.saveUsersBatch(defUsers, true).catch(() => {});
+      FirestoreService.saveLiveState({
+        isDrawing: false,
+        prizeId: null,
+        scheduleId: null,
+        round: 1,
+        currentDisplayTicket: '-----',
+        currentDisplayName: 'AGUARDANDO SORTEIO...',
+        currentDisplayCity: '',
+        latestWinner: null,
+        lastDrawnAt: null,
+      }).catch(() => {});
 
       // Persist factory reset to server database
       ApiService.saveData({
@@ -1242,6 +1361,7 @@ export default function App() {
             schedules={schedules}
             winners={winners}
             brand={brand}
+            firestoreLiveState={firestoreLiveState}
             isAdmin={isAdminUnlocked}
             isAdministrator={isAdministrator}
             currentUser={currentUser}

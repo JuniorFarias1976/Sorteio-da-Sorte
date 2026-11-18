@@ -36,6 +36,7 @@ import {
   X
 } from 'lucide-react';
 import { ApiService } from '../utils/api';
+import { FirestoreService } from '../utils/firestoreService';
 
 interface LiveDrawRoomProps {
   participants: Participant[];
@@ -43,6 +44,7 @@ interface LiveDrawRoomProps {
   schedules: DrawSchedule[];
   winners: DrawWinner[];
   brand: BrandConfig;
+  firestoreLiveState?: any;
   isAdmin: boolean;
   isAdministrator?: boolean;
   currentUser?: AppUser | null;
@@ -62,6 +64,7 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
   schedules,
   winners,
   brand,
+  firestoreLiveState = null,
   isAdmin,
   isAdministrator = isAdmin,
   currentUser = null,
@@ -270,6 +273,18 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       winner: winnerRecord,
     });
 
+    FirestoreService.saveLiveState({
+      isDrawing: false,
+      prizeId: winnerRecord.prizeId,
+      scheduleId: targetSchedId || null,
+      round: selectedRound,
+      currentDisplayTicket: winnerRecord.participantTicket,
+      currentDisplayName: winnerRecord.participantName,
+      currentDisplayCity: winnerRecord.participantCity || winnerRecord.participantDocument || '',
+      latestWinner: winnerRecord,
+      lastDrawnAt: winnerRecord.wonAt,
+    }).catch(() => {});
+
     if (soundEnabled) {
       playWinFanfare();
     }
@@ -451,6 +466,31 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     };
   }, [isAdmin, soundEnabled, onWinnerAnnounced, onPrizeQuantityDrawn]);
 
+  // Cloud Firestore real-time spectator fallback when SSE is on a different server instance
+  useEffect(() => {
+    if (!firestoreLiveState || isAdmin) return;
+    if (firestoreLiveState.prizeId) setSelectedPrizeId(firestoreLiveState.prizeId);
+    if (firestoreLiveState.scheduleId) setSelectedScheduleId(firestoreLiveState.scheduleId);
+    if (firestoreLiveState.latestWinner) {
+      setIsDrawing(false);
+      setCountdown(null);
+      setLatestWinner(firestoreLiveState.latestWinner);
+      setCurrentDisplayTicket(firestoreLiveState.currentDisplayTicket || firestoreLiveState.latestWinner.participantTicket);
+      setCurrentDisplayName(firestoreLiveState.currentDisplayName || firestoreLiveState.latestWinner.participantName);
+      setCurrentDisplayCity(firestoreLiveState.currentDisplayCity || firestoreLiveState.latestWinner.participantCity || '');
+    } else if (firestoreLiveState.isDrawing) {
+      setIsDrawing(true);
+      setLatestWinner(null);
+    } else if (firestoreLiveState.currentDisplayName === 'AGUARDANDO SORTEIO...') {
+      setIsDrawing(false);
+      setCountdown(null);
+      setLatestWinner(null);
+      setCurrentDisplayTicket(firestoreLiveState.currentDisplayTicket || '-----');
+      setCurrentDisplayName('AGUARDANDO SORTEIO...');
+      setCurrentDisplayCity('');
+    }
+  }, [firestoreLiveState, isAdmin]);
+
   const broadcastEvent = (payload: object) => {
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -509,6 +549,18 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
       round: selectedRound,
     });
 
+    FirestoreService.saveLiveState({
+      isDrawing: true,
+      prizeId: currentPrize.id,
+      scheduleId: activeSchedule?.id || null,
+      round: selectedRound,
+      currentDisplayTicket: '-----',
+      currentDisplayName: 'A sortear...',
+      currentDisplayCity: brand.companyName || 'SorteioLive',
+      latestWinner: null,
+      lastDrawnAt: null,
+    }).catch(() => {});
+
     if (soundEnabled) playCountdownBeep(false);
 
     // Call server to trigger draw asynchronously (validates schedule lock on server)
@@ -557,6 +609,17 @@ export const LiveDrawRoom: React.FC<LiveDrawRoomProps> = ({
     setCurrentDisplayName('AGUARDANDO SORTEIO...');
     setCurrentDisplayCity('');
     broadcastEvent({ type: 'LIVE_RESET' });
+    FirestoreService.saveLiveState({
+      isDrawing: false,
+      prizeId: currentPrize?.id || null,
+      scheduleId: activeSchedule?.id || null,
+      round: selectedRound,
+      currentDisplayTicket: '-----',
+      currentDisplayName: 'AGUARDANDO SORTEIO...',
+      currentDisplayCity: '',
+      latestWinner: null,
+      lastDrawnAt: null,
+    }).catch(() => {});
     try {
       await ApiService.resetLive();
     } catch (e) {

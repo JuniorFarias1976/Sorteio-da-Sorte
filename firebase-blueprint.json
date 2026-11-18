@@ -134,12 +134,107 @@
         "active": { "type": "boolean" }
       },
       "required": ["id", "username", "name", "role", "active"]
+    },
+    "NotificationSettings": {
+      "title": "NotificationSettings",
+      "description": "Automatic reminder and notification channel configuration",
+      "type": "object",
+      "properties": {
+        "autoNotify24h": { "type": "boolean" },
+        "autoNotify1h": { "type": "boolean" },
+        "autoNotify15m": { "type": "boolean" },
+        "autoNotifyStart": { "type": "boolean" },
+        "whatsappEnabled": { "type": "boolean" },
+        "emailEnabled": { "type": "boolean" },
+        "smsEnabled": { "type": "boolean" },
+        "messageTemplate": { "type": "string" }
+      }
+    },
+    "FormFieldsConfig": {
+      "title": "FormFieldsConfig",
+      "description": "Public registration form field visibility and labels",
+      "type": "object",
+      "properties": {
+        "name": { "type": "object" },
+        "email": { "type": "object" },
+        "phone": { "type": "object" },
+        "clinic": { "type": "object" },
+        "city": { "type": "object" },
+        "specialty": { "type": "object" },
+        "document": { "type": "object" }
+      }
+    },
+    "QRCodePosterConfig": {
+      "title": "QRCodePosterConfig",
+      "description": "Printable QR code poster layout and copy configuration",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "step1": { "type": "string" },
+        "step2": { "type": "string" },
+        "step3": { "type": "string" },
+        "footerLeft": { "type": "string" },
+        "footerRight": { "type": "string" },
+        "showDate": { "type": "boolean" },
+        "showSteps": { "type": "boolean" }
+      }
+    },
+    "ReportPdfConfig": {
+      "title": "ReportPdfConfig",
+      "description": "Audit and official PDF report configuration",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "protocolPrefix": { "type": "string" },
+        "statementText": { "type": "string" },
+        "organizerSignTitle": { "type": "string" },
+        "auditorSignTitle": { "type": "string" }
+      }
+    },
+    "LiveState": {
+      "title": "LiveState",
+      "description": "Real-time live draw broadcast state across devices",
+      "type": "object",
+      "properties": {
+        "isDrawing": { "type": "boolean" },
+        "prizeId": { "type": "string" },
+        "scheduleId": { "type": "string" },
+        "round": { "type": "number" },
+        "currentDisplayTicket": { "type": "string" },
+        "currentDisplayName": { "type": "string" },
+        "currentDisplayCity": { "type": "string" },
+        "latestWinner": { "type": "object" },
+        "lastDrawnAt": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "firestore": {
     "/system/brand": {
       "schema": { "$ref": "RaffleConfig" },
       "description": "Stores the central brand configuration and theme"
+    },
+    "/system/settings": {
+      "schema": { "$ref": "NotificationSettings" },
+      "description": "Stores notification automation preferences"
+    },
+    "/system/formFields": {
+      "schema": { "$ref": "FormFieldsConfig" },
+      "description": "Stores public registration form field settings"
+    },
+    "/system/posterConfig": {
+      "schema": { "$ref": "QRCodePosterConfig" },
+      "description": "Stores QR Code poster settings"
+    },
+    "/system/reportConfig": {
+      "schema": { "$ref": "ReportPdfConfig" },
+      "description": "Stores PDF audit report layout settings"
+    },
+    "/system/liveState": {
+      "schema": { "$ref": "LiveState" },
+      "description": "Stores real-time live draw state across connected screens"
     },
     "/participants/{participantId}": {
       "schema": { "$ref": "Participant" },

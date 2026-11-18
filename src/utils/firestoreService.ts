@@ -6,6 +6,7 @@ import {
   deleteDoc, 
   collection, 
   getDocs, 
+  getDocsFromServer,
   onSnapshot, 
   writeBatch,
   Unsubscribe
@@ -691,6 +692,19 @@ export const FirestoreService = {
     }
   },
 
+  // Clear all notification logs from Firestore
+  async clearAllNotifications(): Promise<void> {
+    const path = 'notifications';
+    try {
+      const snap = await getDocs(collection(db, 'notifications'));
+      if (snap.empty) return;
+      const ops = snap.docs.map((d) => ({ type: 'delete' as const, ref: d.ref }));
+      await commitOperationsInChunks(ops);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  },
+
   // Check if a doc exists in Firestore
   async getSystemDoc(docId: string): Promise<any | null> {
     try {
@@ -701,10 +715,15 @@ export const FirestoreService = {
     }
   },
 
-  // Check email uniqueness on Firestore
+  // Check email uniqueness on Firestore (reads fresh from server when online)
   async isEmailRegistered(email: string): Promise<{ isDuplicate: boolean; existing?: Participant }> {
     try {
-      const snap = await getDocs(collection(db, 'participants'));
+      let snap;
+      try {
+        snap = await getDocsFromServer(collection(db, 'participants'));
+      } catch {
+        snap = await getDocs(collection(db, 'participants'));
+      }
       const normalized = email.trim().toLowerCase();
       for (const d of snap.docs) {
         const p = d.data() as Participant;
@@ -716,5 +735,90 @@ export const FirestoreService = {
     } catch {
       return { isDuplicate: false };
     }
+  },
+
+  // Authoritative full cloud snapshot fetch for manual/reconciliation sync
+  async fetchAllSnapshot(): Promise<{
+    brand?: BrandConfig;
+    settings?: NotificationSettings;
+    formFields?: FormFieldsConfig;
+    posterConfig?: QRCodePosterConfig;
+    reportConfig?: ReportPdfConfig;
+    liveState?: any;
+    participants: Participant[];
+    prizes: Prize[];
+    schedules: DrawSchedule[];
+    winners: DrawWinner[];
+    users: AppUser[];
+    notifications: NotificationLog[];
+  }> {
+    const readDoc = async (docId: string) => {
+      try {
+        const snap = await getDocFromServer(doc(db, 'system', docId));
+        return snap.exists() ? snap.data() : undefined;
+      } catch {
+        const snap = await getDoc(doc(db, 'system', docId));
+        return snap.exists() ? snap.data() : undefined;
+      }
+    };
+    const readCol = async <T,>(colName: string): Promise<T[]> => {
+      try {
+        const snap = await getDocsFromServer(collection(db, colName));
+        return snap.docs.map((d) => d.data() as T);
+      } catch {
+        const snap = await getDocs(collection(db, colName));
+        return snap.docs.map((d) => d.data() as T);
+      }
+    };
+
+    const [
+      brand,
+      settings,
+      formFields,
+      posterConfig,
+      reportConfig,
+      liveState,
+      participants,
+      prizes,
+      schedules,
+      winners,
+      users,
+      notifications,
+    ] = await Promise.all([
+      readDoc('brand'),
+      readDoc('settings'),
+      readDoc('formFields'),
+      readDoc('posterConfig'),
+      readDoc('reportConfig'),
+      readDoc('liveState'),
+      readCol<Participant>('participants'),
+      readCol<Prize>('prizes'),
+      readCol<DrawSchedule>('schedules'),
+      readCol<DrawWinner>('winners'),
+      readCol<AppUser>('users'),
+      readCol<NotificationLog>('notifications'),
+    ]);
+
+    participants.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    prizes.sort((a, b) => (a.drawOrder || 0) - (b.drawOrder || 0));
+    schedules.sort((a, b) => `${a.scheduledDate || ''}T${a.scheduledTime || ''}`.localeCompare(`${b.scheduledDate || ''}T${b.scheduledTime || ''}`));
+    winners.sort((a, b) => new Date(b.wonAt || 0).getTime() - new Date(a.wonAt || 0).getTime());
+    users.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    notifications.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+
+    return {
+      brand: brand as BrandConfig | undefined,
+      settings: settings as NotificationSettings | undefined,
+      formFields: formFields as FormFieldsConfig | undefined,
+      posterConfig: posterConfig as QRCodePosterConfig | undefined,
+      reportConfig: reportConfig as ReportPdfConfig | undefined,
+      liveState,
+      participants,
+      prizes,
+      schedules,
+      winners,
+      users,
+      notifications,
+    };
   },
 };

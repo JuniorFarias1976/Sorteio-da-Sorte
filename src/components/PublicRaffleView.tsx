@@ -249,6 +249,18 @@ export const PublicRaffleView: React.FC<PublicRaffleViewProps> = ({
 
     setIsSubmitting(true);
 
+    // 1b. Cloud Firestore authoritative duplicate email check
+    if (normalizedEmail) {
+      try {
+        const fsDup = await FirestoreService.isEmailRegistered(normalizedEmail);
+        if (fsDup.isDuplicate && fsDup.existing) {
+          setDuplicateEmailError(fsDup.existing);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch {}
+    }
+
     const processedSpecialties = selectedSpecialties.map((s) =>
       s === 'Outra' && specialtyOther.trim() ? `Outra: ${specialtyOther.trim()}` : s
     );
